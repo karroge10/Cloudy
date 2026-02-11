@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, Image } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
+import { View, Text, TextInput, KeyboardAvoidingView, Platform, TouchableOpacity, Image, ScrollView } from 'react-native';
 import { MASCOTS } from '../constants/Assets';
 import { useNavigation } from '@react-navigation/native';
+import { Layout } from '../components/Layout';
+import { TopNav } from '../components/TopNav';
 
 export const JournalEntryScreen = () => {
     const [gratitude, setGratitude] = useState('');
@@ -19,14 +19,18 @@ export const JournalEntryScreen = () => {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-background">
-            <StatusBar style="dark" />
+        <Layout noScroll={true}>
+            <TopNav title="Journal" />
             <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
                 className="flex-1"
+                keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
             >
-                <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="px-6 py-6">
-                    {/* Header with Back Button (optional, relying on native back for now or custom) */}
+                <ScrollView 
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={{ flexGrow: 1 }}
+                >
+                    {/* Header Content */}
                     <View className="items-center mt-4 mb-8">
                         <Image
                             source={MASCOTS.WRITE}
@@ -41,7 +45,10 @@ export const JournalEntryScreen = () => {
                         </Text>
                     </View>
 
-                    <View className="bg-card rounded-3xl p-6 shadow-sm border border-inactive min-h-[200px]">
+                    <View 
+                        className="bg-card rounded-3xl p-6 shadow-[#0000000D] shadow-xl min-h-[200px]"
+                        style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}
+                    >
                         <TextInput
                             className="flex-1 text-lg text-text font-q-regular text-left align-top"
                             placeholder="I am grateful for..."
@@ -66,6 +73,6 @@ export const JournalEntryScreen = () => {
                     </TouchableOpacity>
                 </ScrollView>
             </KeyboardAvoidingView>
-        </SafeAreaView>
+        </Layout>
     );
 };

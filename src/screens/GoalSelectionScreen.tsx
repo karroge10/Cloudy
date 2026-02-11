@@ -8,14 +8,7 @@ import { SelectionPill } from '../components/SelectionPill';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { MASCOTS } from '../constants/Assets';
 
-const GOALS = [
-    "Inner Peace",
-    "Happiness",
-    "Better Sleep",
-    "Mental Clarity",
-    "Productivity",
-    "Self-Love"
-];
+import { GOALS } from '../constants/Goals';
 
 export const GoalSelectionScreen = () => {
     const navigation = useNavigation();

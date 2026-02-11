@@ -55,7 +55,7 @@ export const SummaryScreen = () => {
                         label="Start Writing"
                         onPress={() => navigation.reset({
                             index: 0,
-                            routes: [{ name: 'Home' as never }],
+                            routes: [{ name: 'MainApp' as never }],
                         })}
                     />
                 </View>

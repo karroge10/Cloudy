@@ -10,6 +10,8 @@ module.exports = {
         text: "#333333",
         muted: "#7F7F7F",
         inactive: "#E0E0E0",
+        secondary: "#fff1dbff",
+        "tip-bg": "#fffff9ff",
       },
       fontFamily: {
         "q-regular": ["Quicksand_400Regular"],

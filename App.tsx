@@ -17,8 +17,10 @@ import { WelcomeScreen } from './src/screens/WelcomeScreen';
 import { StruggleSelectionScreen } from './src/screens/StruggleSelectionScreen';
 import { GoalSelectionScreen } from './src/screens/GoalSelectionScreen';
 import { SummaryScreen } from './src/screens/SummaryScreen';
-import { HomeScreen } from './src/screens/HomeScreen';
+import { MainTabNavigator } from './src/navigation/MainTabNavigator';
 import { JournalEntryScreen } from './src/screens/JournalEntryScreen';
+import { MemoryScreen } from './src/screens/MemoryScreen';
+
 
 const Stack = createNativeStackNavigator();
 
@@ -42,6 +44,9 @@ export default function App() {
     Quicksand_700Bold,
   });
 
+  // Temporary flag to disable onboarding
+  const isAuthenticated = true;
+
   const onLayoutRootView = useCallback(async () => {
     if (fontsLoaded) {
       await SplashScreen.hideAsync();
@@ -61,15 +66,23 @@ export default function App() {
             contentStyle: { backgroundColor: '#FFF9F0' }, // Global background just in case
             animation: 'slide_from_right'
           }}
-          initialRouteName="Welcome"
         >
-          <Stack.Screen name="Welcome" component={WelcomeScreen} />
-          <Stack.Screen name="StruggleSelection" component={StruggleSelectionScreen} />
-          <Stack.Screen name="GoalSelection" component={GoalSelectionScreen} />
-          <Stack.Screen name="Summary" component={SummaryScreen} />
-          <Stack.Screen name="Home" component={HomeScreen} />
-          <Stack.Screen name="JournalEntry" component={JournalEntryScreen} />
+          {isAuthenticated ? (
+            <>
+              <Stack.Screen name="MainApp" component={MainTabNavigator} />
+              <Stack.Screen name="JournalEntry" component={JournalEntryScreen} />
+              <Stack.Screen name="Memory" component={MemoryScreen} />
+            </>
+          ) : (
+            <>
+              <Stack.Screen name="Welcome" component={WelcomeScreen} />
+              <Stack.Screen name="StruggleSelection" component={StruggleSelectionScreen} />
+              <Stack.Screen name="GoalSelection" component={GoalSelectionScreen} />
+              <Stack.Screen name="Summary" component={SummaryScreen} />
+            </>
+          )}
         </Stack.Navigator>
+
         <StatusBar style="dark" />
       </NavigationContainer>
     </SafeAreaProvider>
