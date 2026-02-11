@@ -1,9 +1,9 @@
 import "./global.css";
 import React, { useCallback, useEffect } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as SplashScreen from 'expo-splash-screen';
-import { useFonts, Nunito_400Regular, Nunito_700Bold, Nunito_600SemiBold } from '@expo-google-fonts/nunito';
+import { useFonts, Quicksand_400Regular, Quicksand_500Medium, Quicksand_600SemiBold, Quicksand_700Bold } from '@expo-google-fonts/quicksand';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
@@ -22,14 +22,24 @@ import { JournalEntryScreen } from './src/screens/JournalEntryScreen';
 
 const Stack = createNativeStackNavigator();
 
+const CloudyTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    background: '#FFF9F0',
+    card: '#FFF9F0',
+  },
+};
+
 // Prevent auto hide splash screen
 SplashScreen.preventAutoHideAsync();
 
 export default function App() {
   const [fontsLoaded] = useFonts({
-    Nunito_400Regular,
-    Nunito_600SemiBold,
-    Nunito_700Bold,
+    Quicksand_400Regular,
+    Quicksand_500Medium,
+    Quicksand_600SemiBold,
+    Quicksand_700Bold,
   });
 
   const onLayoutRootView = useCallback(async () => {
@@ -44,11 +54,11 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer onReady={onLayoutRootView}>
+      <NavigationContainer theme={CloudyTheme} onReady={onLayoutRootView}>
         <Stack.Navigator
           screenOptions={{
             headerShown: false,
-            contentStyle: { backgroundColor: '#FFFBF0' }, // Global background just in case
+            contentStyle: { backgroundColor: '#FFF9F0' }, // Global background just in case
             animation: 'slide_from_right'
           }}
           initialRouteName="Welcome"

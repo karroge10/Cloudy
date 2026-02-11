@@ -19,7 +19,7 @@ export const SelectionPill: React.FC<SelectionPillProps> = ({ label, selected, o
     const containerSelected = "bg-primary border-primary";
     const containerInactive = "bg-background border-gray-300";
 
-    const textBase = "text-xl font-semibold"; // Adjusted to semi-bold as requested
+    const textBase = "text-xl font-q-semibold"; 
     const textSelected = "text-white";
     const textInactive = "text-text";
 

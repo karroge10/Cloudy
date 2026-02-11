@@ -4,15 +4,18 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: "#FFFBF0",
-        primary: "#FF8C76",
+        background: "#FFF9F0",
+        primary: "#FF9E7D",
+        card: "#FFFFFF",
         text: "#333333",
+        muted: "#7F7F7F",
         inactive: "#E0E0E0",
       },
       fontFamily: {
-        sans: ["Nunito_400Regular"],
-        bold: ["Nunito_700Bold"],
-        semibold: ["Nunito_600SemiBold"],
+        "q-regular": ["Quicksand_400Regular"],
+        "q-medium": ["Quicksand_500Medium"],
+        "q-semibold": ["Quicksand_600SemiBold"],
+        "q-bold": ["Quicksand_700Bold"],
       }
     },
   },

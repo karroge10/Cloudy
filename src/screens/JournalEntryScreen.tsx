@@ -33,17 +33,17 @@ export const JournalEntryScreen = () => {
                             className="w-40 h-40 mb-4"
                             resizeMode="contain"
                         />
-                        <Text className="text-2xl font-bold text-text text-center font-sans">
+                        <Text className="text-2xl font-q-bold text-text text-center">
                             Focus on the good.
                         </Text>
-                        <Text className="text-base text-text text-center font-sans mt-2 opacity-80">
+                        <Text className="text-base text-text text-center font-q-regular mt-2 opacity-80">
                             What is one small thing you are grateful for today?
                         </Text>
                     </View>
 
-                    <View className="bg-white rounded-3xl p-6 shadow-sm border border-inactive min-h-[200px]">
+                    <View className="bg-card rounded-3xl p-6 shadow-sm border border-inactive min-h-[200px]">
                         <TextInput
-                            className="flex-1 text-lg text-text font-sans text-left align-top"
+                            className="flex-1 text-lg text-text font-q-regular text-left align-top"
                             placeholder="I am grateful for..."
                             placeholderTextColor="#999"
                             multiline
@@ -60,7 +60,7 @@ export const JournalEntryScreen = () => {
                             }`}
                         disabled={gratitude.trim().length === 0}
                     >
-                        <Text className="text-white text-lg font-bold font-sans">
+                        <Text className="text-white text-lg font-q-bold">
                             Save Entry
                         </Text>
                     </TouchableOpacity>

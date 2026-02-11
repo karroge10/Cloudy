@@ -21,7 +21,7 @@ export const Button: React.FC<ButtonProps> = ({
     const primaryClasses = disabled ? "bg-inactive" : "bg-primary active:opacity-90";
     const outlineClasses = "bg-transparent border-2 border-primary"; 
 
-    const textClasses = "text-2xl font-bold font-sans";
+    const textClasses = "text-2xl font-q-bold";
     const primaryText = "text-white";
     const outlineText = "text-primary";
 
@@ -36,7 +36,7 @@ export const Button: React.FC<ButtonProps> = ({
             </Text>
             {showArrow && (
                 <View className="ml-2 absolute right-8">
-                    <Ionicons name="arrow-forward" size={28} color={variant === 'primary' ? 'white' : '#FF9F43'} />
+                    <Ionicons name="arrow-forward" size={28} color={variant === 'primary' ? 'white' : '#FF9E7D'} />
                 </View>
             )}
         </TouchableOpacity>

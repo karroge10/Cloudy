@@ -25,10 +25,10 @@ export const WelcomeScreen = () => {
                         resizeMode="contain"
                     />
 
-                    <Text className="text-5xl font-bold text-text mb-6 text-center font-sans tracking-tight">
+                    <Text className="text-5xl font-q-bold text-text mb-6 text-center leading-[60px]">
                         Hi, I'm Cloudy
                     </Text>
-                    <Text className="text-2xl text-text opacity-80 text-center font-sans leading-9 px-4">
+                    <Text className="text-2xl text-text opacity-80 text-center font-q-regular leading-relaxed px-4">
                         Your tiny companion for a clearer mind.
                     </Text>
                 </View>

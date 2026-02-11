@@ -41,7 +41,7 @@ export const StruggleSelectionScreen = () => {
 
                     {/* Main Content Area */}
                     <View className="items-center mb-6">
-                        <Text className="text-4xl font-bold text-text text-center font-sans mb-6 pt-4 leading-tight">
+                        <Text className="text-4xl font-q-bold text-text text-center mb-6 pt-4 leading-tight">
                             What's been weighing on you lately?
                         </Text>
                         <Image

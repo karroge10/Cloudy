@@ -28,7 +28,7 @@ export const SummaryScreen = () => {
                  <View className="flex-row justify-between items-center w-full min-h-[40px]" />
 
                 <View className="items-center">
-                    <Text className="text-4xl font-bold text-text mb-8 text-center font-sans">
+                    <Text className="text-4xl font-q-bold text-text mb-8 text-center">
                         We can get there, together.
                     </Text>
 
@@ -38,8 +38,8 @@ export const SummaryScreen = () => {
                         resizeMode="contain"
                     />
 
-                    <Text className="text-2xl text-text text-center font-sans leading-9 mb-12 px-2">
-                        Research shows that writing down just <Text className="font-bold text-primary">one gratitude</Text> a day can reduce <Text className="font-bold text-primary">{struggleText}</Text> and help you find <Text className="font-bold text-primary">{goalText}</Text>.
+                    <Text className="text-2xl text-text text-center font-q-regular leading-9 mb-12 px-2">
+                        Research shows that writing down just <Text className="font-q-bold text-primary">one gratitude</Text> a day can reduce <Text className="font-q-bold text-primary">{struggleText}</Text> and help you find <Text className="font-q-bold text-primary">{goalText}</Text>.
                     </Text>
                 </View>
 

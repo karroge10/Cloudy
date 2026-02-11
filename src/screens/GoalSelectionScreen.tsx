@@ -44,7 +44,7 @@ export const GoalSelectionScreen = () => {
 
                     {/* Main Content Area */}
                     <View className="items-center mb-6">
-                        <Text className="text-4xl font-bold text-text text-center font-sans mb-6 pt-4 leading-tight">
+                        <Text className="text-4xl font-q-bold text-text text-center mb-6 pt-4 leading-tight">
                             And what do you want to find more of?
                         </Text>
                         <Image
