@@ -12,14 +12,14 @@ interface SelectionPillProps {
 }
 
 export const SelectionPill: React.FC<SelectionPillProps> = ({ label, selected, onPress }) => {
-    // Inactive: Transparent with dark grey border (maybe #E0E0E0 is too light, let's use slightly darker gray-300 or reuse inactive color).
+    // Inactive: Transparent with dark grey border
     // Active: Peach (primary) with white content.
 
-    const containerBase = "flex-row items-center px-4 py-3 rounded-full border-2 transition-all duration-200";
+    const containerBase = "flex-row items-center justify-between px-5 py-2.5 rounded-full border-2 transition-all duration-200";
     const containerSelected = "bg-primary border-primary";
-    const containerInactive = "bg-transparent border-gray-300";
+    const containerInactive = "bg-background border-gray-300";
 
-    const textBase = "text-base font-medium font-sans ml-2";
+    const textBase = "text-xl font-semibold"; // Adjusted to semi-bold as requested
     const textSelected = "text-white";
     const textInactive = "text-text";
 
@@ -29,10 +29,7 @@ export const SelectionPill: React.FC<SelectionPillProps> = ({ label, selected, o
             activeOpacity={0.8}
             className={`${containerBase} ${selected ? containerSelected : containerInactive}`}
         >
-            {selected && (
-                <Ionicons name="checkmark" size={20} color="white" />
-            )}
-            <Text className={`${textBase} ${selected ? textSelected : textInactive}`}>
+            <Text className={`${textBase} ${selected ? textSelected : textInactive} text-center`}>
                 {label}
             </Text>
         </TouchableOpacity>

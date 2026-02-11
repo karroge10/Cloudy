@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Image } from 'react-native';
+import { View, Text, ScrollView, Image, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Button } from '../components/Button';
@@ -33,22 +34,26 @@ export const StruggleSelectionScreen = () => {
     return (
         <SafeAreaView className="flex-1 bg-background">
             <StatusBar style="dark" />
-            <View className="flex-1 px-6 py-8">
-                {/* Header */}
-                <View className="mt-4 mb-8">
-                    <Image
-                        source={MASCOTS.THINK}
-                        className="w-20 h-20 mb-4 self-center"
-                        resizeMode="contain"
-                    />
-                    <Text className="text-2xl font-bold text-text text-center font-sans">
-                        What's been weighing on you lately?
-                    </Text>
-                </View>
+            <View className="flex-1 px-6 py-8 justify-between">
+                <View>
+                    {/* Header / Dev Back */}
+                    <View className="flex-row justify-between items-center w-full mb-2 min-h-[40px]" />
 
-                {/* Options */}
-                <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 20 }}>
-                    <View className="flex-row flex-wrap justify-center gap-3">
+                    {/* Main Content Area */}
+                    <View className="items-center mb-6">
+                        <Text className="text-4xl font-bold text-text text-center font-sans mb-6 pt-4 leading-tight">
+                            What's been weighing on you lately?
+                        </Text>
+                        <Image
+                            source={MASCOTS.SAD}
+                            className="w-72 h-72"
+                            resizeMode="contain"
+                        />
+                    </View>
+                </View>
+                
+                <View className="flex-1 justify-center">
+                     <View className="w-full flex-row flex-wrap justify-center gap-3">
                         {STRUGGLES.map((struggle) => (
                             <SelectionPill
                                 key={struggle}
@@ -58,10 +63,18 @@ export const StruggleSelectionScreen = () => {
                             />
                         ))}
                     </View>
-                </ScrollView>
+                </View>
 
                 {/* Footer */}
-                <View className="pt-4">
+                <View className="w-full">
+                     {/* Progress Dots */}
+                     <View className="flex-row justify-center gap-2 mb-8">
+                        <View className="w-3 h-3 rounded-full bg-gray-300" />
+                        <View className="w-3 h-3 rounded-full bg-primary" />
+                        <View className="w-3 h-3 rounded-full bg-gray-300" />
+                        <View className="w-3 h-3 rounded-full bg-gray-300" />
+                    </View>
+
                     <Button
                         label="Continue"
                         onPress={() => (navigation.navigate as any)('GoalSelection', { struggles: selected })}
