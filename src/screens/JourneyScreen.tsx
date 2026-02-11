@@ -2,11 +2,17 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import * as Haptics from 'expo-haptics';
 import Animated, { 
     useAnimatedScrollHandler, 
     useSharedValue, 
     useAnimatedStyle, 
-    interpolate, 
+    interpolate,
+    interpolateColor,
+    withSequence,
+    withTiming,
+    withSpring,
+    runOnJS,
     Extrapolation, 
     SharedValue,
 } from 'react-native-reanimated';
@@ -100,6 +106,21 @@ const TimelineItem = ({
     onDelete: (id: string) => void;
 }) => {
     
+    const trashScale = useSharedValue(1);
+
+    const handleDelete = () => {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        
+        trashScale.value = withSequence(
+            withTiming(1.4, { duration: 100 }),
+            withSpring(1, {}, (finished) => {
+                if (finished) {
+                    runOnJS(onDelete)(item.id);
+                }
+            })
+        );
+    };
+
     const animatedStyle = useAnimatedStyle(() => {
         const itemTop = index * ITEM_HEIGHT;
         const relativePos = itemTop - scrollY.value;
@@ -125,14 +146,34 @@ const TimelineItem = ({
         };
     });
 
+    const circleAnimatedStyle = useAnimatedStyle(() => {
+        const isActiveRange = [
+            (index - 0.5) * ITEM_HEIGHT,
+            index * ITEM_HEIGHT,
+            (index + 0.5) * ITEM_HEIGHT
+        ];
+        
+        const borderColor = interpolateColor(
+            scrollY.value,
+            isActiveRange,
+            ['#E5E5E5', item.color, '#E5E5E5'],
+        );
+
+        return { borderColor };
+    });
+
+    const trashAnimatedStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: trashScale.value }]
+    }));
+
     return (
         <Animated.View className="flex-row" style={animatedStyle}>
             {/* Left Column: Date & Line */}
             <View className="items-center mr-6">
                 <View className={`w-[1px] h-4 ${isFirst ? 'bg-transparent' : 'bg-inactive'}`} />
                 
-                <View 
-                    style={{ backgroundColor: 'white', borderColor: item.color, borderWidth: 2 }}
+                <Animated.View 
+                    style={[{ backgroundColor: 'white', borderWidth: 2 }, circleAnimatedStyle]}
                     className="w-16 h-16 rounded-full items-center justify-center shadow-sm z-10 bg-white shadow-[#00000010]"
                 >
                      <Animated.View 
@@ -157,7 +198,7 @@ const TimelineItem = ({
                         <Text className="text-[10px] font-q-bold text-text">{item.month}</Text>
                         <Text className="text-xl font-q-bold text-text">{item.day}</Text>
                     </View>
-                </View>
+                </Animated.View>
 
                 <View className={`w-[1px] flex-1 ${isLast ? 'bg-transparent' : 'bg-inactive'}`} />
             </View>
@@ -186,10 +227,12 @@ const TimelineItem = ({
                         </TouchableOpacity>
                         
                         <TouchableOpacity 
-                            onPress={() => onDelete(item.id)}
+                            onPress={handleDelete}
                             className="p-2"
                         >
-                            <Ionicons name="trash-outline" size={20} color="#333" style={{ opacity: 0.1 }} />
+                            <Animated.View style={trashAnimatedStyle}>
+                                <Ionicons name="trash-outline" size={22} color="#333" style={{ opacity: 0.2 }} />
+                            </Animated.View>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -198,7 +241,7 @@ const TimelineItem = ({
     );
 };
 
-export const HistoryScreen = () => {
+export const JourneyScreen = () => {
     const navigation = useNavigation();
     const { height: viewportHeight } = useWindowDimensions();
     const [entries, setEntries] = useState(MOCK_ENTRIES);
@@ -250,7 +293,7 @@ export const HistoryScreen = () => {
             </TouchableOpacity>
 
             {/* Filter Tabs */}
-            <View className="flex-row mb-6 bg-inactive/10 p-1.5 rounded-2xl self-start">
+            <View className="flex-row mb-8 bg-inactive/10 p-1.5 rounded-2xl self-start">
                 <TouchableOpacity 
                     onPress={() => setFilter('all')}
                     className={`px-6 py-2 rounded-[14px] ${filter === 'all' ? 'bg-white shadow-sm' : ''}`}
@@ -276,7 +319,7 @@ export const HistoryScreen = () => {
     );
 
     return (
-        <Layout noScroll={true} isTabScreen={true}>
+        <Layout noScroll={true} isTabScreen={true} useSafePadding={false}>
             <Animated.FlatList
                 data={filteredEntries}
                 renderItem={({ item, index }) => (
@@ -293,7 +336,7 @@ export const HistoryScreen = () => {
                 )}
                 keyExtractor={item => item.id}
                 ListHeaderComponent={renderHeader}
-                contentContainerStyle={{ paddingBottom: 40 }}
+                contentContainerStyle={{ paddingBottom: 120, paddingHorizontal: 24, paddingTop: 16 }}
                 showsVerticalScrollIndicator={false}
                 onScroll={scrollHandler}
                 scrollEventThrottle={16}

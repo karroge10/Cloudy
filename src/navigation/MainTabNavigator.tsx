@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { HomeScreen } from '../screens/HomeScreen';
-import { HistoryScreen } from '../screens/HistoryScreen';
+import { JourneyScreen } from '../screens/JourneyScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
@@ -92,7 +92,7 @@ export const MainTabNavigator = () => {
       }}
     >
       <Tab.Screen name="Entry" component={HomeScreen} />
-      <Tab.Screen name="Journey" component={HistoryScreen} />
+      <Tab.Screen name="Journey" component={JourneyScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );

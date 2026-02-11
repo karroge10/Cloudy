@@ -18,7 +18,7 @@ export const HomeScreen = () => {
     const charCount = text.length;
 
     return (
-        <Layout isTabScreen={true}>
+        <Layout isTabScreen={true} useSafePadding={false} className="px-6 pt-4">
             {/* Header */}
             <View className="flex-row justify-between items-center mb-8">
                 <Image 

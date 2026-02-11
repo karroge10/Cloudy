@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Image, TouchableOpacity } from 'react-native';
+import { View, Text, Image, TouchableOpacity, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { MASCOTS } from '../constants/Assets';
@@ -82,20 +82,32 @@ export const MemoryScreen = () => {
         transform: [{ scale: heartScale.value }]
     }));
 
+    const handleShare = async () => {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        try {
+            await Share.share({
+                message: `Check out this memory from Cloudy: "${currentMemory.text}" - ${currentMemory.date}`,
+            });
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
     const ShareButton = (
         <TouchableOpacity 
-            onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+            onPress={handleShare}
             className="w-12 h-12 items-center justify-center"
         >
             <Ionicons name="share-outline" size={28} color="#333" />
         </TouchableOpacity>
     );
 
-
     return (
         <Layout 
             noScroll={true} 
-            backgroundColors={['#fff1db', '#FFF9F0']}
+            // Layout now defaults to our gradient, so we can remove this if we want strict conformity, 
+            // but keeping it explicit here is fine too.
+            backgroundColors={['#FFF9F0', '#fff1db']}
             className="px-0 py-0" // Remove Layout default padding to control specifically
         >
             <View className="px-6 pt-4">
@@ -108,8 +120,8 @@ export const MemoryScreen = () => {
                 />
             </View>
 
-            <Animated.View 
-                style={[{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }, animatedContentStyle]}
+            <View 
+                style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}
             >
                 <View className="mb-12 items-center justify-center">
                     <Image 
@@ -120,34 +132,36 @@ export const MemoryScreen = () => {
                 </View>
 
                 <View className="bg-card rounded-[48px] p-10 shadow-sm w-full relative">
-                    <View className="absolute top-8 left-8">
-                        <Text className="text-[#FF9E7D15] text-7xl font-q-bold">“</Text>
-                    </View>
-
-                    <Text className="text-3xl font-q-bold text-text mb-6">I am grateful for...</Text>
-                    
-                    <Text className="text-xl font-q-medium text-text/70 leading-relaxed mb-10">
-                        {currentMemory.text}
-                    </Text>
-
-                    <View className="flex-row justify-between items-center">
-                        <View className="flex-row items-center bg-[#FF9E7D10] px-5 py-2.5 rounded-full">
-                            <Ionicons name="leaf" size={18} color="#FF9E7D" />
-                            <Text className="text-primary font-q-semibold ml-2 text-lg">{currentMemory.category}</Text>
+                    <Animated.View style={animatedContentStyle}>
+                        <View className="absolute top-8 left-8">
+                            <Text className="text-[#FF9E7D15] text-7xl font-q-bold">“</Text>
                         </View>
+
+                        <Text className="text-3xl font-q-bold text-text mb-6">I am grateful for...</Text>
                         
-                        <TouchableOpacity onPress={toggleHeart} activeOpacity={0.6}>
-                            <Animated.View style={animatedHeartStyle}>
-                                <Ionicons 
-                                    name={isLiked ? "heart" : "heart-outline"} 
-                                    size={32} 
-                                    color={isLiked ? "#FF9E7D" : "#AAA"} 
-                                />
-                            </Animated.View>
-                        </TouchableOpacity>
-                    </View>
+                        <Text className="text-xl font-q-medium text-text/70 leading-relaxed mb-10">
+                            {currentMemory.text}
+                        </Text>
+
+                        <View className="flex-row justify-between items-center">
+                            <View className="flex-row items-center bg-[#FF9E7D10] px-5 py-2.5 rounded-full">
+                                <Ionicons name="leaf" size={18} color="#FF9E7D" />
+                                <Text className="text-primary font-q-semibold ml-2 text-lg">{currentMemory.category}</Text>
+                            </View>
+                            
+                            <TouchableOpacity onPress={toggleHeart} activeOpacity={0.6}>
+                                <Animated.View style={animatedHeartStyle}>
+                                    <Ionicons 
+                                        name={isLiked ? "heart" : "heart-outline"} 
+                                        size={32} 
+                                        color={isLiked ? "#FF9E7D" : "#AAA"} 
+                                    />
+                                </Animated.View>
+                            </TouchableOpacity>
+                        </View>
+                    </Animated.View>
                 </View>
-            </Animated.View>
+            </View>
 
             <View className="items-center pb-12">
                 <TouchableOpacity 

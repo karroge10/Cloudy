@@ -31,7 +31,7 @@ export const JournalEntryScreen = () => {
                     contentContainerStyle={{ flexGrow: 1 }}
                 >
                     {/* Header Content */}
-                    <View className="items-center mt-4 mb-8">
+                    <View className="items-center mb-8">
                         <Image
                             source={MASCOTS.WRITE}
                             className="w-40 h-40 mb-4"

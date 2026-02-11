@@ -41,7 +41,7 @@ export const ProfileScreen = () => {
             <TopNav title="Profile" />
 
             {/* Streak & Mascot Header */}
-            <View className="flex-row justify-between items-center mb-10">
+            <View className="flex-row justify-between items-center mb-8">
                 <View className="flex-1">
                     <Text className="text-[44px] leading-[50px] font-q-bold text-text">{streak} Day</Text>
                     <Text className="text-[44px] leading-[50px] font-q-bold text-text">Streak!</Text>
@@ -64,7 +64,7 @@ export const ProfileScreen = () => {
             {/* Goal Pill */}
             <TouchableOpacity 
                 onPress={() => setIsGoalSheetVisible(true)}
-                className="bg-card rounded-full py-5 px-8 flex-row justify-between items-center shadow-[#0000000D] shadow-xl mb-10"
+                className="bg-card rounded-full py-5 px-8 flex-row justify-between items-center shadow-[#0000000D] shadow-xl mb-8"
                 style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}
             >
                 <Text className="text-lg font-q-semibold text-text">
@@ -74,7 +74,7 @@ export const ProfileScreen = () => {
             </TouchableOpacity>
 
             {/* Settings Section */}
-            <View className="mb-10 bg-card rounded-[32px] p-6 shadow-[#0000000D] shadow-xl"
+            <View className="mb-8 bg-card rounded-[32px] p-6 shadow-[#0000000D] shadow-xl"
                 style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}>
                 
                 {/* Daily Reminder */}

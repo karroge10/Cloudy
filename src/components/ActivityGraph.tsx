@@ -28,7 +28,7 @@ export const ActivityGraph: React.FC<ActivityGraphProps> = ({ data }) => {
     const days = ['M', '', 'W', '', 'F', '', 'S'];
 
     return (
-        <View className="bg-card rounded-3xl p-6 shadow-[#0000000D] shadow-xl mb-10"
+        <View className="bg-card rounded-3xl p-6 shadow-[#0000000D] shadow-xl mb-8"
             style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}>
             <View className="flex-row justify-between items-center mb-4">
                 <Text className="text-lg font-q-bold text-text">Activity</Text>

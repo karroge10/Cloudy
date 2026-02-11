@@ -24,7 +24,7 @@ export const SummaryScreen = () => {
     return (
         <SafeAreaView className="flex-1 bg-background">
             <StatusBar style="dark" />
-            <View className="flex-1 px-6 justify-between py-8">
+            <View className="flex-1 px-6 justify-between py-4">
                  <View className="flex-row justify-between items-center w-full min-h-[40px]" />
 
                 <View className="items-center">

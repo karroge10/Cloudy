@@ -10,13 +10,21 @@ interface LayoutProps {
     className?: string;
     noScroll?: boolean;
     backgroundColors?: string[];
+    useSafePadding?: boolean;
 }
 
-export const Layout = ({ children, isTabScreen = false, className = "", noScroll = false, backgroundColors }: LayoutProps) => {
+export const Layout = ({ 
+    children, 
+    isTabScreen = false, 
+    className = "", 
+    noScroll = false, 
+    useSafePadding = true,
+    backgroundColors = ['#FFF9F0', '#fff1db'] 
+}: LayoutProps) => {
     const content = (
-        <View className={`flex-1 px-6 py-4 ${className}`}>
+        <View className={`flex-1 ${useSafePadding ? 'px-6 py-4' : ''} ${className}`}>
             {children}
-            {isTabScreen && <View className="h-32" />}
+            {isTabScreen && !noScroll && <View className="h-32" />}
         </View>
     );
 
@@ -34,27 +42,23 @@ export const Layout = ({ children, isTabScreen = false, className = "", noScroll
         )
     );
 
-    if (backgroundColors) {
-        return (
-            <LinearGradient 
-                colors={backgroundColors as [string, string, ...string[]]} 
-                className="flex-1"
-            >
-                <SafeAreaView className="flex-1" edges={['top', 'left', 'right']}>
-                    <StatusBar style="dark" />
-                    {renderContent()}
-                </SafeAreaView>
-            </LinearGradient>
-        );
-    }
-
     return (
         <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
             <StatusBar style="dark" />
-            <View className="flex-1">
-                {renderContent()}
-            </View>
+            {backgroundColors ? (
+                <LinearGradient 
+                    colors={backgroundColors as [string, string, ...string[]]} 
+                    className="flex-1"
+                >
+                    {renderContent()}
+                </LinearGradient>
+            ) : (
+                <View className="flex-1">
+                    {renderContent()}
+                </View>
+            )}
         </SafeAreaView>
     );
 };
+
 

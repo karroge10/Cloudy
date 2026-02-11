@@ -30,7 +30,7 @@ export const GoalSelectionScreen = () => {
     return (
         <SafeAreaView className="flex-1 bg-background">
             <StatusBar style="dark" />
-            <View className="flex-1 px-6 py-8 justify-between">
+            <View className="flex-1 px-6 py-4 justify-between">
                 <View>
                     {/* Header / Dev Back */}
                     <View className="flex-row justify-between items-center w-full mb-2 min-h-[40px]" />
