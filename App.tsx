@@ -28,7 +28,6 @@ import { AuthScreen } from './src/screens/AuthScreen';
 import { ProfileSetupScreen } from './src/screens/ProfileSetupScreen';
 import { ReminderSetupScreen } from './src/screens/ReminderSetupScreen';
 
-import { AnimatedSplashScreen } from './src/components/AnimatedSplashScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -55,8 +54,6 @@ export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean>(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
-  const [isSplashAnimationFinished, setIsSplashAnimationFinished] = useState(false);
-  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     // 1. Check initial session
@@ -105,31 +102,16 @@ export default function App() {
 
   useEffect(() => {
     if (fontsLoaded && !isAuthLoading) {
-      setIsReady(true);
+      SplashScreen.hideAsync().catch(console.warn);
     }
   }, [fontsLoaded, isAuthLoading]);
 
-  const onSplashAnimationFinish = useCallback(() => {
-    setIsSplashAnimationFinished(true);
-  }, []);
-
-  useEffect(() => {
-    if (isReady) {
-      // Hide native splash screen as soon as our custom one is mounted and ready
-      SplashScreen.hideAsync().catch(console.warn);
-    }
-  }, [isReady]);
-
-  if (!isReady && !isSplashAnimationFinished) {
+  if (!fontsLoaded || isAuthLoading) {
     return null;
   }
 
   return (
     <SafeAreaProvider>
-      {!isSplashAnimationFinished && (
-        <AnimatedSplashScreen onAnimationFinish={onSplashAnimationFinish} />
-      )}
-      
       <NavigationContainer theme={CloudyTheme}>
         <Stack.Navigator
           screenOptions={{
@@ -139,18 +121,13 @@ export default function App() {
           }}
         >
           {session ? (
-            onboardingCompleted ? (
-              <>
-                <Stack.Screen name="MainApp" component={MainTabNavigator} />
-                <Stack.Screen name="JournalEntry" component={JournalEntryScreen} />
-                <Stack.Screen name="Memory" component={MemoryScreen} />
-              </>
-            ) : (
-              <>
-                <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
-                <Stack.Screen name="ReminderSetup" component={ReminderSetupScreen} />
-              </>
-            )
+            <>
+              <Stack.Screen name="MainApp" component={MainTabNavigator} />
+              <Stack.Screen name="JournalEntry" component={JournalEntryScreen} />
+              <Stack.Screen name="Memory" component={MemoryScreen} />
+              <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
+              <Stack.Screen name="ReminderSetup" component={ReminderSetupScreen} />
+            </>
           ) : (
             <>
               <Stack.Screen name="Welcome" component={WelcomeScreen} />

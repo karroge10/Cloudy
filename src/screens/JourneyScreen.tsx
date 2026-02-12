@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { View, Text, TouchableOpacity, useWindowDimensions, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import Animated, { 
     useAnimatedScrollHandler, 
@@ -19,6 +19,8 @@ import Animated, {
 
 import { TopNav } from '../components/TopNav';
 import { Layout } from '../components/Layout';
+import { supabase } from '../lib/supabase';
+import { Skeleton } from '../components/Skeleton';
 
 interface JournalEntry {
     id: string;
@@ -29,60 +31,7 @@ interface JournalEntry {
     isFavorite?: boolean;
 }
 
-const MOCK_ENTRIES: JournalEntry[] = [
-    {
-        id: '1',
-        month: 'OCT',
-        day: '24',
-        text: 'A delicious cup of coffee and the feeling of calm it brought me. It felt like time stopped for just a moment.',
-        color: '#FF9E7D',
-        isFavorite: true,
-    },
-    {
-        id: '2',
-        month: 'OCT',
-        day: '23',
-        text: 'My supportive friend who listened without judgment when I was feeling overwhelmed.',
-        color: '#FF9E7D',
-    },
-    {
-        id: '3',
-        month: 'OCT',
-        day: '22',
-        text: 'Finally finishing that book I\'ve been reading for months. The ending was perfect.',
-        color: '#FF9E7D',
-        isFavorite: true,
-    },
-    {
-        id: '4',
-        month: 'OCT',
-        day: '20',
-        text: 'The crisp morning air on my walk to work. It reminded me that every day is a fresh start.',
-        color: '#FF9E7D',
-    },
-    {
-        id: '5',
-        month: 'OCT',
-        day: '19',
-        text: 'Found a new favorite song that perfectly captures my mood right now.',
-        color: '#FF9E7D',
-    },
-    {
-        id: '6',
-        month: 'OCT',
-        day: '18',
-        text: 'Cooked a meal from scratch and it actually turned out amazing!',
-        color: '#FF9E7D',
-        isFavorite: true,
-    },
-    {
-        id: '7',
-        month: 'OCT',
-        day: '17',
-        text: 'A long call with my parents. It is good to hear their voices.',
-        color: '#FF9E7D',
-    }
-];
+// Removed MOCK_ENTRIES
 
 const ITEM_HEIGHT = 180;
 
@@ -241,32 +190,159 @@ const TimelineItem = ({
     );
 };
 
+const LoadingSkeleton = () => (
+    <View className="px-6 space-y-8 mt-2">
+        {[1, 2, 3].map((i) => (
+            <View key={i} className="flex-row">
+                {/* Timeline Column Skeleton */}
+                <View className="items-center mr-6">
+                    <View className="w-[1px] h-4 bg-transparent" />
+                    <Skeleton width={64} height={64} borderRadius={32} />
+                    <View className="w-[1px] flex-1 bg-inactive/10" />
+                </View>
+                {/* Card Skeleton */}
+                <View className="flex-1 pb-10">
+                    <Skeleton height={150} borderRadius={32} />
+                </View>
+            </View>
+        ))}
+    </View>
+);
+
 export const JourneyScreen = () => {
     const navigation = useNavigation();
     const { height: viewportHeight } = useWindowDimensions();
-    const [entries, setEntries] = useState(MOCK_ENTRIES);
+    const [entries, setEntries] = useState<JournalEntry[]>([]);
     const [filter, setFilter] = useState<'all' | 'favorites'>('all');
+    const [isProfileIncomplete, setIsProfileIncomplete] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     const scrollY = useSharedValue(0);
     const scrollHandler = useAnimatedScrollHandler(event => {
         scrollY.value = event.contentOffset.y;
     });
 
+    useFocusEffect(
+        React.useCallback(() => {
+            checkProfileStatus();
+            fetchEntries();
+        }, [])
+    );
+
+    const fetchEntries = async () => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const { data, error } = await supabase
+                .from('posts')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+                if (data) {
+                const mappedEntries: JournalEntry[] = data.map((post: any) => {
+                    const date = new Date(post.created_at);
+                    return {
+                        id: post.id,
+                        month: date.toLocaleString('default', { month: 'short' }).toUpperCase(),
+                        day: date.getDate().toString(),
+                        text: post.text,
+                        color: '#FF9E7D', // Default color
+                        isFavorite: post.is_favorite || false,
+                    };
+                });
+                setEntries(mappedEntries);
+            }
+        } catch (error) {
+            console.error('Error fetching entries:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const checkProfileStatus = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data } = await supabase
+            .from('profiles')
+            .select('display_name, onboarding_completed')
+            .eq('id', user.id)
+            .single();
+
+        if (!data || !data.display_name || !data.onboarding_completed) {
+            setIsProfileIncomplete(true);
+        }
+    };
+
     const filteredEntries = useMemo(() => {
         if (filter === 'favorites') return entries.filter(e => e.isFavorite);
         return entries;
     }, [entries, filter]);
 
-    const toggleFavorite = (id: string) => {
-        setEntries(prev => prev.map(e => e.id === id ? { ...e, isFavorite: !e.isFavorite } : e));
+    const toggleFavorite = async (id: string) => {
+        // Optimistic Update
+        const targetEntry = entries.find(e => e.id === id);
+        if (!targetEntry) return;
+
+        const newStatus = !targetEntry.isFavorite;
+
+        setEntries(prev => prev.map(e => e.id === id ? { ...e, isFavorite: newStatus } : e));
+        
+        try {
+            const { error } = await supabase
+                .from('posts')
+                .update({ is_favorite: newStatus })
+                .eq('id', id);
+
+            if (error) {
+                // Revert if error
+                setEntries(prev => prev.map(e => e.id === id ? { ...e, isFavorite: !newStatus } : e));
+                console.error('Error toggling favorite:', error);
+            } else {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }
+        } catch (error) {
+            console.error('Error toggling favorite:', error);
+            // Revert
+            setEntries(prev => prev.map(e => e.id === id ? { ...e, isFavorite: !newStatus } : e));
+        }
     };
 
-    const deleteEntry = (id: string) => {
-        setEntries(prev => prev.filter(e => e.id !== id));
+    const deleteEntry = async (id: string) => {
+        try {
+            const { error } = await supabase
+                .from('posts')
+                .delete()
+                .eq('id', id);
+            
+            if (error) throw error;
+            
+            setEntries(prev => prev.filter(e => e.id !== id));
+        } catch (error) {
+            console.error('Error deleting entry:', error);
+        }
     };
 
     const renderHeader = () => (
         <View>
+            {/* Profile Nudge */}
+            {isProfileIncomplete && (
+                <TouchableOpacity 
+                    onPress={() => (navigation as any).navigate('Profile')}
+                    className="bg-secondary/30 border border-primary/20 rounded-2xl p-4 mb-6 flex-row items-center"
+                >
+                    <Ionicons name="sparkles" size={18} color="#FF9E7D" />
+                    <Text className="text-sm font-q-medium text-text ml-3 flex-1">
+                        Complete your profile to unlock reminders and cloud sync.
+                    </Text>
+                    <Ionicons name="chevron-forward" size={14} color="#FF9E7D" />
+                </TouchableOpacity>
+            )}
+
             {/* Sunrays Card */}
             <TouchableOpacity 
                 activeOpacity={0.9}
@@ -322,35 +398,46 @@ export const JourneyScreen = () => {
                 <TopNav title="Your Journey" />
             </View>
 
-            <Animated.FlatList
-                data={filteredEntries}
-                renderItem={({ item, index }) => (
-                    <TimelineItem 
-                        item={item} 
-                        index={index}
-                        scrollY={scrollY}
-                        viewportHeight={viewportHeight}
-                        isFirst={index === 0}
-                        isLast={index === filteredEntries.length - 1} 
-                        onToggleFavorite={toggleFavorite}
-                        onDelete={deleteEntry}
-                    />
-                )}
-                keyExtractor={item => item.id}
-                ListHeaderComponent={renderHeader}
-                contentContainerStyle={{ paddingBottom: 120, paddingHorizontal: 24, paddingTop: 0 }}
-                showsVerticalScrollIndicator={false}
-                onScroll={scrollHandler}
-                scrollEventThrottle={16}
-                ListEmptyComponent={
-                    <View className="items-center justify-center py-20">
-                        <Ionicons name="journal-outline" size={48} color="#E0E0E0" />
-                        <Text className="text-lg font-q-medium text-muted mt-4 text-center">
-                            {filter === 'favorites' ? "No favorite entries yet." : "Your journey is just beginning."}
-                        </Text>
-                    </View>
-                }
-            />
+            {loading ? (
+                <ScrollView 
+                    className="flex-1" 
+                    contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 120 }}
+                    showsVerticalScrollIndicator={false}
+                >
+                     {renderHeader()}
+                     <LoadingSkeleton />
+                </ScrollView>
+            ) : (
+                <Animated.FlatList
+                    data={filteredEntries}
+                    renderItem={({ item, index }) => (
+                        <TimelineItem 
+                            item={item} 
+                            index={index}
+                            scrollY={scrollY}
+                            viewportHeight={viewportHeight}
+                            isFirst={index === 0}
+                            isLast={index === filteredEntries.length - 1} 
+                            onToggleFavorite={toggleFavorite}
+                            onDelete={deleteEntry}
+                        />
+                    )}
+                    keyExtractor={item => item.id}
+                    ListHeaderComponent={renderHeader}
+                    contentContainerStyle={{ paddingBottom: 120, paddingHorizontal: 24, paddingTop: 0 }}
+                    showsVerticalScrollIndicator={false}
+                    onScroll={scrollHandler}
+                    scrollEventThrottle={16}
+                    ListEmptyComponent={
+                        <View className="items-center justify-center py-20">
+                            <Ionicons name="journal-outline" size={48} color="#E0E0E0" />
+                            <Text className="text-lg font-q-medium text-muted mt-4 text-center">
+                                {filter === 'favorites' ? "No favorite entries yet." : "Your journey is just beginning."}
+                            </Text>
+                        </View>
+                    }
+                />
+            )}
         </Layout>
     );
 };

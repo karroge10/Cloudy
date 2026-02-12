@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, Switch, ScrollView, FlatList, TextInput } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { MASCOTS } from '../constants/Assets';
@@ -9,6 +10,8 @@ import { TopNav } from '../components/TopNav';
 import { ActivityGraph } from '../components/ActivityGraph';
 import { SelectionPill } from '../components/SelectionPill';
 import { BottomSheet } from '../components/BottomSheet';
+import { calculateStreak } from '../utils/streakUtils';
+import { Skeleton } from '../components/Skeleton';
 
 const COMPANIONS = [
     { id: 'HELLO', name: 'Wavy', asset: MASCOTS.HELLO },
@@ -28,6 +31,8 @@ export const ProfileScreen = () => {
     const [reminderTime, setReminderTime] = useState('8:00 PM');
     const [selectedMascot, setSelectedMascot] = useState<typeof COMPANIONS[number]['id']>('SLEEP_1');
     const [streak, setStreak] = useState(0);
+    const [entries, setEntries] = useState<string[]>([]);
+    const [loading, setLoading] = useState(true);
 
     // Modal States
     const [isNameSheetVisible, setIsNameSheetVisible] = useState(false);
@@ -36,9 +41,11 @@ export const ProfileScreen = () => {
     const [isMascotSheetVisible, setIsMascotSheetVisible] = useState(false);
     const [tempName, setTempName] = useState('');
 
-    useEffect(() => {
-        fetchProfile();
-    }, []);
+    useFocusEffect(
+        React.useCallback(() => {
+            fetchProfile();
+        }, [])
+    );
 
     const fetchProfile = async () => {
         const { data: { user } } = await supabase.auth.getUser();
@@ -50,18 +57,34 @@ export const ProfileScreen = () => {
             .eq('id', user.id)
             .single();
 
+        // Fetch Real Streak
+        const { data: postsData } = await supabase
+            .from('posts')
+            .select('created_at')
+            .eq('user_id', user.id);
+
+        const realStreak = calculateStreak(postsData || []);
+        setStreak(realStreak);
+
+        // Sync cache if needed
+        if (data && data.streak_count !== realStreak) {
+             supabase.from('profiles').update({ streak_count: realStreak }).eq('id', user.id);
+        }
+
         if (data && !error) {
             setDisplayName(data.display_name || '');
             setTempName(data.display_name || '');
             setSelectedGoal(data.goal || 'Inner Peace');
             setReminderTime(data.reminder_time || '8:00 PM');
             setIsHapticsEnabled(data.haptics_enabled ?? true);
-            setStreak(data.streak_count || 0);
+            // setStreak(data.streak_count || 0); // Using realStreak instead
             
             // Map mascot name back to ID
             const mascot = COMPANIONS.find(c => c.name === data.mascot_name);
             if (mascot) setSelectedMascot(mascot.id);
         }
+        setEntries(postsData?.map((p: any) => p.created_at) || []);
+        setLoading(false);
     };
 
     const updateProfile = async (updates: Record<string, any>) => {
@@ -92,14 +115,42 @@ export const ProfileScreen = () => {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 130 }}
             >
+                {/* Profile Nudge Banner */}
+                {(!displayName || streak < 1) && (
+                    <TouchableOpacity 
+                        onPress={() => setIsNameSheetVisible(true)}
+                        className="bg-secondary/30 border border-primary/20 rounded-2xl p-4 mb-6 flex-row items-center"
+                    >
+                        <Ionicons name="information-circle" size={20} color="#FF9E7D" />
+                        <Text className="text-sm font-q-medium text-text ml-3 flex-1">
+                            Complete your profile to enable daily reminders and secure cloud backups.
+                        </Text>
+                        <Ionicons name="chevron-forward" size={16} color="#FF9E7D" />
+                    </TouchableOpacity>
+                )}
+
                 {/* Streak & Mascot Header */}
                 <View className="flex-row justify-between items-center mb-8">
                     <View className="flex-1">
                         <TouchableOpacity onPress={() => setIsNameSheetVisible(true)} className="mb-1">
-                             <Text className="text-xl font-q-bold text-muted">Hi, {displayName || 'Friend'}! 👋</Text>
+                             {loading ? (
+                                <Skeleton width={120} height={24} style={{ marginBottom: 4 }} borderRadius={12} />
+                             ) : (
+                                <Text className="text-xl font-q-bold text-muted">Hi, {displayName || 'Friend'}! 👋</Text>
+                             )}
                         </TouchableOpacity>
-                        <Text className="text-[44px] leading-[50px] font-q-bold text-text">{streak} Day</Text>
-                        <Text className="text-[44px] leading-[50px] font-q-bold text-text">Streak!</Text>
+                        
+                        {loading ? (
+                            <View className="mt-2">
+                                <Skeleton width={130} height={50} borderRadius={16} style={{ marginBottom: 6 }} />
+                                <Skeleton width={110} height={50} borderRadius={16} />
+                            </View>
+                        ) : (
+                            <View>
+                                <Text className="text-[44px] leading-[50px] font-q-bold text-text">{streak} Day</Text>
+                                <Text className="text-[44px] leading-[50px] font-q-bold text-text">Streak!</Text>
+                            </View>
+                        )}
                     </View>
                     <TouchableOpacity onPress={() => setIsMascotSheetVisible(true)} className="active:scale-95 transition-transform">
                         <Image 
@@ -114,7 +165,7 @@ export const ProfileScreen = () => {
                 </View>
 
                 {/* Activity Graph */}
-                <ActivityGraph />
+                <ActivityGraph entries={entries} />
 
                 {/* Goal Pill */}
                 <TouchableOpacity 
@@ -192,11 +243,13 @@ export const ProfileScreen = () => {
             <BottomSheet 
                 visible={isNameSheetVisible} 
                 onClose={() => setIsNameSheetVisible(false)}
-                title="What should we call you?"
             >
-                <View className="mt-2">
+                <View className="items-center mt-2">
+                     <Image source={MASCOTS.THINK} className="w-40 h-40 mb-4" resizeMode="contain" />
+                     <Text className="text-2xl font-q-bold text-text text-center mb-6">What should Cloudy call you?</Text>
+
                     <TextInput
-                        className="bg-card px-6 py-5 rounded-[24px] font-q-bold text-lg text-text border-2 border-inactive/10"
+                        className="w-full bg-card px-6 py-5 rounded-[24px] font-q-bold text-lg text-text border-2 border-inactive/10 mb-6"
                         placeholder="Your Name"
                         placeholderTextColor="#CBD5E1"
                         onChangeText={setTempName}
@@ -208,8 +261,9 @@ export const ProfileScreen = () => {
                         onPress={() => {
                             updateProfile({ display_name: tempName });
                             setIsNameSheetVisible(false);
+                            setDisplayName(tempName); // Immediate local update
                         }}
-                        className="mt-6 bg-primary py-4 rounded-full items-center shadow-md active:opacity-90"
+                        className="w-full bg-primary py-4 rounded-full items-center shadow-md active:opacity-90"
                     >
                         <Text className="text-white font-q-bold text-lg">Save Name</Text>
                     </TouchableOpacity>

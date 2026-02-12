@@ -1,14 +1,17 @@
-import { View, Text, Image, TouchableOpacity } from 'react-native';
+import { View, Text, Image, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Button } from '../components/Button';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { MASCOTS } from '../constants/Assets';
+import { supabase } from '../lib/supabase';
+import { useState } from 'react';
 
 export const SummaryScreen = () => {
     const navigation = useNavigation();
     const route = useRoute();
+    const [loading, setLoading] = useState(false);
     const { struggles, goals } = route.params as { struggles: string[], goals: string[] } || { struggles: [], goals: [] };
 
     const formatList = (items: string[]) => {
@@ -20,6 +23,23 @@ export const SummaryScreen = () => {
 
     const struggleText = formatList(struggles);
     const goalText = formatList(goals);
+
+    const handleStartWriting = async () => {
+        setLoading(true);
+        try {
+            // Sign in anonymously to bypass traditional auth for now
+            const { error } = await supabase.auth.signInAnonymously();
+            
+            if (error) throw error;
+            
+            // Note: App.tsx has an auth listener that will pick up the session 
+            // change and update the navigation stack automatically.
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'Something went wrong. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <SafeAreaView className="flex-1 bg-background">
@@ -53,7 +73,8 @@ export const SummaryScreen = () => {
 
                     <Button
                         label="Start Writing"
-                        onPress={() => navigation.navigate('Auth' as never)}
+                        onPress={handleStartWriting}
+                        loading={loading}
                     />
                 </View>
             </View>
