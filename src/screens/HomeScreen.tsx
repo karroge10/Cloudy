@@ -1,17 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { View, Text, Image, TouchableOpacity, TextInput, Alert, ActivityIndicator, Keyboard } from 'react-native';
+import { View, Text, Image, TouchableOpacity, TextInput, Alert, ActivityIndicator, Keyboard, Animated, Pressable } from 'react-native';
 import { MASCOTS } from '../constants/Assets';
 import { Ionicons } from '@expo/vector-icons';
 import { Layout } from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import { BottomSheet } from '../components/BottomSheet';
-import { calculateStreak } from '../utils/streakUtils'; // Preserving this import I might have missed
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import ConfettiCannon from 'react-native-confetti-cannon';
+import { useJournal } from '../context/JournalContext';
+import * as Haptics from 'expo-haptics';
 
 export const HomeScreen = () => {
     const navigation = useNavigation<any>();
+    const { addEntry, streak } = useJournal();
+    
     const [text, setText] = useState('');
     const [loading, setLoading] = useState(false);
     const [onboardingCompleted, setOnboardingCompleted] = useState(true);
@@ -19,10 +21,9 @@ export const HomeScreen = () => {
     const [showStreakNudge, setShowStreakNudge] = useState(false);
     const [displayName, setDisplayName] = useState('');
     const [isSavingName, setIsSavingName] = useState(false);
-    const [streak, setStreak] = useState(0);
-    const [showConfetti, setShowConfetti] = useState(false);
     
-    const confettiRef = React.useRef<ConfettiCannon>(null);
+    // Animation for mascot
+    const scaleAnim = useRef(new Animated.Value(1)).current;
 
     const today = new Date();
     const formattedDate = today.toLocaleDateString('en-US', {
@@ -41,29 +42,12 @@ export const HomeScreen = () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        // 1. Fetch Profile Data
+        // Fetch Profile Data Only
         const { data: profileData, error: profileError } = await supabase
             .from('profiles')
             .select('onboarding_completed, display_name')
             .eq('id', user.id)
             .single();
-
-        // 2. Fetch Posts for Real Streak Calculation
-        const { data: postsData } = await supabase
-            .from('posts')
-            .select('created_at')
-            .eq('user_id', user.id);
-
-        const realStreak = calculateStreak(postsData || []);
-        setStreak(realStreak);
-
-        // 3. Sync streak to profile if slightly out of date (silent update)
-        if (profileData) {
-             const { error: updateError } = await supabase
-                .from('profiles')
-                .update({ streak_count: realStreak })
-                .eq('id', user.id);
-        }
 
         if (profileData && !profileError) {
             setOnboardingCompleted(profileData.onboarding_completed ?? false);
@@ -71,6 +55,22 @@ export const HomeScreen = () => {
         } else if (profileError && profileError.code === 'PGRST116') {
              setOnboardingCompleted(false);
         }
+    };
+
+    const handleMascotPress = () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        Animated.sequence([
+            Animated.timing(scaleAnim, {
+                toValue: 0.8,
+                duration: 100,
+                useNativeDriver: true,
+            }),
+            Animated.spring(scaleAnim, {
+                toValue: 1,
+                friction: 3,
+                useNativeDriver: true,
+            })
+        ]).start();
     };
 
     const handleSave = async () => {
@@ -81,44 +81,33 @@ export const HomeScreen = () => {
 
         setLoading(true);
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error('You must be logged in to save.');
-
-            // 1. Save entry to 'posts' table
-            const { error: postError } = await supabase
-                .from('posts')
-                .insert({
-                    user_id: user.id,
-                    text: text.trim(),
-                    type: 'gratitude'
-                });
-
-            if (postError) throw postError;
-
-            // 2. Success Feedback
+            await addEntry(text.trim());
+            
             Keyboard.dismiss();
             
-            const hasSeenFirstEntry = await AsyncStorage.getItem('has_seen_first_entry');
-            const isAnon = user.is_anonymous;
+            // Get user for anon check
+            const { data: { user } } = await supabase.auth.getUser();
+            const isAnon = user?.is_anonymous;
 
-            // Update streak locally for immediate feedback 
-            // (In a real app, we'd wait for server, but we want snappy UI)
-            const newStreak = streak + 1; // Simplified optimistic update
+            // We added entry, so streak *will* be updated shortly via context.
+            // For immediate logic (nudge), we can guess.
+            // If user had streak X, and today wasn't counted, now it is X+1.
+            // But actually, just checking if new total is 3 is enough for nudge.
+            const likelyStreak = streak + 1; 
+
+            const hasSeenFirstEntry = await AsyncStorage.getItem('has_seen_first_entry');
 
             if (!hasSeenFirstEntry) {
-                // First time entry celebration
-                setShowConfetti(true);
-                confettiRef.current?.start();
+                // First time entry
                 setShowSetupSheet(true);
-            } else if (isAnon && newStreak === 3) { 
+            } else if (isAnon && likelyStreak === 3) {  
                 // Suggest linking account on 3rd entry
                 setShowStreakNudge(true);
             } else {
-                 // Standard success toast/haptic could go here
                  setText('');
             }
             
-            // Refresh real data in background
+            // We still want to check profile just in case background stuff changed
             checkProfile();
 
         } catch (error: any) {
@@ -154,7 +143,6 @@ export const HomeScreen = () => {
             setOnboardingCompleted(true);
             setShowSetupSheet(false);
             setText('');
-            // Confetti or Toast could go here, but we already showed confetti on open
         } catch (error: any) {
             Alert.alert('Error', error.message);
         } finally {
@@ -172,30 +160,20 @@ export const HomeScreen = () => {
 
     return (
         <Layout isTabScreen={true} useSafePadding={false} className="px-6 pt-4">
-            {showConfetti && (
-                <View className="absolute top-0 left-0 right-0 bottom-0 z-50 pointer-events-none">
-                    <ConfettiCannon
-                        count={200}
-                        origin={{x: -10, y: 0}}
-                        autoStart={true}
-                        ref={confettiRef}
-                        fadeOut={true}
-                        onAnimationEnd={() => setShowConfetti(false)}
-                    />
-                </View>
-            )}
-
             {/* Header */}
             <View className="flex-row justify-between items-center mb-8">
-                <Image 
-                    source={onboardingCompleted ? MASCOTS.WRITE : MASCOTS.HELLO} 
-                    className="w-24 h-24" 
-                    resizeMode="contain" 
-                />
+                <Pressable onPress={handleMascotPress}>
+                    <Animated.Image 
+                        source={onboardingCompleted ? MASCOTS.WRITE : MASCOTS.HELLO} 
+                        className="w-24 h-24" 
+                        resizeMode="contain"
+                        style={{ transform: [{ scale: scaleAnim }] }}
+                    />
+                </Pressable>
                 <View className="items-end">
                     <View className="flex-row items-center">
                         <Text className="text-lg text-muted font-q-bold">TODAY</Text>
-                        <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+                        <TouchableOpacity onPress={() => navigation.navigate('Profile')} className="ml-3">
                             <View className="flex-row items-center bg-white px-2 py-1 rounded-full shadow-sm">
                                 <Ionicons name="flame" size={16} color="#FF9E7D" />
                                 <Text className="font-q-bold text-primary ml-1 text-base">{streak}</Text>

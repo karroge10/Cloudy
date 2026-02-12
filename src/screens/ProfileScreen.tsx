@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, TouchableOpacity, Switch, ScrollView, FlatList, TextInput } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { View, Text, Image, TouchableOpacity, Switch, ScrollView, FlatList, TextInput, Alert } from 'react-native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { MASCOTS } from '../constants/Assets';
@@ -12,6 +12,7 @@ import { SelectionPill } from '../components/SelectionPill';
 import { BottomSheet } from '../components/BottomSheet';
 import { calculateStreak } from '../utils/streakUtils';
 import { Skeleton } from '../components/Skeleton';
+import { useJournal } from '../context/JournalContext';
 
 const COMPANIONS = [
     { id: 'HELLO', name: 'Wavy', asset: MASCOTS.HELLO },
@@ -24,22 +25,35 @@ const COMPANIONS = [
 
 export const ProfileScreen = () => {
     // Data States
+    const { streak, rawStreakData } = useJournal();
     const [displayName, setDisplayName] = useState('');
     const [isReminderEnabled, setIsReminderEnabled] = useState(true);
     const [isHapticsEnabled, setIsHapticsEnabled] = useState(true);
     const [selectedGoal, setSelectedGoal] = useState('Inner Peace');
     const [reminderTime, setReminderTime] = useState('8:00 PM');
     const [selectedMascot, setSelectedMascot] = useState<typeof COMPANIONS[number]['id']>('SLEEP_1');
-    const [streak, setStreak] = useState(0);
-    const [entries, setEntries] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isAnonymous, setIsAnonymous] = useState(false);
+    
+    // Detailed Profile States
+    const [age, setAge] = useState<number | null>(null);
+    const [gender, setGender] = useState('');
+    const [country, setCountry] = useState('');
+
+    const navigation = useNavigation<any>();
 
     // Modal States
     const [isNameSheetVisible, setIsNameSheetVisible] = useState(false);
     const [isGoalSheetVisible, setIsGoalSheetVisible] = useState(false);
     const [isTimeSheetVisible, setIsTimeSheetVisible] = useState(false);
     const [isMascotSheetVisible, setIsMascotSheetVisible] = useState(false);
+    const [isAgeSheetVisible, setIsAgeSheetVisible] = useState(false);
+    const [isGenderSheetVisible, setIsGenderSheetVisible] = useState(false);
+    const [isCountrySheetVisible, setIsCountrySheetVisible] = useState(false);
+    
+    const [tempAge, setTempAge] = useState('');
     const [tempName, setTempName] = useState('');
+    const [tempCountry, setTempCountry] = useState('');
 
     useFocusEffect(
         React.useCallback(() => {
@@ -57,33 +71,23 @@ export const ProfileScreen = () => {
             .eq('id', user.id)
             .single();
 
-        // Fetch Real Streak
-        const { data: postsData } = await supabase
-            .from('posts')
-            .select('created_at')
-            .eq('user_id', user.id);
-
-        const realStreak = calculateStreak(postsData || []);
-        setStreak(realStreak);
-
-        // Sync cache if needed
-        if (data && data.streak_count !== realStreak) {
-             supabase.from('profiles').update({ streak_count: realStreak }).eq('id', user.id);
-        }
-
         if (data && !error) {
             setDisplayName(data.display_name || '');
             setTempName(data.display_name || '');
             setSelectedGoal(data.goal || 'Inner Peace');
             setReminderTime(data.reminder_time || '8:00 PM');
             setIsHapticsEnabled(data.haptics_enabled ?? true);
-            // setStreak(data.streak_count || 0); // Using realStreak instead
+            setAge(data.age || null);
+            setTempAge(data.age?.toString() || '');
+            setGender(data.gender || '');
+            setCountry(data.country || '');
+            setTempCountry(data.country || '');
             
             // Map mascot name back to ID
             const mascot = COMPANIONS.find(c => c.name === data.mascot_name);
             if (mascot) setSelectedMascot(mascot.id);
         }
-        setEntries(postsData?.map((p: any) => p.created_at) || []);
+        setIsAnonymous(user.is_anonymous || false);
         setLoading(false);
     };
 
@@ -101,7 +105,15 @@ export const ProfileScreen = () => {
         }
     };
 
+    const handleLogout = async () => {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+            Alert.alert('Error', error.message);
+        }
+    };
+
     const TIMES = ['7:00 AM', '8:00 AM', '9:00 AM', '12:00 PM', '6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM', '10:00 PM'];
+    const GENDERS = ['Male', 'Female', 'Non-binary', 'Prefer not to say'];
 
     const currentMascot = COMPANIONS.find(c => c.id === selectedMascot) || COMPANIONS[4];
 
@@ -115,17 +127,26 @@ export const ProfileScreen = () => {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 130 }}
             >
-                {/* Profile Nudge Banner */}
-                {(!displayName || streak < 1) && (
+                {/* Profile Nudge Banner - Show if info missing OR anonymous */}
+                {!loading && (isAnonymous || !displayName) && (
                     <TouchableOpacity 
-                        onPress={() => setIsNameSheetVisible(true)}
-                        className="bg-secondary/30 border border-primary/20 rounded-2xl p-4 mb-6 flex-row items-center"
+                        onPress={() => isAnonymous ? navigation.navigate('Auth') : setIsNameSheetVisible(true)}
+                        className="bg-secondary/30 border border-primary/20 rounded-[32px] p-6 mb-8 flex-row items-center"
                     >
-                        <Ionicons name="information-circle" size={20} color="#FF9E7D" />
-                        <Text className="text-sm font-q-medium text-text ml-3 flex-1">
-                            Complete your profile to enable daily reminders and secure cloud backups.
-                        </Text>
-                        <Ionicons name="chevron-forward" size={16} color="#FF9E7D" />
+                        <View className="bg-primary/10 p-3 rounded-2xl">
+                             <Ionicons name="sparkles" size={24} color="#FF9E7D" />
+                        </View>
+                        <View className="ml-4 flex-1">
+                            <Text className="text-lg font-q-bold text-text">
+                                {isAnonymous ? 'Secure your journey' : 'Complete your profile'}
+                            </Text>
+                            <Text className="text-sm font-q-medium text-muted mt-0.5 leading-5">
+                                {isAnonymous 
+                                    ? 'Save your progress to the cloud so you never lose your memories.' 
+                                    : 'Add your name to unlock daily reminders and personalized tips.'}
+                            </Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color="#FF9E7D" />
                     </TouchableOpacity>
                 )}
 
@@ -140,7 +161,8 @@ export const ProfileScreen = () => {
                              )}
                         </TouchableOpacity>
                         
-                        {loading ? (
+                        {/* We use loading state for entire profile, but streak comes from Context instantly */}
+                        {loading && streak === 0 ? (
                             <View className="mt-2">
                                 <Skeleton width={130} height={50} borderRadius={16} style={{ marginBottom: 6 }} />
                                 <Skeleton width={110} height={50} borderRadius={16} />
@@ -165,7 +187,7 @@ export const ProfileScreen = () => {
                 </View>
 
                 {/* Activity Graph */}
-                <ActivityGraph entries={entries} />
+                <ActivityGraph entries={rawStreakData} />
 
                 {/* Goal Pill */}
                 <TouchableOpacity 
@@ -194,9 +216,32 @@ export const ProfileScreen = () => {
                         <Switch
                             trackColor={{ false: '#E0E0E0', true: '#FF9E7D' }}
                             thumbColor={isReminderEnabled ? '#FFFFFF' : '#f4f3f4'}
-                            onValueChange={() => setIsReminderEnabled(!isReminderEnabled)}
+                            onValueChange={() => {
+                                const newVal = !isReminderEnabled;
+                                setIsReminderEnabled(newVal);
+                            }}
                             value={isReminderEnabled}
                         />
+                    </View>
+
+                    <View className="h-[1px] bg-inactive opacity-10" />
+
+                    {/* Age, Gender, Country row */}
+                    <View className="py-2">
+                        <TouchableOpacity onPress={() => setIsAgeSheetVisible(true)} className="flex-row justify-between items-center py-3">
+                            <Text className="text-lg font-q-bold text-text">Age</Text>
+                            <Text className="text-primary font-q-bold text-base">{age || 'Set Age'}</Text>
+                        </TouchableOpacity>
+                        <View className="h-[1px] bg-inactive opacity-10" />
+                        <TouchableOpacity onPress={() => setIsGenderSheetVisible(true)} className="flex-row justify-between items-center py-3">
+                            <Text className="text-lg font-q-bold text-text">Gender</Text>
+                            <Text className="text-primary font-q-bold text-base">{gender || 'Set Gender'}</Text>
+                        </TouchableOpacity>
+                        <View className="h-[1px] bg-inactive opacity-10" />
+                        <TouchableOpacity onPress={() => setIsCountrySheetVisible(true)} className="flex-row justify-between items-center py-3">
+                            <Text className="text-lg font-q-bold text-text">Location</Text>
+                            <Text className="text-primary font-q-bold text-base">{country || 'Set Country'}</Text>
+                        </TouchableOpacity>
                     </View>
 
                     <View className="h-[1px] bg-inactive opacity-10" />
@@ -210,7 +255,11 @@ export const ProfileScreen = () => {
                         <Switch
                             trackColor={{ false: '#E0E0E0', true: '#FF9E7D' }}
                             thumbColor={isHapticsEnabled ? '#FFFFFF' : '#f4f3f4'}
-                            onValueChange={() => setIsHapticsEnabled(!isHapticsEnabled)}
+                            onValueChange={() => {
+                                const newVal = !isHapticsEnabled;
+                                setIsHapticsEnabled(newVal);
+                                updateProfile({ haptics_enabled: newVal });
+                            }}
                             value={isHapticsEnabled}
                         />
                     </View>
@@ -233,21 +282,17 @@ export const ProfileScreen = () => {
                 </View>
 
                 {/* Log Out */}
-                <TouchableOpacity className="mb-20 items-center py-4">
+                <TouchableOpacity onPress={handleLogout} className="mb-20 items-center py-4">
                     <Text className="text-lg font-q-bold text-red-400 opacity-60">Log Out</Text>
                     <Text className="text-[10px] font-q-medium text-muted mt-2 opacity-30">Cloudy v1.0.42</Text>
                 </TouchableOpacity>
             </ScrollView>
 
             {/* Name Edit Sheet */}
-            <BottomSheet 
-                visible={isNameSheetVisible} 
-                onClose={() => setIsNameSheetVisible(false)}
-            >
+            <BottomSheet visible={isNameSheetVisible} onClose={() => setIsNameSheetVisible(false)}>
                 <View className="items-center mt-2">
                      <Image source={MASCOTS.THINK} className="w-40 h-40 mb-4" resizeMode="contain" />
                      <Text className="text-2xl font-q-bold text-text text-center mb-6">What should Cloudy call you?</Text>
-
                     <TextInput
                         className="w-full bg-card px-6 py-5 rounded-[24px] font-q-bold text-lg text-text border-2 border-inactive/10 mb-6"
                         placeholder="Your Name"
@@ -261,93 +306,183 @@ export const ProfileScreen = () => {
                         onPress={() => {
                             updateProfile({ display_name: tempName });
                             setIsNameSheetVisible(false);
-                            setDisplayName(tempName); // Immediate local update
+                            setDisplayName(tempName);
                         }}
-                        className="w-full bg-primary py-4 rounded-full items-center shadow-md active:opacity-90"
+                        className="w-full bg-primary py-4 rounded-full items-center shadow-md active:opacity-90 mb-4"
                     >
                         <Text className="text-white font-q-bold text-lg">Save Name</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setIsNameSheetVisible(false)} className="py-2">
+                         <Text className="text-muted font-q-bold text-base">Cancel</Text>
+                    </TouchableOpacity>
+                </View>
+            </BottomSheet>
+
+            {/* Age Edit Sheet */}
+            <BottomSheet visible={isAgeSheetVisible} onClose={() => setIsAgeSheetVisible(false)}>
+                <View className="items-center mt-2">
+                     <Ionicons name="calendar-outline" size={60} color="#FF9E7D" className="mb-4" />
+                     <Text className="text-2xl font-q-bold text-text text-center mb-6">How old are you?</Text>
+                    <TextInput
+                        className="w-full bg-card px-6 py-5 rounded-[24px] font-q-bold text-lg text-text border-2 border-inactive/10 mb-6"
+                        placeholder="Age"
+                        placeholderTextColor="#CBD5E1"
+                        onChangeText={setTempAge}
+                        value={tempAge}
+                        keyboardType="numeric"
+                        autoFocus={true}
+                    />
+                    <TouchableOpacity 
+                        onPress={() => {
+                            const val = parseInt(tempAge);
+                            if (!isNaN(val)) {
+                                updateProfile({ age: val });
+                                setAge(val);
+                            }
+                            setIsAgeSheetVisible(false);
+                        }}
+                        className="w-full bg-primary py-4 rounded-full items-center shadow-md active:opacity-90 mb-4"
+                    >
+                        <Text className="text-white font-q-bold text-lg">Save Age</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setIsAgeSheetVisible(false)} className="py-2">
+                         <Text className="text-muted font-q-bold text-base">Cancel</Text>
+                    </TouchableOpacity>
+                </View>
+            </BottomSheet>
+
+            {/* Gender Selection Sheet */}
+            <BottomSheet visible={isGenderSheetVisible} onClose={() => setIsGenderSheetVisible(false)}>
+                <View className="items-center mt-2">
+                    <Ionicons name="people-outline" size={60} color="#FF9E7D" className="mb-4" />
+                    <Text className="text-2xl font-q-bold text-text text-center mb-6">How do you identify?</Text>
+                    <View className="flex-row flex-wrap gap-3 justify-center w-full mb-6">
+                        {GENDERS.map((g) => (
+                            <SelectionPill
+                                key={g}
+                                label={g}
+                                selected={gender === g}
+                                onPress={() => {
+                                    setGender(g);
+                                    updateProfile({ gender: g });
+                                    setIsGenderSheetVisible(false);
+                                }}
+                            />
+                        ))}
+                    </View>
+                    <TouchableOpacity onPress={() => setIsGenderSheetVisible(false)} className="py-2">
+                         <Text className="text-muted font-q-bold text-base">Cancel</Text>
+                    </TouchableOpacity>
+                </View>
+            </BottomSheet>
+
+            {/* Country Selection Sheet */}
+            <BottomSheet visible={isCountrySheetVisible} onClose={() => setIsCountrySheetVisible(false)}>
+                <View className="items-center mt-2">
+                     <Ionicons name="earth-outline" size={60} color="#FF9E7D" className="mb-4" />
+                     <Text className="text-2xl font-q-bold text-text text-center mb-6">Where are you from?</Text>
+                    <TextInput
+                        className="w-full bg-card px-6 py-5 rounded-[24px] font-q-bold text-lg text-text border-2 border-inactive/10 mb-6"
+                        placeholder="Country"
+                        placeholderTextColor="#CBD5E1"
+                        onChangeText={setTempCountry}
+                        value={tempCountry}
+                        autoFocus={true}
+                    />
+                    <TouchableOpacity 
+                        onPress={() => {
+                            updateProfile({ country: tempCountry });
+                            setCountry(tempCountry);
+                            setIsCountrySheetVisible(false);
+                        }}
+                        className="w-full bg-primary py-4 rounded-full items-center shadow-md active:opacity-90 mb-4"
+                    >
+                        <Text className="text-white font-q-bold text-lg">Save Location</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setIsCountrySheetVisible(false)} className="py-2">
+                         <Text className="text-muted font-q-bold text-base">Cancel</Text>
                     </TouchableOpacity>
                 </View>
             </BottomSheet>
 
             {/* Goal Selection Sheet */}
-            <BottomSheet 
-                visible={isGoalSheetVisible} 
-                onClose={() => setIsGoalSheetVisible(false)}
-                title="Your Focus"
-            >
-                <View className="flex-row flex-wrap gap-3 mt-2">
-                    {GOALS.map((goal) => (
-                        <SelectionPill
-                            key={goal}
-                            label={goal}
-                            selected={selectedGoal === goal}
-                            onPress={() => {
-                                setSelectedGoal(goal);
-                                setIsGoalSheetVisible(false);
-                            }}
-                        />
-                    ))}
+            <BottomSheet visible={isGoalSheetVisible} onClose={() => setIsGoalSheetVisible(false)}>
+                <View className="items-center mt-2">
+                    <Ionicons name="trophy-outline" size={60} color="#FF9E7D" className="mb-4" />
+                    <Text className="text-2xl font-q-bold text-text text-center mb-6">What's your focus?</Text>
+                    <View className="flex-row flex-wrap gap-3 justify-center w-full mb-6">
+                        {GOALS.map((goal) => (
+                            <SelectionPill
+                                key={goal}
+                                label={goal}
+                                selected={selectedGoal === goal}
+                                onPress={() => {
+                                    setSelectedGoal(goal);
+                                    updateProfile({ goal: goal });
+                                    setIsGoalSheetVisible(false);
+                                }}
+                            />
+                        ))}
+                    </View>
+                    <TouchableOpacity onPress={() => setIsGoalSheetVisible(false)} className="py-2">
+                         <Text className="text-muted font-q-bold text-base">Cancel</Text>
+                    </TouchableOpacity>
                 </View>
-                <TouchableOpacity 
-                    onPress={() => setIsGoalSheetVisible(false)}
-                    className="mt-10 py-4 items-center"
-                >
-                    <Text className="text-lg font-q-bold text-muted">Cancel</Text>
-                </TouchableOpacity>
             </BottomSheet>
 
             {/* Time Selection Sheet */}
-            <BottomSheet 
-                visible={isTimeSheetVisible} 
-                onClose={() => setIsTimeSheetVisible(false)}
-                title="Reminder Time"
-            >
-                <ScrollView showsVerticalScrollIndicator={false} className="max-h-[350px] mt-2">
-                    <View className="flex-row flex-wrap gap-3">
-                        {TIMES.map((time) => (
-                            <TouchableOpacity
-                                key={time}
-                                onPress={() => {
-                                    setReminderTime(time);
-                                    setIsTimeSheetVisible(false);
-                                }}
-                                className={`px-6 py-3 rounded-2xl border-2 ${reminderTime === time ? 'bg-primary border-primary' : 'bg-card border-inactive/30'}`}
-                            >
-                                <Text className={`text-lg font-q-bold ${reminderTime === time ? 'text-white' : 'text-text'}`}>{time}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                </ScrollView>
+            <BottomSheet visible={isTimeSheetVisible} onClose={() => setIsTimeSheetVisible(false)}>
+                <View className="items-center mt-2 w-full">
+                    <Ionicons name="alarm-outline" size={60} color="#FF9E7D" className="mb-4" />
+                    <Text className="text-2xl font-q-bold text-text text-center mb-6">When to remind you?</Text>
+                    <ScrollView showsVerticalScrollIndicator={false} className="max-h-[350px] w-full">
+                        <View className="flex-row flex-wrap gap-3 justify-center">
+                            {TIMES.map((time) => (
+                                <TouchableOpacity
+                                    key={time}
+                                    onPress={() => {
+                                        setReminderTime(time);
+                                        updateProfile({ reminder_time: time });
+                                        setIsTimeSheetVisible(false);
+                                    }}
+                                    className={`px-6 py-3 rounded-2xl border-2 ${reminderTime === time ? 'bg-primary border-primary' : 'bg-card border-inactive/30'}`}
+                                >
+                                    <Text className={`text-lg font-q-bold ${reminderTime === time ? 'text-white' : 'text-text'}`}>{time}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </ScrollView>
+                    <TouchableOpacity onPress={() => setIsTimeSheetVisible(false)} className="mt-6 py-2">
+                         <Text className="text-muted font-q-bold text-base">Cancel</Text>
+                    </TouchableOpacity>
+                </View>
             </BottomSheet>
 
             {/* Mascot Selection Sheet */}
-            <BottomSheet 
-                visible={isMascotSheetVisible} 
-                onClose={() => setIsMascotSheetVisible(false)}
-                title="Your Companion"
-            >
-                <View className="flex-row flex-wrap mt-2">
-                    {COMPANIONS.map((companion) => (
-                        <TouchableOpacity 
-                            key={companion.id}
-                            onPress={() => {
-                                setSelectedMascot(companion.id);
-                                setIsMascotSheetVisible(false);
-                            }}
-                            className={`w-[30%] m-[1.5%] p-4 rounded-3xl items-center border-2 ${selectedMascot === companion.id ? 'bg-secondary border-primary' : 'bg-card border-transparent'}`}
-                        >
-                            <Image source={companion.asset} className="w-14 h-14" resizeMode="contain" />
-                            <Text className="text-[10px] font-q-bold text-text mt-2 uppercase">{companion.name}</Text>
-                        </TouchableOpacity>
-                    ))}
+            <BottomSheet visible={isMascotSheetVisible} onClose={() => setIsMascotSheetVisible(false)}>
+                <View className="items-center mt-2 w-full">
+                    <Image source={currentMascot.asset} className="w-40 h-40 mb-4" resizeMode="contain" />
+                    <Text className="text-2xl font-q-bold text-text text-center mb-6">Choose your companion</Text>
+                    <View className="flex-row flex-wrap justify-center w-full">
+                        {COMPANIONS.map((companion) => (
+                            <TouchableOpacity 
+                                key={companion.id}
+                                onPress={() => {
+                                    setSelectedMascot(companion.id);
+                                    updateProfile({ mascot_name: companion.name });
+                                    setIsMascotSheetVisible(false);
+                                }}
+                                className={`w-[30%] m-[1.5%] p-4 rounded-3xl items-center border-2 ${selectedMascot === companion.id ? 'bg-secondary border-primary' : 'bg-card border-transparent'}`}
+                            >
+                                <Image source={companion.asset} className="w-14 h-14" resizeMode="contain" />
+                                <Text className="text-[10px] font-q-bold text-text mt-2 uppercase">{companion.name}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                    <TouchableOpacity onPress={() => setIsMascotSheetVisible(false)} className="mt-6 py-2">
+                         <Text className="text-muted font-q-bold text-base">Cancel</Text>
+                    </TouchableOpacity>
                 </View>
-                <TouchableOpacity 
-                    onPress={() => setIsMascotSheetVisible(false)}
-                    className="mt-6 py-4 items-center"
-                >
-                    <Text className="text-lg font-q-bold text-muted">Go Back</Text>
-                </TouchableOpacity>
             </BottomSheet>
         </Layout>
     );

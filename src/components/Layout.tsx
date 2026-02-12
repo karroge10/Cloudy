@@ -44,7 +44,7 @@ export const Layout = ({
 
     return (
         <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
-            <StatusBar style="dark" />
+            <StatusBar style="dark" translucent />
             {backgroundColors ? (
                 <LinearGradient 
                     colors={backgroundColors as [string, string, ...string[]]} 

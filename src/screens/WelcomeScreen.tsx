@@ -48,6 +48,15 @@ export const WelcomeScreen = () => {
                         onPress={() => navigation.navigate('StruggleSelection' as never)}
                         showArrow
                     />
+
+                    <TouchableOpacity 
+                        onPress={() => navigation.navigate('Auth' as never)}
+                        className="mt-6 items-center py-2"
+                    >
+                        <Text className="text-muted font-q-bold text-lg">
+                            Already have an account? <Text className="text-primary">Log In</Text>
+                        </Text>
+                    </TouchableOpacity>
                 </View>
             </View>
         </SafeAreaView>

@@ -7,6 +7,7 @@ import { useFonts, Quicksand_400Regular, Quicksand_500Medium, Quicksand_600SemiB
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Session } from '@supabase/supabase-js';
+import { DeviceEventEmitter } from 'react-native';
 
 import { supabase } from './src/lib/supabase';
 import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
@@ -27,6 +28,7 @@ import { MemoryScreen } from './src/screens/MemoryScreen';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { ProfileSetupScreen } from './src/screens/ProfileSetupScreen';
 import { ReminderSetupScreen } from './src/screens/ReminderSetupScreen';
+import { JournalProvider } from './src/context/JournalContext';
 
 
 const Stack = createNativeStackNavigator();
@@ -77,7 +79,17 @@ export default function App() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    // 3. Listen for manual profile refreshes
+    const refreshSub = DeviceEventEmitter.addListener('refresh_profile', () => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) checkProfile(session.user.id);
+        });
+    });
+
+    return () => {
+        subscription.unsubscribe();
+        refreshSub.remove();
+    };
   }, []);
 
   const checkProfile = async (userId: string) => {
@@ -112,37 +124,50 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer theme={CloudyTheme}>
-        <Stack.Navigator
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: '#FFF9F0' },
-            animation: 'slide_from_right'
-          }}
-        >
-          {session ? (
-            <>
-              <Stack.Screen name="MainApp" component={MainTabNavigator} />
-              <Stack.Screen name="JournalEntry" component={JournalEntryScreen} />
-              <Stack.Screen name="Memory" component={MemoryScreen} />
-              <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
-              <Stack.Screen name="ReminderSetup" component={ReminderSetupScreen} />
-            </>
-          ) : (
-            <>
-              <Stack.Screen name="Welcome" component={WelcomeScreen} />
-              <Stack.Screen name="StruggleSelection" component={StruggleSelectionScreen} />
-              <Stack.Screen name="GoalSelection" component={GoalSelectionScreen} />
-              <Stack.Screen name="Summary" component={SummaryScreen} />
-              <Stack.Screen name="Auth" component={AuthScreen} />
-              <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
-              <Stack.Screen name="ReminderSetup" component={ReminderSetupScreen} />
-            </>
-          )}
-        </Stack.Navigator>
+      <JournalProvider session={session}>
+        <NavigationContainer theme={CloudyTheme}>
+          <Stack.Navigator
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: '#FFF9F0' },
+              animation: 'slide_from_right'
+            }}
+          >
+            {session ? (
+              <>
+                {!onboardingCompleted ? (
+                  <>
+                    <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
+                    <Stack.Screen name="ReminderSetup" component={ReminderSetupScreen} />
+                  </>
+                ) : null}
+                <Stack.Screen name="MainApp" component={MainTabNavigator} />
+                <Stack.Screen name="JournalEntry" component={JournalEntryScreen} />
+                <Stack.Screen name="Memory" component={MemoryScreen} />
+                <Stack.Screen name="Auth" component={AuthScreen} />
 
-        <StatusBar style="dark" />
-      </NavigationContainer>
+                {/* Allow navigating back to setup screens even if completed, just in case */}
+                {onboardingCompleted && (
+                  <>
+                    <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
+                    <Stack.Screen name="ReminderSetup" component={ReminderSetupScreen} />
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                <Stack.Screen name="Welcome" component={WelcomeScreen} />
+                <Stack.Screen name="StruggleSelection" component={StruggleSelectionScreen} />
+                <Stack.Screen name="GoalSelection" component={GoalSelectionScreen} />
+                <Stack.Screen name="Summary" component={SummaryScreen} />
+                <Stack.Screen name="Auth" component={AuthScreen} />
+              </>
+            )}
+          </Stack.Navigator>
+
+          <StatusBar style="dark" />
+        </NavigationContainer>
+      </JournalProvider>
     </SafeAreaProvider>
   );
 }

@@ -26,6 +26,12 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
     children 
 }) => {
     const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+    
+    const backdropOpacity = translateY.interpolate({
+        inputRange: [0, SCREEN_HEIGHT],
+        outputRange: [1, 0],
+        extrapolate: 'clamp'
+    });
 
     const panResponder = useRef(
         PanResponder.create({
@@ -70,17 +76,18 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
             onClose();
         });
     };
-
-    return (
+ 
+     return (
         <Modal
             visible={visible}
             transparent
+            statusBarTranslucent
             animationType="none"
             onRequestClose={closeModal}
         >
             <View className="flex-1 justify-end">
                 <TouchableWithoutFeedback onPress={closeModal}>
-                    <View className="absolute inset-0 bg-black/40" />
+                    <Animated.View style={{ opacity: backdropOpacity }} className="absolute inset-0 bg-black/40" />
                 </TouchableWithoutFeedback>
                 
                 <Animated.View 
