@@ -6,6 +6,7 @@ import { MASCOTS } from '../constants/Assets';
 import { Layout } from '../components/Layout';
 import { TopNav } from '../components/TopNav';
 import { Button } from '../components/Button';
+import { MascotCard } from '../components/MascotCard';
 
 // Available mascots for selection
 const COMPANIONS = [
@@ -73,26 +74,13 @@ export const ProfileSetupScreen = () => {
                     <Text className="text-base font-q-bold text-muted mb-4 ml-1 uppercase tracking-widest text-[10px]">Pick a Companion</Text>
                     <View className="flex-row flex-wrap justify-between">
                         {COMPANIONS.map((companion) => (
-                            <TouchableOpacity
+                            <MascotCard
                                 key={companion.id}
+                                name={companion.name}
+                                asset={companion.asset}
+                                isSelected={selectedMascot.id === companion.id}
                                 onPress={() => setSelectedMascot(companion)}
-                                className={`w-[30%] aspect-square mb-4 rounded-[32px] items-center justify-center border-2 ${
-                                    selectedMascot.id === companion.id 
-                                        ? 'bg-secondary border-primary shadow-sm' 
-                                        : 'bg-white border-primary/10 shadow-sm'
-                                }`}
-                            >
-                                <Image 
-                                    source={companion.asset} 
-                                    className="w-14 h-14" 
-                                    resizeMode="contain" 
-                                />
-                                <Text className={`font-q-bold text-[10px] mt-2 uppercase ${
-                                    selectedMascot.id === companion.id ? 'text-primary' : 'text-muted'
-                                }`}>
-                                    {companion.name}
-                                </Text>
-                            </TouchableOpacity>
+                            />
                         ))}
                     </View>
                 </View>

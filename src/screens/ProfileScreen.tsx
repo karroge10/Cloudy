@@ -14,6 +14,7 @@ import { calculateStreak } from '../utils/streakUtils';
 import { Skeleton } from '../components/Skeleton';
 import { useJournal } from '../context/JournalContext';
 import { ProfileNudge } from '../components/ProfileNudge';
+import { MascotCard } from '../components/MascotCard';
 
 const COMPANIONS = [
     { id: 'HELLO', name: 'Wavy', asset: MASCOTS.HELLO },
@@ -476,20 +477,19 @@ export const ProfileScreen = () => {
                 <View className="items-center mt-2 w-full">
                     <Image source={currentMascot.asset} className="w-40 h-40 mb-4" resizeMode="contain" />
                     <Text className="text-2xl font-q-bold text-text text-center mb-6">Choose your companion</Text>
-                    <View className="flex-row flex-wrap justify-center w-full">
+                    <View className="flex-row flex-wrap justify-between w-full">
                         {COMPANIONS.map((companion) => (
-                            <TouchableOpacity 
+                            <MascotCard 
                                 key={companion.id}
+                                name={companion.name}
+                                asset={companion.asset}
+                                isSelected={selectedMascot === companion.id}
                                 onPress={() => {
                                     setSelectedMascot(companion.id);
                                     updateProfile({ mascot_name: companion.name });
                                     setIsMascotSheetVisible(false);
                                 }}
-                                className={`w-[30%] m-[1.5%] p-4 rounded-3xl items-center border-2 ${selectedMascot === companion.id ? 'bg-secondary border-primary' : 'bg-card/50 border-transparent'}`}
-                            >
-                                <Image source={companion.asset} className="w-14 h-14" resizeMode="contain" />
-                                <Text className="text-[10px] font-q-bold text-text mt-2 uppercase">{companion.name}</Text>
-                            </TouchableOpacity>
+                            />
                         ))}
                     </View>
                     <TouchableOpacity onPress={() => setIsMascotSheetVisible(false)} className="mt-6 py-2">
