@@ -19,11 +19,13 @@ export const JournalEntryScreen = () => {
     };
 
     return (
-        <Layout noScroll={true}>
-            <TopNav title="Journal" />
+        <Layout noScroll={true} useSafePadding={false}>
+            <View className="px-6 pt-4">
+                <TopNav title="Journal" />
+            </View>
             <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
-                className="flex-1"
+                className="flex-1 px-6"
                 keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
             >
                 <ScrollView 

@@ -13,6 +13,7 @@ import { BottomSheet } from '../components/BottomSheet';
 import { calculateStreak } from '../utils/streakUtils';
 import { Skeleton } from '../components/Skeleton';
 import { useJournal } from '../context/JournalContext';
+import { ProfileNudge } from '../components/ProfileNudge';
 
 const COMPANIONS = [
     { id: 'HELLO', name: 'Wavy', asset: MASCOTS.HELLO },
@@ -34,6 +35,7 @@ export const ProfileScreen = () => {
     const [selectedMascot, setSelectedMascot] = useState<typeof COMPANIONS[number]['id']>('SLEEP_1');
     const [loading, setLoading] = useState(true);
     const [isAnonymous, setIsAnonymous] = useState(false);
+    const [onboardingGoals, setOnboardingGoals] = useState<string[]>([]);
     
     // Detailed Profile States
     const [age, setAge] = useState<number | null>(null);
@@ -86,6 +88,8 @@ export const ProfileScreen = () => {
             // Map mascot name back to ID
             const mascot = COMPANIONS.find(c => c.name === data.mascot_name);
             if (mascot) setSelectedMascot(mascot.id);
+            
+            setOnboardingGoals(data.goals || []);
         }
         setIsAnonymous(user.is_anonymous || false);
         setLoading(false);
@@ -127,28 +131,14 @@ export const ProfileScreen = () => {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 130 }}
             >
-                {/* Profile Nudge Banner - Show if info missing OR anonymous */}
-                {!loading && (isAnonymous || !displayName) && (
-                    <TouchableOpacity 
-                        onPress={() => isAnonymous ? navigation.navigate('Auth') : setIsNameSheetVisible(true)}
-                        className="bg-secondary/30 border border-primary/20 rounded-[32px] p-6 mb-8 flex-row items-center"
-                    >
-                        <View className="bg-primary/10 p-3 rounded-2xl">
-                             <Ionicons name="sparkles" size={24} color="#FF9E7D" />
-                        </View>
-                        <View className="ml-4 flex-1">
-                            <Text className="text-lg font-q-bold text-text">
-                                {isAnonymous ? 'Secure your journey' : 'Complete your profile'}
-                            </Text>
-                            <Text className="text-sm font-q-medium text-muted mt-0.5 leading-5">
-                                {isAnonymous 
-                                    ? 'Save your progress to the cloud so you never lose your memories.' 
-                                    : 'Add your name to unlock daily reminders and personalized tips.'}
-                            </Text>
-                        </View>
-                        <Ionicons name="chevron-forward" size={20} color="#FF9E7D" />
-                    </TouchableOpacity>
-                )}
+                {/* Profile Nudge Banner */}
+                <ProfileNudge 
+                    isAnonymous={isAnonymous}
+                    isComplete={!!displayName}
+                    loading={loading}
+                    onPressCompleteProfile={() => setIsNameSheetVisible(true)}
+                    className="mb-8"
+                />
 
                 {/* Streak & Mascot Header */}
                 <View className="flex-row justify-between items-center mb-8">
@@ -410,8 +400,31 @@ export const ProfileScreen = () => {
                 <View className="items-center mt-2">
                     <Ionicons name="trophy-outline" size={60} color="#FF9E7D" className="mb-4" />
                     <Text className="text-2xl font-q-bold text-text text-center mb-6">What's your focus?</Text>
+                    
+                    {onboardingGoals.length > 0 && (
+                        <View className="w-full mb-4">
+                            <Text className="text-xs font-q-bold text-muted uppercase mb-3 ml-2 tracking-widest">Picked during onboarding</Text>
+                            <View className="flex-row flex-wrap gap-3 justify-center w-full mb-6">
+                                {onboardingGoals.map((goal) => (
+                                    <SelectionPill
+                                        key={`onboarding-${goal}`}
+                                        label={goal}
+                                        selected={selectedGoal === goal}
+                                        onPress={() => {
+                                            setSelectedGoal(goal);
+                                            updateProfile({ goal: goal });
+                                            setIsGoalSheetVisible(false);
+                                        }}
+                                    />
+                                ))}
+                            </View>
+                            <View className="h-[1px] bg-inactive/10 w-full mb-6" />
+                            <Text className="text-xs font-q-bold text-muted uppercase mb-3 ml-2 tracking-widest">All Goals</Text>
+                        </View>
+                    )}
+
                     <View className="flex-row flex-wrap gap-3 justify-center w-full mb-6">
-                        {GOALS.map((goal) => (
+                        {GOALS.filter(g => !onboardingGoals.includes(g)).map((goal) => (
                             <SelectionPill
                                 key={goal}
                                 label={goal}
@@ -472,7 +485,7 @@ export const ProfileScreen = () => {
                                     updateProfile({ mascot_name: companion.name });
                                     setIsMascotSheetVisible(false);
                                 }}
-                                className={`w-[30%] m-[1.5%] p-4 rounded-3xl items-center border-2 ${selectedMascot === companion.id ? 'bg-secondary border-primary' : 'bg-card border-transparent'}`}
+                                className={`w-[30%] m-[1.5%] p-4 rounded-3xl items-center border-2 ${selectedMascot === companion.id ? 'bg-secondary border-primary' : 'bg-card/50 border-transparent'}`}
                             >
                                 <Image source={companion.asset} className="w-14 h-14" resizeMode="contain" />
                                 <Text className="text-[10px] font-q-bold text-text mt-2 uppercase">{companion.name}</Text>

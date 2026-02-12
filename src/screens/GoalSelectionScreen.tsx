@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
 import { Button } from '../components/Button';
 import { SelectionPill } from '../components/SelectionPill';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { MASCOTS } from '../constants/Assets';
-
+import { TopNav } from '../components/TopNav';
+import { Layout } from '../components/Layout';
 import { GOALS } from '../constants/Goals';
 
 export const GoalSelectionScreen = () => {
@@ -28,13 +27,13 @@ export const GoalSelectionScreen = () => {
     const canContinue = selected.length > 0;
 
     return (
-        <SafeAreaView className="flex-1 bg-background">
-            <StatusBar style="dark" />
-            <View className="flex-1 px-6 py-4 justify-between">
-                <View>
-                    {/* Header / Dev Back */}
-                    <View className="flex-row justify-between items-center w-full mb-2 min-h-[40px]" />
+        <Layout useSafePadding={false}>
+            <View className="px-6 pt-4">
+                <TopNav showBack={true} />
+            </View>
 
+            <View className="flex-1 px-6 justify-between pb-8">
+                <View>
                     {/* Main Content Area */}
                     <View className="items-center mb-6">
                         <Text className="text-4xl font-q-bold text-text text-center mb-6 pt-4 leading-tight">
@@ -77,6 +76,6 @@ export const GoalSelectionScreen = () => {
                     />
                 </View>
             </View>
-        </SafeAreaView>
+        </Layout>
     );
 };

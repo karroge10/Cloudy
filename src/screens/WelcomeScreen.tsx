@@ -1,22 +1,22 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
 import { Button } from '../components/Button';
 import { useNavigation } from '@react-navigation/native';
 import { MASCOTS } from '../constants/Assets';
 import { Ionicons } from '@expo/vector-icons';
 
+import { Layout } from '../components/Layout';
+
 export const WelcomeScreen = () => {
     const navigation = useNavigation();
 
     return (
-        <SafeAreaView className="flex-1 bg-background">
-            <StatusBar style="dark" />
-            <View className="flex-1 px-6 justify-between py-4">
-                 {/* Header / Dev control */}
-                 <View className="flex-row justify-between items-center w-full min-h-[40px]" />
+        <Layout useSafePadding={false}>
+            <View className="px-6 pt-4">
+                 <View className="flex-row justify-between items-center w-full min-h-[48px]" />
+            </View>
 
+            <View className="flex-1 px-6 justify-between pb-8">
                 {/* Content */}
                 <View className="items-center">
                     <Image
@@ -59,6 +59,6 @@ export const WelcomeScreen = () => {
                     </TouchableOpacity>
                 </View>
             </View>
-        </SafeAreaView>
+        </Layout>
     );
 };

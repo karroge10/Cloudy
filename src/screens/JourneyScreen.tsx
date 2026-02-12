@@ -25,6 +25,7 @@ import { BottomSheet } from '../components/BottomSheet';
 import { MASCOTS } from '../constants/Assets';
 import { Image, Alert } from 'react-native';
 import { useJournal, JournalEntry } from '../context/JournalContext';
+import { ProfileNudge } from '../components/ProfileNudge';
 
 const ITEM_HEIGHT = 180;
 
@@ -217,6 +218,9 @@ export const JourneyScreen = () => {
     const { height: viewportHeight } = useWindowDimensions();
     const { entries, loading, toggleFavorite, deleteEntry } = useJournal();
     const [filter, setFilter] = useState<'all' | 'favorites'>('all');
+    const [isAnonymous, setIsAnonymous] = useState(false);
+    const [displayName, setDisplayName] = useState<string | null>(null);
+    const [profileLoading, setProfileLoading] = useState(true);
     const [isProfileIncomplete, setIsProfileIncomplete] = useState(false);
     
     // Deletion states
@@ -237,7 +241,12 @@ export const JourneyScreen = () => {
 
     const checkProfileStatus = async () => {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        if (!user) {
+            setProfileLoading(false);
+            return;
+        }
+
+        setIsAnonymous(user.is_anonymous || false);
 
         const { data } = await supabase
             .from('profiles')
@@ -245,9 +254,15 @@ export const JourneyScreen = () => {
             .eq('id', user.id)
             .single();
 
-        if (!data || !data.display_name || !data.onboarding_completed) {
-            setIsProfileIncomplete(true);
+        if (data) {
+            setDisplayName(data.display_name);
+            if (!data.display_name || !data.onboarding_completed) {
+                setIsProfileIncomplete(true);
+            } else {
+                setIsProfileIncomplete(false);
+            }
         }
+        setProfileLoading(false);
     };
 
     const filteredEntries = useMemo(() => {
@@ -294,18 +309,12 @@ export const JourneyScreen = () => {
     const renderHeader = () => (
         <View>
             {/* Profile Nudge */}
-            {isProfileIncomplete && (
-                <TouchableOpacity 
-                    onPress={() => (navigation as any).navigate('Profile')}
-                    className="bg-secondary/30 border border-primary/20 rounded-2xl p-4 mb-6 flex-row items-center"
-                >
-                    <Ionicons name="sparkles" size={18} color="#FF9E7D" />
-                    <Text className="text-sm font-q-medium text-text ml-3 flex-1">
-                        Complete your profile to unlock reminders and cloud sync.
-                    </Text>
-                    <Ionicons name="chevron-forward" size={14} color="#FF9E7D" />
-                </TouchableOpacity>
-            )}
+            <ProfileNudge 
+                isAnonymous={isAnonymous}
+                isComplete={!isProfileIncomplete}
+                loading={profileLoading}
+                className="mb-8"
+            />
 
             {/* Sunrays Card - Only show after a week of memories */}
             {entries.length >= 7 && (

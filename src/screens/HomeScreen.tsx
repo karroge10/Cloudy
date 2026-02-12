@@ -9,6 +9,7 @@ import { BottomSheet } from '../components/BottomSheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useJournal } from '../context/JournalContext';
 import * as Haptics from 'expo-haptics';
+import { InfoCard } from '../components/InfoCard';
 
 export const HomeScreen = () => {
     const navigation = useNavigation<any>();
@@ -220,17 +221,12 @@ export const HomeScreen = () => {
             </View>
 
             {/* Tip Box */}
-            <View className="bg-tip-bg rounded-2xl p-5 flex-row items-center shadow-[#00000005] shadow-sm mb-8" style={{ elevation: 2 }}>
-                <View className="bg-secondary p-3 rounded-full mr-4 w-12 h-12 items-center justify-center">
-                    <Ionicons name="bulb" size={24} color="#FF9E7D" />
-                </View>
-                <View className="flex-1">
-                    <Text className="text-text font-q-bold text-base mb-0.5">Writing Tip</Text>
-                    <Text className="text-muted font-q-regular text-sm leading-5">
-                        Focus on one small thing that went well today, no matter how tiny it seems.
-                    </Text>
-                </View>
-            </View>
+            <InfoCard 
+                title="Writing Tip"
+                subtitle="Focus on one small thing that went well today, no matter how tiny it seems."
+                icon="bulb"
+                className="mb-8"
+            />
 
             {/* Post-Save Setup Sheet */}
             <BottomSheet 

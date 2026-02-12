@@ -1,12 +1,13 @@
 import { View, Text, Image, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
 import { Button } from '../components/Button';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { MASCOTS } from '../constants/Assets';
 import { supabase } from '../lib/supabase';
 import { useState } from 'react';
+import { TopNav } from '../components/TopNav';
+
+import { Layout } from '../components/Layout';
 
 export const SummaryScreen = () => {
     const navigation = useNavigation();
@@ -28,9 +29,28 @@ export const SummaryScreen = () => {
         setLoading(true);
         try {
             // Sign in anonymously to bypass traditional auth for now
-            const { error } = await supabase.auth.signInAnonymously();
+            const { data: { user }, error: authError } = await supabase.auth.signInAnonymously();
             
-            if (error) throw error;
+            if (authError) throw authError;
+
+            if (user) {
+                // Initialize profile with onboarding data
+                const { error: profileError } = await supabase
+                    .from('profiles')
+                    .upsert({
+                        id: user.id,
+                        goals: goals, // Save the array of goals selected
+                        struggles: struggles, // Save the struggles selected
+                        goal: goals[0] || 'Inner Peace', // Set the primary goal to the first one
+                        updated_at: new Date(),
+                    });
+                
+                if (profileError) {
+                    console.warn('Profile init error:', profileError.message);
+                    // We don't throw here as the session is already active and 
+                    // the user can continue, we'll just have missing initial data
+                }
+            }
             
             // Note: App.tsx has an auth listener that will pick up the session 
             // change and update the navigation stack automatically.
@@ -42,11 +62,12 @@ export const SummaryScreen = () => {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-background">
-            <StatusBar style="dark" />
-            <View className="flex-1 px-6 justify-between py-4">
-                 <View className="flex-row justify-between items-center w-full min-h-[40px]" />
+        <Layout useSafePadding={false}>
+            <View className="px-6 pt-4">
+                 <TopNav showBack={true} />
+            </View>
 
+            <View className="flex-1 px-6 justify-between pb-8">
                 <View className="items-center">
                     <Text className="text-4xl font-q-bold text-text mb-8 text-center">
                         We can get there, together.
@@ -78,6 +99,6 @@ export const SummaryScreen = () => {
                     />
                 </View>
             </View>
-        </SafeAreaView>
+        </Layout>
     );
 };

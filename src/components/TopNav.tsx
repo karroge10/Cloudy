@@ -18,7 +18,7 @@ export const TopNav = ({ title, subtitle, showBack = true, onBack, rightElement,
 
 
     return (
-        <View className="flex-row items-center justify-between mb-8 min-h-[48px] w-full">
+        <View className="flex-row items-center justify-between mb-4 min-h-[48px] w-full">
             <View className="w-12 items-start">
                 {showBack && (
                     <TouchableOpacity 
@@ -28,7 +28,7 @@ export const TopNav = ({ title, subtitle, showBack = true, onBack, rightElement,
                         <Ionicons 
                             name={roundButtons ? "close" : "arrow-back"} 
                             size={28} 
-                            color="#333" 
+                            color="#333333" 
                         />
                     </TouchableOpacity>
                 )}

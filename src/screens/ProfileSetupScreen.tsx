@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, Image } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { useNavigation } from '@react-navigation/native';
 import { MASCOTS } from '../constants/Assets';
 import { Layout } from '../components/Layout';
 import { TopNav } from '../components/TopNav';
+import { Button } from '../components/Button';
 
 // Available mascots for selection
 const COMPANIONS = [
@@ -22,62 +23,44 @@ export const ProfileSetupScreen = () => {
     const [loading, setLoading] = useState(false);
     const navigation = useNavigation();
 
-    async function finishSetup() {
+    function finishSetup() {
         if (!displayName.trim()) {
             Alert.alert('Hey there!', 'Please enter a name so we know what to call you.');
             return;
         }
 
-        setLoading(true);
-        try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error('No user found');
-
-            const updates = {
-                id: user.id,
-                display_name: displayName.trim(),
-                mascot_name: selectedMascot.name,
-                updated_at: new Date(),
-            };
-
-            const { error } = await supabase
-                .from('profiles')
-                .upsert(updates);
-
-            if (error) throw error;
-
-            // Navigate to next step: Reminder Setup
-            navigation.navigate('ReminderSetup' as never);
-            
-        } catch (error: any) {
-            Alert.alert('Error', error.message);
-        } finally {
-            setLoading(false);
-        }
+        // Navigate to next step: Reminder Setup, passing data forward
+        (navigation as any).navigate('ReminderSetup', {
+            displayName: displayName.trim(),
+            mascotName: selectedMascot.name
+        });
     }
 
-    async function skipSetup() {
-        navigation.navigate('ReminderSetup' as never);
+    function skipSetup() {
+        (navigation as any).navigate('ReminderSetup', {
+            displayName: null,
+            mascotName: 'Dreamy' // Default
+        });
     }
 
     return (
         <Layout useSafePadding={false}>
             <View className="px-6 pt-4">
-                 <TopNav showBack={false} />
+                 <TopNav showBack={navigation.canGoBack()} />
             </View>
 
             <View className="flex-1 px-6 pb-8">
-                <View className="mb-8">
-                    <Text className="text-4xl font-q-bold text-text mb-2">Almost there! 🎉</Text>
-                    <Text className="text-lg font-q-medium text-muted">
+                <View className="mb-8 items-center">
+                    <Text className="text-4xl font-q-bold text-text mb-2 text-center">Almost there!</Text>
+                    <Text className="text-lg font-q-medium text-muted text-center">
                         Let's set up your profile to make Cloudy truly yours.
                     </Text>
                 </View>
 
                 <View className="mb-6">
-                    <Text className="text-sm font-q-bold text-muted mb-2 ml-1 uppercase tracking-widest">What should Cloudy call you?</Text>
+                    <Text className="text-base font-q-bold text-muted mb-2 ml-1 uppercase tracking-widest text-[10px]">What should Cloudy call you?</Text>
                     <TextInput
-                        className="bg-white px-6 py-5 rounded-3xl font-q-bold text-lg text-text border-2 border-inactive/10 shadow-sm"
+                        className="bg-white px-6 py-5 rounded-3xl font-q-bold text-lg text-text border-2 border-primary/10 shadow-sm"
                         placeholder="Your Name"
                         placeholderTextColor="#CBD5E1"
                         onChangeText={setDisplayName}
@@ -87,7 +70,7 @@ export const ProfileSetupScreen = () => {
                 </View>
 
                 <View className="mb-8 flex-1">
-                    <Text className="text-sm font-q-bold text-muted mb-4 ml-1 uppercase tracking-widest">Pick a Companion</Text>
+                    <Text className="text-base font-q-bold text-muted mb-4 ml-1 uppercase tracking-widest text-[10px]">Pick a Companion</Text>
                     <View className="flex-row flex-wrap justify-between">
                         {COMPANIONS.map((companion) => (
                             <TouchableOpacity
@@ -95,8 +78,8 @@ export const ProfileSetupScreen = () => {
                                 onPress={() => setSelectedMascot(companion)}
                                 className={`w-[30%] aspect-square mb-4 rounded-[32px] items-center justify-center border-2 ${
                                     selectedMascot.id === companion.id 
-                                        ? 'bg-secondary/50 border-primary shadow-sm' 
-                                        : 'bg-white border-transparent shadow-sm'
+                                        ? 'bg-secondary border-primary shadow-sm' 
+                                        : 'bg-white border-primary/10 shadow-sm'
                                 }`}
                             >
                                 <Image 
@@ -115,20 +98,14 @@ export const ProfileSetupScreen = () => {
                 </View>
 
                 <View className="mt-auto">
-                    <TouchableOpacity
-                        className="bg-primary py-5 rounded-full items-center shadow-lg active:scale-[0.98] transition-transform mb-4"
+                    <Button
+                        label="Continue"
                         onPress={finishSetup}
-                        disabled={loading}
-                    >
-                        {loading ? (
-                            <ActivityIndicator color="#FFF" />
-                        ) : (
-                            <Text className="text-white font-q-bold text-xl">Continue</Text>
-                        )}
-                    </TouchableOpacity>
+                        loading={loading}
+                    />
 
                     <TouchableOpacity 
-                        className="py-3 items-center"
+                        className="py-4 items-center mt-2"
                         onPress={skipSetup}
                         disabled={loading}
                     >
