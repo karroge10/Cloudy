@@ -41,7 +41,6 @@ export const SummaryScreen = () => {
                         id: user.id,
                         goals: goals, // Save the array of goals selected
                         struggles: struggles, // Save the struggles selected
-                        goal: goals[0] || 'Inner Peace', // Set the primary goal to the first one
                         updated_at: new Date(),
                     });
                 

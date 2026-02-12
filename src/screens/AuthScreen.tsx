@@ -8,6 +8,12 @@ import { CustomAlert } from '../components/CustomAlert';
 import { TopNav } from '../components/TopNav';
 import { Layout } from '../components/Layout';
 
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+
+GoogleSignin.configure({
+    webClientId: '110002315879-19osagf9f4s3spnpns5jckcdc5dq0g5r.apps.googleusercontent.com',
+});
+
 export const AuthScreen = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -130,16 +136,33 @@ export const AuthScreen = () => {
 
     const signInWithGoogle = async () => {
         try {
-            const { data: { user: currentUser } } = await supabase.auth.getUser();
-            if (currentUser?.is_anonymous) {
-                const { error } = await supabase.auth.linkIdentity({ provider: 'google' });
+            setLoading(true);
+            await GoogleSignin.hasPlayServices();
+            const userInfo = await GoogleSignin.signIn();
+            
+            if (userInfo.data?.idToken) {
+                const { data, error } = await supabase.auth.signInWithIdToken({
+                    provider: 'google',
+                    token: userInfo.data.idToken,
+                });
+                
                 if (error) throw error;
+                
+                if (data.session) {
+                    navigation.reset({
+                        index: 0,
+                        routes: [{ name: 'MainApp' }],
+                    });
+                }
             } else {
-                const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
-                if (error) throw error;
+                throw new Error('No ID Token found');
             }
         } catch (error: any) {
-            showAlert('Error', error.message, 'error');
+            if (error.code !== 'ASYNC_OP_IN_PROGRESS') {
+                showAlert('Error', error.message, 'error');
+            }
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -160,7 +183,7 @@ export const AuthScreen = () => {
                     <View className="items-center mb-4">
                         <View className="w-32 h-32 mb-2 items-center justify-center">
                             <Image 
-                                source={isLogin ? MASCOTS.HELLO : MASCOTS.THINK} 
+                                source={isLogin ? MASCOTS.KEY : MASCOTS.SAVE} 
                                 className="w-32 h-32" 
                                 resizeMode="contain" 
                             />

@@ -35,7 +35,10 @@ export const ReminderSetupScreen = () => {
                 updated_at: new Date(),
             };
 
-            const { error } = await supabase.from('profiles').upsert(updates);
+            const { error } = await supabase
+                .from('profiles')
+                .update(updates)
+                .eq('id', user.id);
             if (error) throw error;
             
             DeviceEventEmitter.emit('refresh_profile');
@@ -62,7 +65,10 @@ export const ReminderSetupScreen = () => {
                 onboarding_completed: true,
                 updated_at: new Date(),
             };
-            const { error } = await supabase.from('profiles').upsert(updates);
+            const { error } = await supabase
+                .from('profiles')
+                .update(updates)
+                .eq('id', user.id);
             if (error) throw error;
             
             DeviceEventEmitter.emit('refresh_profile');
@@ -88,7 +94,7 @@ export const ReminderSetupScreen = () => {
                         <Text className="text-lg font-q-medium text-muted text-center px-4 mb-4">
                             When is a good time for you to reflect? We can send you a gentle nudge.
                         </Text>
-                        <Image source={MASCOTS.HELLO} className="w-64 h-64 mb-6" resizeMode="contain" />
+                        <Image source={MASCOTS.WATCH} className="w-64 h-64 mb-6" resizeMode="contain" />
                     </View>
 
                     <View className="items-center w-full">

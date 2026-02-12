@@ -2,19 +2,27 @@
 
 This is a living document for all the things we want to polish or add later that aren't critical for the current vibe.
 
-## Tech & Security
-*   **Persistent Storage**: Right now, selections reset on reload. We'll need to plug in a local database or cloud sync so user data actually stays safe.
-*   **Security Lock**: Add a toggle for FaceID or a passcode. Since this is a personal journal, it needs to feel like a locked diary.
-*   **Haptic Engine**: Wire up the "Haptic Feedback" toggle to actual device vibrations. It'll make buttons and swipe headers feel much more tactile.
-*   **Dynamic Versioning**: Automate the version number display in the profile so it matches the real build.
+## 🚀 Engagement & Surface
+*   **The "Sunrays" Widget (High Impact)**: Create a Home Screen Widget. If the user sees Cloudy on their home screen asking "What went well today?", they are much more likely to engage. Uses WidgetKit (iOS) and Android Widgets.
+*   **Flashback Notifications**: Instead of just generic reminders, send nostalgic nudges: *"Remember what made you smile 3 months ago?"*. Tapping opens the Memory screen directly to that entry.
+*   **Smarter Reminders**: Implement `expo-notifications`. Move beyond just database values—actually schedule local push notifications that respect the user's `reminder_time`.
 
-## Experience & Polish
-*   **Custom Mascots**: The user wants to design their own companions eventually. We'll need a way to upload or select from a wider gallery.
-*   **Smarter Reminders**: Instead of just fixed times, maybe "Smart Reminders" that nudge you if you haven't written by the time you usually do.
-*   **Export as PDF**: The button is there, but it doesn't do anything yet. Need to implement a generator that turns journal entries into a pretty, printable layout.
-*   **Dark Mode**: The warm cream is great, but a late-night "Midnight" theme would be a nice option for journaling in bed.
+## 📊 Insights & Meaning
+*   **Monthly Forecasts**: After 30 days, generate an insight summary. *"You mentioned 'Family' 12 times this month!"* or *"You've been feeling 20% more 'Zen' lately."* This turns data into knowledge.
+*   **Weekly Highlights**: A special view in the history that picks the most "liked" or significant memories based on keywords or user favorites.
+*   **Multi-Question Prompts**: Allow users to cycle through different gratitude prompts if they're feeling stuck on "What's on your mind?".
 
-## Journaling Features
-*   **Multi-Question Prompts**: Sometimes one gratitude isn't enough. Allow users to cycle through a few different prompts.
-*   **Photo Attachments**: Letting people snap a photo of their "small win" of the day to go with the text.
-*   **Weekly Highlights**: A special view in the history that picks the most "liked" or significant memories.
+## 🔒 Trust & Security
+*   **Security Lock**: Implement biometric (FaceID/Passcode) protection using `expo-local-authentication`. The UI toggle exists in the DB but needs to be wired to a splash interceptor.
+*   **Privacy & Security Center**: Build out the dedicated screen for managing data, learning about our encryption, and controlling account settings.
+*   **Local-First Persistence**: Ensure `JournalContext` handles offline saves gracefully so memories aren't lost during poor connectivity.
+
+## ✨ Experience & Polish
+*   **Export as PDF**: The button is in the Profile, but it needs an engine. Use `expo-print` to generate beautiful, themed layouts of the user's journal for printing or backup.
+*   **Haptic Engine**: Create a global haptic utility that respects the "Haptic Feedback" toggle. Currently, vibrations fire regardless of the user's preference in settings.
+*   **Dark Mode ("Midnight")**: A warm, high-contrast dark theme for late-night journaling in bed.
+*   **Dynamic Versioning**: Automate the version footer in the Profile screen to pull directly from `app.json` instead of being hardcoded.
+
+## 🎨 Creative Expression
+*   **Photo Attachments**: Let users snap a photo of their "small win" to accompany their text entries. Requires `posts` table update and Supabase Storage integration.
+*   **Custom Mascots**: Allow users to unlock or design their own companion varieties. Expand the gallery beyond the core set.

@@ -8,20 +8,21 @@ import { supabase } from '../lib/supabase';
 import { BottomSheet } from '../components/BottomSheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useJournal } from '../context/JournalContext';
-import * as Haptics from 'expo-haptics';
+import { useProfile } from '../context/ProfileContext';
+import { haptics } from '../utils/haptics';
 import { InfoCard } from '../components/InfoCard';
 
 export const HomeScreen = () => {
     const navigation = useNavigation<any>();
     const { addEntry, streak } = useJournal();
+    const { profile, updateProfile } = useProfile();
     
     const [text, setText] = useState('');
     const [loading, setLoading] = useState(false);
-    const [onboardingCompleted, setOnboardingCompleted] = useState(true);
     const [showSetupSheet, setShowSetupSheet] = useState(false);
     const [showStreakNudge, setShowStreakNudge] = useState(false);
-    const [displayName, setDisplayName] = useState('');
     const [isSavingName, setIsSavingName] = useState(false);
+    const [tempDisplayName, setTempDisplayName] = useState('');
     
     // Animation for mascot
     const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -33,33 +34,8 @@ export const HomeScreen = () => {
         day: 'numeric'
     });
 
-    useFocusEffect(
-        React.useCallback(() => {
-            checkProfile();
-        }, [])
-    );
-
-    const checkProfile = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        // Fetch Profile Data Only
-        const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('onboarding_completed, display_name')
-            .eq('id', user.id)
-            .single();
-
-        if (profileData && !profileError) {
-            setOnboardingCompleted(profileData.onboarding_completed ?? false);
-            setDisplayName(profileData.display_name || '');
-        } else if (profileError && profileError.code === 'PGRST116') {
-             setOnboardingCompleted(false);
-        }
-    };
-
     const handleMascotPress = () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        haptics.light();
         Animated.sequence([
             Animated.timing(scaleAnim, {
                 toValue: 0.8,
@@ -83,6 +59,7 @@ export const HomeScreen = () => {
         setLoading(true);
         try {
             await addEntry(text.trim());
+            haptics.success();
             
             Keyboard.dismiss();
             
@@ -90,16 +67,11 @@ export const HomeScreen = () => {
             const { data: { user } } = await supabase.auth.getUser();
             const isAnon = user?.is_anonymous;
 
-            // We added entry, so streak *will* be updated shortly via context.
-            // For immediate logic (nudge), we can guess.
-            // If user had streak X, and today wasn't counted, now it is X+1.
-            // But actually, just checking if new total is 3 is enough for nudge.
             const likelyStreak = streak + 1; 
-
             const hasSeenFirstEntry = await AsyncStorage.getItem('has_seen_first_entry');
 
-            if (!hasSeenFirstEntry) {
-                // First time entry
+            if (!hasSeenFirstEntry && !profile?.display_name) {
+                // First time entry and no name set yet
                 setShowSetupSheet(true);
             } else if (isAnon && likelyStreak === 3) {  
                 // Suggest linking account on 3rd entry
@@ -107,10 +79,6 @@ export const HomeScreen = () => {
             } else {
                  setText('');
             }
-            
-            // We still want to check profile just in case background stuff changed
-            checkProfile();
-
         } catch (error: any) {
             Alert.alert('Error', error.message || 'Could not save your entry.');
         } finally {
@@ -119,29 +87,19 @@ export const HomeScreen = () => {
     };
 
     const handleSaveProfile = async () => {
-        if (!displayName.trim()) {
+        if (!tempDisplayName.trim()) {
             Alert.alert('Name Required', 'Please let us know what to call you.');
             return;
         }
 
         setIsSavingName(true);
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-
-            const { error } = await supabase
-                .from('profiles')
-                .upsert({
-                    id: user.id,
-                    display_name: displayName.trim(),
-                    onboarding_completed: true,
-                    updated_at: new Date()
-                });
-
-            if (error) throw error;
+            await updateProfile({
+                display_name: tempDisplayName.trim(),
+                onboarding_completed: true,
+            });
 
             await AsyncStorage.setItem('has_seen_first_entry', 'true');
-            setOnboardingCompleted(true);
             setShowSetupSheet(false);
             setText('');
         } catch (error: any) {
@@ -158,6 +116,8 @@ export const HomeScreen = () => {
     };
 
     const charCount = text.length;
+    const onboardingCompleted = profile?.onboarding_completed ?? false;
+
 
     return (
         <Layout isTabScreen={true} useSafePadding={false} className="px-6 pt-4">
@@ -246,8 +206,8 @@ export const HomeScreen = () => {
                         className="w-full bg-white px-6 py-4 rounded-2xl font-q-bold text-lg text-text border border-gray-100 shadow-sm mb-8"
                         placeholder="Your Name"
                         placeholderTextColor="#CBD5E1"
-                        onChangeText={setDisplayName}
-                        value={displayName}
+                        onChangeText={setTempDisplayName}
+                        value={tempDisplayName}
                         autoCapitalize="words"
                     />
 

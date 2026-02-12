@@ -13,6 +13,7 @@ export interface JournalEntry {
     color: string;
     isFavorite?: boolean;
     createdAt: Date;
+    isDeleted?: boolean;
 }
 
 interface JournalContextType {
@@ -74,6 +75,7 @@ export const JournalProvider = ({ children, session }: { children: React.ReactNo
                         color: '#FF9E7D', 
                         isFavorite: post.is_favorite || false,
                         createdAt: date,
+                        isDeleted: !!post.deleted_at,
                     };
                 });
                 setEntries(mappedEntries);
@@ -88,6 +90,7 @@ export const JournalProvider = ({ children, session }: { children: React.ReactNo
     // 3. Computed Streak Logic
     // Whenever entries change (e.g. initial fetch, or optimize delete/update),
     // we recalculate the streak immediately.
+    // We use ALL entries (including soft deleted) for streak.
     const rawStreakData = useMemo(() => {
         return entries.map(e => e.createdAt.toISOString());
     }, [entries]);
@@ -152,8 +155,10 @@ export const JournalProvider = ({ children, session }: { children: React.ReactNo
     };
 
     const deleteEntry = async (id: string, soft = true) => {
-        // Optimistically remove from list - this INSTANTLY updates the streak because of the useEffect above!
-        setEntries(prev => prev.filter(e => e.id !== id));
+        // Optimistically mark as deleted? 
+        // If we remove it from the list, the streak WILL break locally until re-fetch.
+        // So we should just mark it as isDeleted: true.
+        setEntries(prev => prev.map(e => e.id === id ? { ...e, isDeleted: true } : e));
 
         try {
             let error;
@@ -172,6 +177,11 @@ export const JournalProvider = ({ children, session }: { children: React.ReactNo
                         .delete()
                         .eq('id', id);
                     error = deleteError;
+                    
+                    if (!error) {
+                         // If hard delete was necessary, we MUST remove it from state so it's not "stuck"
+                         setEntries(prev => prev.filter(e => e.id !== id));
+                    }
                  }
             } else {
                 const { error: deleteError } = await supabase
@@ -179,13 +189,16 @@ export const JournalProvider = ({ children, session }: { children: React.ReactNo
                     .delete()
                     .eq('id', id);
                 error = deleteError;
+                if (!error) {
+                    setEntries(prev => prev.filter(e => e.id !== id));
+                }
             }
             
             if (error) throw error;
         } catch (error) {
             console.error('Error deleting entry:', error);
-            // Could revert here if needed, but for delete it's trickier to restore exactly where it was.
-            // For now, allow it to be gone locally. A refresh would bring it back if failed.
+            // Revert
+            setEntries(prev => prev.map(e => e.id === id ? { ...e, isDeleted: false } : e));
         }
     };
 
@@ -203,6 +216,7 @@ export const JournalProvider = ({ children, session }: { children: React.ReactNo
             color: '#FF9E7D', 
             isFavorite: false,
             createdAt: now,
+            isDeleted: false,
         };
 
         setEntries(prev => [optimisticEntry, ...prev]);
@@ -237,8 +251,11 @@ export const JournalProvider = ({ children, session }: { children: React.ReactNo
         }
     };
 
+    // Derived state for components: only non-deleted entries
+    const visibleEntries = useMemo(() => entries.filter(e => !e.isDeleted), [entries]);
+
     return (
-        <JournalContext.Provider value={{ entries, loading, streak, rawStreakData, refreshEntries, toggleFavorite, deleteEntry, addEntry }}>
+        <JournalContext.Provider value={{ entries: visibleEntries, loading, streak, rawStreakData, refreshEntries, toggleFavorite, deleteEntry, addEntry }}>
             {children}
         </JournalContext.Provider>
     )

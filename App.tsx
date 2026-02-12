@@ -29,6 +29,7 @@ import { AuthScreen } from './src/screens/AuthScreen';
 import { ProfileSetupScreen } from './src/screens/ProfileSetupScreen';
 import { ReminderSetupScreen } from './src/screens/ReminderSetupScreen';
 import { JournalProvider } from './src/context/JournalContext';
+import { ProfileProvider } from './src/context/ProfileContext';
 
 
 const Stack = createNativeStackNavigator();
@@ -54,63 +55,25 @@ export default function App() {
   });
 
   const [session, setSession] = useState<Session | null>(null);
-  const [onboardingCompleted, setOnboardingCompleted] = useState<boolean>(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   useEffect(() => {
     // 1. Check initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session) {
-        checkProfile(session.user.id);
-      } else {
-        setIsAuthLoading(false);
-      }
+      setIsAuthLoading(false);
     });
 
     // 2. Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
-      if (session) {
-        await checkProfile(session.user.id);
-      } else {
-        setOnboardingCompleted(false);
-        setIsAuthLoading(false);
-      }
-    });
-
-    // 3. Listen for manual profile refreshes
-    const refreshSub = DeviceEventEmitter.addListener('refresh_profile', () => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            if (session) checkProfile(session.user.id);
-        });
+      setIsAuthLoading(false);
     });
 
     return () => {
         subscription.unsubscribe();
-        refreshSub.remove();
     };
   }, []);
-
-  const checkProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('onboarding_completed')
-        .eq('id', userId)
-        .single();
-      
-      if (data) {
-        setOnboardingCompleted(data.onboarding_completed || false);
-      } else {
-        setOnboardingCompleted(false);
-      }
-    } catch (e) {
-      console.warn('Error checking profile:', e);
-    } finally {
-      setIsAuthLoading(false);
-    }
-  };
 
   useEffect(() => {
     if (fontsLoaded && !isAuthLoading) {
@@ -124,51 +87,42 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <JournalProvider session={session}>
-        <NavigationContainer theme={CloudyTheme}>
-          <Stack.Navigator
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: '#FFF9F0' },
-              animation: 'slide_from_right'
-            }}
-          >
-            {session ? (
-              <>
-                {!onboardingCompleted ? (
-                  <>
-                    <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
-                    <Stack.Screen name="ReminderSetup" component={ReminderSetupScreen} />
-                  </>
-                ) : null}
-                <Stack.Screen name="MainApp" component={MainTabNavigator} />
-                <Stack.Screen name="JournalEntry" component={JournalEntryScreen} />
-                <Stack.Screen name="Memory" component={MemoryScreen} />
-                <Stack.Screen name="Auth" component={AuthScreen} />
+      <ProfileProvider>
+        <JournalProvider session={session}>
+          <NavigationContainer theme={CloudyTheme}>
+            <Stack.Navigator
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: '#FFF9F0' },
+                animation: 'slide_from_right'
+              }}
+            >
+              {session ? (
+                <>
+                  <Stack.Screen name="MainApp" component={MainTabNavigator} />
+                  <Stack.Screen name="JournalEntry" component={JournalEntryScreen} />
+                  <Stack.Screen name="Memory" component={MemoryScreen} />
+                  <Stack.Screen name="Auth" component={AuthScreen} />
+                  <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
+                  <Stack.Screen name="ReminderSetup" component={ReminderSetupScreen} />
+                </>
+              ) : (
+                <>
+                  <Stack.Screen name="Welcome" component={WelcomeScreen} />
+                  <Stack.Screen name="StruggleSelection" component={StruggleSelectionScreen} />
+                  <Stack.Screen name="GoalSelection" component={GoalSelectionScreen} />
+                  <Stack.Screen name="Summary" component={SummaryScreen} />
+                  <Stack.Screen name="Auth" component={AuthScreen} />
+                </>
+              )}
+            </Stack.Navigator>
 
-                {/* Allow navigating back to setup screens even if completed, just in case */}
-                {onboardingCompleted && (
-                  <>
-                    <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
-                    <Stack.Screen name="ReminderSetup" component={ReminderSetupScreen} />
-                  </>
-                )}
-              </>
-            ) : (
-              <>
-                <Stack.Screen name="Welcome" component={WelcomeScreen} />
-                <Stack.Screen name="StruggleSelection" component={StruggleSelectionScreen} />
-                <Stack.Screen name="GoalSelection" component={GoalSelectionScreen} />
-                <Stack.Screen name="Summary" component={SummaryScreen} />
-                <Stack.Screen name="Auth" component={AuthScreen} />
-              </>
-            )}
-          </Stack.Navigator>
-
-          <StatusBar style="dark" />
-        </NavigationContainer>
-      </JournalProvider>
+            <StatusBar style="dark" />
+          </NavigationContainer>
+        </JournalProvider>
+      </ProfileProvider>
     </SafeAreaProvider>
   );
 }
+
 

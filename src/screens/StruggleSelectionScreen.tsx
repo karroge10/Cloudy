@@ -9,14 +9,7 @@ import { TopNav } from '../components/TopNav';
 
 import { Layout } from '../components/Layout';
 
-const STRUGGLES = [
-    "Stress",
-    "Anxiety",
-    "Overthinking",
-    "Low Energy",
-    "Sleep Issues",
-    "Lack of Focus"
-];
+import { STRUGGLES } from '../constants/Struggles';
 
 export const StruggleSelectionScreen = () => {
     const navigation = useNavigation(); // Typing omitted for brevity

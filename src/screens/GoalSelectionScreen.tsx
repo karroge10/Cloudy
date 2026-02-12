@@ -37,7 +37,7 @@ export const GoalSelectionScreen = () => {
                     {/* Main Content Area */}
                     <View className="items-center mb-6">
                         <Text className="text-4xl font-q-bold text-text text-center mb-6 pt-4 leading-tight">
-                            And what do you want to find more of?
+                            What are your goals?
                         </Text>
                         <Image
                             source={MASCOTS.ZEN}

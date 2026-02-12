@@ -8,19 +8,11 @@ import { TopNav } from '../components/TopNav';
 import { Button } from '../components/Button';
 import { MascotCard } from '../components/MascotCard';
 
-// Available mascots for selection
-const COMPANIONS = [
-    { id: 'HELLO', name: 'Wavy', asset: MASCOTS.HELLO },
-    { id: 'SLEEP_1', name: 'Dreamy', asset: MASCOTS.SLEEP_1 },
-    { id: 'WRITE', name: 'Author', asset: MASCOTS.WRITE },
-    { id: 'THINK', name: 'Brainy', asset: MASCOTS.THINK },
-    { id: 'STREAK', name: 'Firey', asset: MASCOTS.STREAK },
-    { id: 'ZEN', name: 'Flow', asset: MASCOTS.ZEN },
-] as const;
+import { COMPANIONS } from '../constants/Companions';
 
 export const ProfileSetupScreen = () => {
     const [displayName, setDisplayName] = useState('');
-    const [selectedMascot, setSelectedMascot] = useState<typeof COMPANIONS[number]>(COMPANIONS[1]); // Default to Dreamy (SLEEP_1)
+    const [selectedMascot, setSelectedMascot] = useState<typeof COMPANIONS[number]>(COMPANIONS[0]); // Default to Hero
     const [loading, setLoading] = useState(false);
     const navigation = useNavigation();
 
@@ -40,7 +32,7 @@ export const ProfileSetupScreen = () => {
     function skipSetup() {
         (navigation as any).navigate('ReminderSetup', {
             displayName: null,
-            mascotName: 'Dreamy' // Default
+            mascotName: 'Hero' // Default
         });
     }
 

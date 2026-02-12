@@ -189,21 +189,31 @@ const TimelineItem = ({
                             />
                         </TouchableOpacity>
                         
-                        <TouchableOpacity 
-                            onPress={handleTrashPress}
-                            className="p-2"
-                            disabled={isDeletingProp}
-                        >
-                            <Animated.View style={trashAnimatedStyle}>
-                                {isDeletingProp ? (
-                                    <View className="w-[22px] h-[22px] items-center justify-center">
-                                        <ActivityIndicator size="small" color="#FF9E7D" />
-                                    </View>
-                                ) : (
-                                    <Ionicons name="trash-outline" size={22} color="#333" style={{ opacity: 0.2 }} />
-                                )}
-                            </Animated.View>
-                        </TouchableOpacity>
+                        {(() => {
+                            const now = new Date();
+                            const diffInHours = (now.getTime() - item.createdAt.getTime()) / (1000 * 60 * 60);
+                            const canDelete = diffInHours <= 24;
+                            
+                            if (!canDelete) return null;
+
+                            return (
+                                <TouchableOpacity 
+                                    onPress={handleTrashPress}
+                                    className="p-2"
+                                    disabled={isDeletingProp}
+                                >
+                                    <Animated.View style={trashAnimatedStyle}>
+                                        {isDeletingProp ? (
+                                            <View className="w-[22px] h-[22px] items-center justify-center">
+                                                <ActivityIndicator size="small" color="#FF9E7D" />
+                                            </View>
+                                        ) : (
+                                            <Ionicons name="trash-outline" size={22} color="#333" style={{ opacity: 0.2 }} />
+                                        )}
+                                    </Animated.View>
+                                </TouchableOpacity>
+                            );
+                        })()}
                     </View>
                 </View>
             </View>
