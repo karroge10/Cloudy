@@ -267,8 +267,6 @@ export const JourneyScreen = () => {
 
     const renderHeader = () => (
         <View>
-            <TopNav title="Your Journey" />
-            
             {/* Sunrays Card */}
             <TouchableOpacity 
                 activeOpacity={0.9}
@@ -320,6 +318,10 @@ export const JourneyScreen = () => {
 
     return (
         <Layout noScroll={true} isTabScreen={true} useSafePadding={false}>
+            <View className="px-6 pt-4">
+                <TopNav title="Your Journey" />
+            </View>
+
             <Animated.FlatList
                 data={filteredEntries}
                 renderItem={({ item, index }) => (
@@ -336,7 +338,7 @@ export const JourneyScreen = () => {
                 )}
                 keyExtractor={item => item.id}
                 ListHeaderComponent={renderHeader}
-                contentContainerStyle={{ paddingBottom: 120, paddingHorizontal: 24, paddingTop: 16 }}
+                contentContainerStyle={{ paddingBottom: 120, paddingHorizontal: 24, paddingTop: 0 }}
                 showsVerticalScrollIndicator={false}
                 onScroll={scrollHandler}
                 scrollEventThrottle={16}

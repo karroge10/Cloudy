@@ -1,13 +1,17 @@
 import "./global.css";
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts, Quicksand_400Regular, Quicksand_500Medium, Quicksand_600SemiBold, Quicksand_700Bold } from '@expo-google-fonts/quicksand';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Session } from '@supabase/supabase-js';
+
+import { supabase } from './src/lib/supabase';
 import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
 
+// Disable reanimated strict mode to avoid noisy warnings during render transitions
 configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,
   strict: false,
@@ -20,7 +24,11 @@ import { SummaryScreen } from './src/screens/SummaryScreen';
 import { MainTabNavigator } from './src/navigation/MainTabNavigator';
 import { JournalEntryScreen } from './src/screens/JournalEntryScreen';
 import { MemoryScreen } from './src/screens/MemoryScreen';
+import { AuthScreen } from './src/screens/AuthScreen';
+import { ProfileSetupScreen } from './src/screens/ProfileSetupScreen';
+import { ReminderSetupScreen } from './src/screens/ReminderSetupScreen';
 
+import { AnimatedSplashScreen } from './src/components/AnimatedSplashScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -44,41 +52,114 @@ export default function App() {
     Quicksand_700Bold,
   });
 
-  // Temporary flag to disable onboarding
-  const isAuthenticated = true;
+  const [session, setSession] = useState<Session | null>(null);
+  const [onboardingCompleted, setOnboardingCompleted] = useState<boolean>(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isSplashAnimationFinished, setIsSplashAnimationFinished] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
-  const onLayoutRootView = useCallback(async () => {
-    if (fontsLoaded) {
-      await SplashScreen.hideAsync();
+  useEffect(() => {
+    // 1. Check initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) {
+        checkProfile(session.user.id);
+      } else {
+        setIsAuthLoading(false);
+      }
+    });
+
+    // 2. Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setSession(session);
+      if (session) {
+        await checkProfile(session.user.id);
+      } else {
+        setOnboardingCompleted(false);
+        setIsAuthLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const checkProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('onboarding_completed')
+        .eq('id', userId)
+        .single();
+      
+      if (data) {
+        setOnboardingCompleted(data.onboarding_completed || false);
+      } else {
+        setOnboardingCompleted(false);
+      }
+    } catch (e) {
+      console.warn('Error checking profile:', e);
+    } finally {
+      setIsAuthLoading(false);
     }
-  }, [fontsLoaded]);
+  };
 
-  if (!fontsLoaded) {
+  useEffect(() => {
+    if (fontsLoaded && !isAuthLoading) {
+      setIsReady(true);
+    }
+  }, [fontsLoaded, isAuthLoading]);
+
+  const onSplashAnimationFinish = useCallback(() => {
+    setIsSplashAnimationFinished(true);
+  }, []);
+
+  useEffect(() => {
+    if (isReady) {
+      // Hide native splash screen as soon as our custom one is mounted and ready
+      SplashScreen.hideAsync().catch(console.warn);
+    }
+  }, [isReady]);
+
+  if (!isReady && !isSplashAnimationFinished) {
     return null;
   }
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer theme={CloudyTheme} onReady={onLayoutRootView}>
+      {!isSplashAnimationFinished && (
+        <AnimatedSplashScreen onAnimationFinish={onSplashAnimationFinish} />
+      )}
+      
+      <NavigationContainer theme={CloudyTheme}>
         <Stack.Navigator
           screenOptions={{
             headerShown: false,
-            contentStyle: { backgroundColor: '#FFF9F0' }, // Global background just in case
+            contentStyle: { backgroundColor: '#FFF9F0' },
             animation: 'slide_from_right'
           }}
         >
-          {isAuthenticated ? (
-            <>
-              <Stack.Screen name="MainApp" component={MainTabNavigator} />
-              <Stack.Screen name="JournalEntry" component={JournalEntryScreen} />
-              <Stack.Screen name="Memory" component={MemoryScreen} />
-            </>
+          {session ? (
+            onboardingCompleted ? (
+              <>
+                <Stack.Screen name="MainApp" component={MainTabNavigator} />
+                <Stack.Screen name="JournalEntry" component={JournalEntryScreen} />
+                <Stack.Screen name="Memory" component={MemoryScreen} />
+              </>
+            ) : (
+              <>
+                <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
+                <Stack.Screen name="ReminderSetup" component={ReminderSetupScreen} />
+              </>
+            )
           ) : (
             <>
               <Stack.Screen name="Welcome" component={WelcomeScreen} />
               <Stack.Screen name="StruggleSelection" component={StruggleSelectionScreen} />
               <Stack.Screen name="GoalSelection" component={GoalSelectionScreen} />
               <Stack.Screen name="Summary" component={SummaryScreen} />
+              <Stack.Screen name="Auth" component={AuthScreen} />
+              <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
+              <Stack.Screen name="ReminderSetup" component={ReminderSetupScreen} />
             </>
           )}
         </Stack.Navigator>

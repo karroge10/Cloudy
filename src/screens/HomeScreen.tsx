@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
 import { View, Text, Image, TouchableOpacity, TextInput } from 'react-native';
 import { MASCOTS } from '../constants/Assets';
 import { Ionicons } from '@expo/vector-icons';
 import { Layout } from '../components/Layout';
 
 export const HomeScreen = () => {
+    const navigation = useNavigation<any>();
     const [text, setText] = useState('');
     const streak = 3;
 
@@ -29,10 +31,12 @@ export const HomeScreen = () => {
                 <View className="items-end">
                     <View className="flex-row items-center">
                     <Text className="text-lg text-muted font-q-bold">TODAY</Text>
+                    <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
                         <View className="flex-row items-center bg-white px-2 py-1 rounded-full shadow-sm">
                             <Ionicons name="flame" size={16} color="#FF9E7D" />
                             <Text className="font-q-bold text-primary ml-1 text-base">{streak}</Text>
                         </View>
+                    </TouchableOpacity>
                     </View>
                     <Text className="text-xl font-q-bold text-text mr-2">{formattedDate}</Text>
                 </View>

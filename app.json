@@ -19,10 +19,11 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FFFBF0"
+        "backgroundColor": "#FFF9F0"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": true
+      "predictiveBackGestureEnabled": true,
+      "package": "com.karoge.Cloudy"
     },
     "web": {
       "favicon": "./assets/favicon.png"

@@ -1,13 +1,26 @@
 import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text, ScrollView, Dimensions } from 'react-native';
 
 interface ActivityGraphProps {
     data?: number[]; // Intensity per day for the last X days
 }
 
 export const ActivityGraph: React.FC<ActivityGraphProps> = ({ data }) => {
-    // Generate dummy data if none provided (last 90 days)
-    const activityData = data || Array.from({ length: 91 }, () => Math.floor(Math.random() * 4));
+    // Calculate reliable width
+    const screenWidth = Dimensions.get('window').width;
+    // We assume a smaller offset to calculate more weeks than strictly necessary
+    // to guarantee the graph is "full" and has no gap on the right.
+    const availableWidth = screenWidth - 100; 
+    const weekWidth = 20; // 14px (w-3.5) + 6px (gap-1.5)
+    
+    // Calculate weeks to fill, and add 2 weeks buffer for a "full" look
+    const targetWeeks = Math.ceil(availableWidth / weekWidth) + 2; 
+    const totalDays = targetWeeks * 7;
+
+    const monthsText = Math.round(totalDays / 30);
+
+    // Generate dummy data if none provided
+    const activityData = data || Array.from({ length: totalDays }, () => Math.floor(Math.random() * 4));
 
     // Chunk into weeks (7 days per week)
     const weeks = [];
@@ -32,7 +45,7 @@ export const ActivityGraph: React.FC<ActivityGraphProps> = ({ data }) => {
             style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}>
             <View className="flex-row justify-between items-center mb-4">
                 <Text className="text-lg font-q-bold text-text">Activity</Text>
-                <Text className="text-sm font-q-medium text-muted">Last 3 months</Text>
+                <Text className="text-sm font-q-medium text-muted">Last {monthsText} months</Text>
             </View>
             
             <View className="flex-row">
@@ -43,8 +56,8 @@ export const ActivityGraph: React.FC<ActivityGraphProps> = ({ data }) => {
                     ))}
                 </View>
 
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    <View className="flex-row gap-1.5">
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-1">
+                    <View className="flex-row gap-1.5 flex-1">
                         {weeks.map((week, weekIndex) => (
                             <View key={weekIndex} className="gap-1.5">
                                 {week.map((intensity, dayIndex) => (

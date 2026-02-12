@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, Image, TouchableOpacity, Switch, ScrollView, FlatList } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Image, TouchableOpacity, Switch, ScrollView, FlatList, TextInput } from 'react-native';
+import { supabase } from '../lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { MASCOTS } from '../constants/Assets';
 import { GOALS } from '../constants/Goals';
@@ -19,118 +20,201 @@ const COMPANIONS = [
 ] as const;
 
 export const ProfileScreen = () => {
+    // Data States
+    const [displayName, setDisplayName] = useState('');
     const [isReminderEnabled, setIsReminderEnabled] = useState(true);
     const [isHapticsEnabled, setIsHapticsEnabled] = useState(true);
     const [selectedGoal, setSelectedGoal] = useState('Inner Peace');
     const [reminderTime, setReminderTime] = useState('8:00 PM');
-    const [selectedMascot, setSelectedMascot] = useState<typeof COMPANIONS[number]['id']>('STREAK');
+    const [selectedMascot, setSelectedMascot] = useState<typeof COMPANIONS[number]['id']>('SLEEP_1');
+    const [streak, setStreak] = useState(0);
 
     // Modal States
+    const [isNameSheetVisible, setIsNameSheetVisible] = useState(false);
     const [isGoalSheetVisible, setIsGoalSheetVisible] = useState(false);
     const [isTimeSheetVisible, setIsTimeSheetVisible] = useState(false);
     const [isMascotSheetVisible, setIsMascotSheetVisible] = useState(false);
+    const [tempName, setTempName] = useState('');
 
-    const streak = 3;
+    useEffect(() => {
+        fetchProfile();
+    }, []);
+
+    const fetchProfile = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+        if (data && !error) {
+            setDisplayName(data.display_name || '');
+            setTempName(data.display_name || '');
+            setSelectedGoal(data.goal || 'Inner Peace');
+            setReminderTime(data.reminder_time || '8:00 PM');
+            setIsHapticsEnabled(data.haptics_enabled ?? true);
+            setStreak(data.streak_count || 0);
+            
+            // Map mascot name back to ID
+            const mascot = COMPANIONS.find(c => c.name === data.mascot_name);
+            if (mascot) setSelectedMascot(mascot.id);
+        }
+    };
+
+    const updateProfile = async (updates: Record<string, any>) => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { error } = await supabase
+            .from('profiles')
+            .update({ ...updates, updated_at: new Date() })
+            .eq('id', user.id);
+
+        if (!error) {
+            fetchProfile();
+        }
+    };
 
     const TIMES = ['7:00 AM', '8:00 AM', '9:00 AM', '12:00 PM', '6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM', '10:00 PM'];
 
     const currentMascot = COMPANIONS.find(c => c.id === selectedMascot) || COMPANIONS[4];
 
     return (
-        <Layout isTabScreen={true}>
-            <TopNav title="Profile" />
-
-            {/* Streak & Mascot Header */}
-            <View className="flex-row justify-between items-center mb-8">
-                <View className="flex-1">
-                    <Text className="text-[44px] leading-[50px] font-q-bold text-text">{streak} Day</Text>
-                    <Text className="text-[44px] leading-[50px] font-q-bold text-text">Streak!</Text>
-                </View>
-                <TouchableOpacity onPress={() => setIsMascotSheetVisible(true)} className="active:scale-95 transition-transform">
-                    <Image 
-                        source={currentMascot.asset} 
-                        className="w-32 h-32" 
-                        resizeMode="contain" 
-                    />
-                    <View className="absolute bottom-0 right-0 bg-primary rounded-full p-1.5 border-2 border-background shadow-sm">
-                        <Ionicons name="sync" size={14} color="white" />
-                    </View>
-                </TouchableOpacity>
+        <Layout noScroll={true} isTabScreen={true} useSafePadding={false}>
+            <View className="px-6 pt-4">
+                <TopNav title="Profile" />
             </View>
 
-            {/* Activity Graph */}
-            <ActivityGraph />
-
-            {/* Goal Pill */}
-            <TouchableOpacity 
-                onPress={() => setIsGoalSheetVisible(true)}
-                className="bg-card rounded-full py-5 px-8 flex-row justify-between items-center shadow-[#0000000D] shadow-xl mb-8"
-                style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}
+            <ScrollView 
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 130 }}
             >
-                <Text className="text-lg font-q-semibold text-text">
-                    My Goal: <Text className="font-q-regular text-primary">{selectedGoal}</Text>
-                </Text>
-                <Ionicons name="pencil-sharp" size={20} color="#FF9E7D" />
-            </TouchableOpacity>
-
-            {/* Settings Section */}
-            <View className="mb-8 bg-card rounded-[32px] p-6 shadow-[#0000000D] shadow-xl"
-                style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}>
-                
-                {/* Daily Reminder */}
-                <View className="flex-row items-center justify-between py-4">
+                {/* Streak & Mascot Header */}
+                <View className="flex-row justify-between items-center mb-8">
                     <View className="flex-1">
-                        <Text className="text-lg font-q-bold text-text">Daily Reminder</Text>
-                        <TouchableOpacity onPress={() => setIsTimeSheetVisible(true)}>
-                            <Text className="text-primary font-q-bold text-base mt-1">{reminderTime}</Text>
+                        <TouchableOpacity onPress={() => setIsNameSheetVisible(true)} className="mb-1">
+                             <Text className="text-xl font-q-bold text-muted">Hi, {displayName || 'Friend'}! 👋</Text>
                         </TouchableOpacity>
+                        <Text className="text-[44px] leading-[50px] font-q-bold text-text">{streak} Day</Text>
+                        <Text className="text-[44px] leading-[50px] font-q-bold text-text">Streak!</Text>
                     </View>
-                    <Switch
-                        trackColor={{ false: '#E0E0E0', true: '#FF9E7D' }}
-                        thumbColor={isReminderEnabled ? '#FFFFFF' : '#f4f3f4'}
-                        onValueChange={() => setIsReminderEnabled(!isReminderEnabled)}
-                        value={isReminderEnabled}
-                    />
+                    <TouchableOpacity onPress={() => setIsMascotSheetVisible(true)} className="active:scale-95 transition-transform">
+                        <Image 
+                            source={currentMascot.asset} 
+                            className="w-32 h-32" 
+                            resizeMode="contain" 
+                        />
+                        <View className="absolute bottom-0 right-0 bg-primary rounded-full p-1.5 border-2 border-background shadow-sm">
+                            <Ionicons name="sync" size={14} color="white" />
+                        </View>
+                    </TouchableOpacity>
                 </View>
 
-                <View className="h-[1px] bg-inactive opacity-10" />
+                {/* Activity Graph */}
+                <ActivityGraph />
 
-                {/* Haptic Feedback */}
-                <View className="flex-row items-center justify-between py-4">
-                    <View className="flex-1">
-                        <Text className="text-lg font-q-bold text-text">Haptic Feedback</Text>
-                        <Text className="text-muted font-q-medium text-xs">Soft vibrations for interactions</Text>
+                {/* Goal Pill */}
+                <TouchableOpacity 
+                    onPress={() => setIsGoalSheetVisible(true)}
+                    className="bg-card rounded-full py-5 px-8 flex-row justify-between items-center shadow-[#0000000D] shadow-xl mb-8"
+                    style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}
+                >
+                    <Text className="text-lg font-q-semibold text-text">
+                        My Goal: <Text className="font-q-regular text-primary">{selectedGoal}</Text>
+                    </Text>
+                    <Ionicons name="pencil-sharp" size={20} color="#FF9E7D" />
+                </TouchableOpacity>
+
+                {/* Settings Section */}
+                <View className="mb-8 bg-card rounded-[32px] p-6 shadow-[#0000000D] shadow-xl"
+                    style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}>
+                    
+                    {/* Daily Reminder */}
+                    <View className="flex-row items-center justify-between py-4">
+                        <View className="flex-1">
+                            <Text className="text-lg font-q-bold text-text">Daily Reminder</Text>
+                            <TouchableOpacity onPress={() => setIsTimeSheetVisible(true)}>
+                                <Text className="text-primary font-q-bold text-base mt-1">{reminderTime}</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <Switch
+                            trackColor={{ false: '#E0E0E0', true: '#FF9E7D' }}
+                            thumbColor={isReminderEnabled ? '#FFFFFF' : '#f4f3f4'}
+                            onValueChange={() => setIsReminderEnabled(!isReminderEnabled)}
+                            value={isReminderEnabled}
+                        />
                     </View>
-                    <Switch
-                        trackColor={{ false: '#E0E0E0', true: '#FF9E7D' }}
-                        thumbColor={isHapticsEnabled ? '#FFFFFF' : '#f4f3f4'}
-                        onValueChange={() => setIsHapticsEnabled(!isHapticsEnabled)}
-                        value={isHapticsEnabled}
-                    />
+
+                    <View className="h-[1px] bg-inactive opacity-10" />
+
+                    {/* Haptic Feedback */}
+                    <View className="flex-row items-center justify-between py-4">
+                        <View className="flex-1">
+                            <Text className="text-lg font-q-bold text-text">Haptic Feedback</Text>
+                            <Text className="text-muted font-q-medium text-xs">Soft vibrations for interactions</Text>
+                        </View>
+                        <Switch
+                            trackColor={{ false: '#E0E0E0', true: '#FF9E7D' }}
+                            thumbColor={isHapticsEnabled ? '#FFFFFF' : '#f4f3f4'}
+                            onValueChange={() => setIsHapticsEnabled(!isHapticsEnabled)}
+                            value={isHapticsEnabled}
+                        />
+                    </View>
+
+                    <View className="h-[1px] bg-inactive opacity-10" />
+
+                    {/* Export Data */}
+                    <TouchableOpacity className="flex-row items-center justify-between py-4">
+                        <Text className="text-lg font-q-bold text-text">Export Journal (.pdf)</Text>
+                        <Ionicons name="download-outline" size={22} color="#FF9E7D" />
+                    </TouchableOpacity>
+
+                    <View className="h-[1px] bg-inactive opacity-10" />
+
+                    {/* Privacy Policy */}
+                    <TouchableOpacity className="flex-row items-center justify-between py-4">
+                        <Text className="text-lg font-q-bold text-text">Privacy & Security</Text>
+                        <Ionicons name="lock-closed-outline" size={22} color="#FF9E7D" />
+                    </TouchableOpacity>
                 </View>
 
-                <View className="h-[1px] bg-inactive opacity-10" />
-
-                {/* Export Data */}
-                <TouchableOpacity className="flex-row items-center justify-between py-4">
-                    <Text className="text-lg font-q-bold text-text">Export Journal (.pdf)</Text>
-                    <Ionicons name="download-outline" size={22} color="#FF9E7D" />
+                {/* Log Out */}
+                <TouchableOpacity className="mb-20 items-center py-4">
+                    <Text className="text-lg font-q-bold text-red-400 opacity-60">Log Out</Text>
+                    <Text className="text-[10px] font-q-medium text-muted mt-2 opacity-30">Cloudy v1.0.42</Text>
                 </TouchableOpacity>
+            </ScrollView>
 
-                <View className="h-[1px] bg-inactive opacity-10" />
-
-                {/* Privacy Policy */}
-                <TouchableOpacity className="flex-row items-center justify-between py-4">
-                    <Text className="text-lg font-q-bold text-text">Privacy & Security</Text>
-                    <Ionicons name="lock-closed-outline" size={22} color="#FF9E7D" />
-                </TouchableOpacity>
-            </View>
-
-            {/* Log Out */}
-            <TouchableOpacity className="mb-20 items-center py-4">
-                <Text className="text-lg font-q-bold text-red-400 opacity-60">Log Out</Text>
-                <Text className="text-[10px] font-q-medium text-muted mt-2 opacity-30">Cloudy v1.0.42</Text>
-            </TouchableOpacity>
+            {/* Name Edit Sheet */}
+            <BottomSheet 
+                visible={isNameSheetVisible} 
+                onClose={() => setIsNameSheetVisible(false)}
+                title="What should we call you?"
+            >
+                <View className="mt-2">
+                    <TextInput
+                        className="bg-card px-6 py-5 rounded-[24px] font-q-bold text-lg text-text border-2 border-inactive/10"
+                        placeholder="Your Name"
+                        placeholderTextColor="#CBD5E1"
+                        onChangeText={setTempName}
+                        value={tempName}
+                        autoCapitalize="words"
+                        autoFocus={true}
+                    />
+                    <TouchableOpacity 
+                        onPress={() => {
+                            updateProfile({ display_name: tempName });
+                            setIsNameSheetVisible(false);
+                        }}
+                        className="mt-6 bg-primary py-4 rounded-full items-center shadow-md active:opacity-90"
+                    >
+                        <Text className="text-white font-q-bold text-lg">Save Name</Text>
+                    </TouchableOpacity>
+                </View>
+            </BottomSheet>
 
             {/* Goal Selection Sheet */}
             <BottomSheet 

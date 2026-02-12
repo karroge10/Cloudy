@@ -53,10 +53,7 @@ export const SummaryScreen = () => {
 
                     <Button
                         label="Start Writing"
-                        onPress={() => navigation.reset({
-                            index: 0,
-                            routes: [{ name: 'MainApp' as never }],
-                        })}
+                        onPress={() => navigation.navigate('Auth' as never)}
                     />
                 </View>
             </View>
