@@ -42,22 +42,29 @@ export const Layout = ({
         )
     );
 
-    return (
-        <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
+    const renderLayout = () => (
+        <SafeAreaView 
+            className="flex-1" 
+            edges={isTabScreen ? ['top', 'left', 'right'] : ['top', 'left', 'right', 'bottom']}
+        >
             <StatusBar style="dark" translucent />
+            {renderContent()}
+        </SafeAreaView>
+    );
+
+    return (
+        <View className="flex-1 bg-background">
             {backgroundColors ? (
                 <LinearGradient 
                     colors={backgroundColors as [string, string, ...string[]]} 
                     className="flex-1"
                 >
-                    {renderContent()}
+                    {renderLayout()}
                 </LinearGradient>
             ) : (
-                <View className="flex-1">
-                    {renderContent()}
-                </View>
+                renderLayout()
             )}
-        </SafeAreaView>
+        </View>
     );
 };
 

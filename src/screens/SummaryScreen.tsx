@@ -66,7 +66,7 @@ export const SummaryScreen = () => {
                  <TopNav showBack={true} />
             </View>
 
-            <View className="flex-1 px-6 justify-between pb-8">
+            <View className="flex-1 px-6 justify-between pb-10">
                 <View className="items-center">
                     <Text className="text-4xl font-q-bold text-text mb-8 text-center">
                         We can get there, together.

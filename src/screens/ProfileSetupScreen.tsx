@@ -42,7 +42,7 @@ export const ProfileSetupScreen = () => {
                  <TopNav showBack={navigation.canGoBack()} />
             </View>
 
-            <View className="flex-1 px-6 pb-8">
+            <View className="flex-1 px-6 pb-10">
                 <View className="mb-8 items-center">
                     <Text className="text-4xl font-q-bold text-text mb-2 text-center">Almost there!</Text>
                     <Text className="text-lg font-q-medium text-muted text-center">

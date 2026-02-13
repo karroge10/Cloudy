@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { View, Text, ScrollView, Dimensions } from 'react-native';
 
 interface ActivityGraphProps {
-    entries?: string[]; // Array of ISO date strings
+    entries?: { created_at: string }[]; // Array of objects with ISO date strings
 }
 
 export const ActivityGraph: React.FC<ActivityGraphProps> = ({ entries }) => {
@@ -23,75 +23,37 @@ export const ActivityGraph: React.FC<ActivityGraphProps> = ({ entries }) => {
     // Generate data from entries
     const activityData = React.useMemo(() => {
         const counts = new Map<string, number>();
-        entries?.forEach(dateStr => {
-            const date = new Date(dateStr);
-            const key = date.toISOString().split('T')[0];
+        entries?.forEach(entry => {
+            const key = new Date(entry.created_at).toISOString().split('T')[0];
             counts.set(key, (counts.get(key) || 0) + 1);
         });
 
         // Generate last X days
         const days = [];
         const today = new Date();
-        // Align end to Saturday for a clean grid? Or just last X days?
-        // Let's just do last totalDays.
         
         for (let i = totalDays - 1; i >= 0; i--) {
             const d = new Date();
             d.setDate(today.getDate() - i);
             const key = d.toISOString().split('T')[0];
             const count = counts.get(key) || 0;
-            // Map count to intensity 0-3
-            // 0 -> 0
-            // 1 -> 1
-            // 2 -> 2
-            // 3+ -> 3
             days.push(Math.min(count, 3));
         }
         return days;
     }, [entries, totalDays]);
 
-    // Chunk into weeks (7 days per week)
-    // IMPORTANT: Activity grid usually goes column-by-column (weeks). 
-    // Here the existing code does row-by-row logic? No, let's look at render.
-    // It renders weeks horizontally: {weeks.map...} -> and inside week days vertically.
-    // So "Chunk into weeks" means each chunk is a column.
-    // The days array is strictly chronological.
-    // So we need to ensure the first day aligns with the day of week?
-    // The current logic just slices 0-7. This assumes day 0 is Monday (as per label).
-    // Let's rely on totalDays logic to be cleaner.
-    
-    // Logic refinement:
-    // Labels are "M, W, F". 
-    // If we simply slice, we might start on a Wednesday and label it Monday.
-    
-    // Let's force start on Monday.
-    // const today = new Date();
-    // const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon...
-    // But we want the graph to end on Today? Or end on Sunday?
-    // GitHub ends on Today/Yesterday.
-    // Let's keep it simple: Just show last X days. 
-    // BUT the labels "M/W/F" are static. So we MUST ensure the rows correspond to M/W/F.
-    // This means each "column" (week) must start with Sunday/Monday depending on locale.
-    // Let's assume Monday start for the labels provided.
-    
-    // We need to back-calculate the start date to be a Monday.
     const weeks = React.useMemo(() => {
         const result = [];
         const today = new Date();
         const currentDayIndex = (today.getDay() + 6) % 7; // Mon=0, Sun=6
         
-        // We want the last chunk to end on the current day, OR we pad the future days.
-        // GitHub fills the last week.
-        
-        // Let's construct strictly by weeks.
         const endOfCurrentWeek = new Date(today);
-        endOfCurrentWeek.setDate(today.getDate() + (6 - currentDayIndex)); // Move to coming Sunday (which is last of the column if Mon is first)
+        endOfCurrentWeek.setDate(today.getDate() + (6 - currentDayIndex)); 
 
-        // Generate totalDays worth of data ending at endOfCurrentWeek
         const data: number[] = [];
         const counts = new Map<string, number>();
-        entries?.forEach(dateStr => {
-             const key = new Date(dateStr).toISOString().split('T')[0];
+        entries?.forEach(entry => {
+             const key = new Date(entry.created_at).toISOString().split('T')[0];
              counts.set(key, (counts.get(key) || 0) + 1);
         });
 

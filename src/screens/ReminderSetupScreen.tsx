@@ -87,7 +87,7 @@ export const ReminderSetupScreen = () => {
                  <TopNav showBack={true} />
             </View>
 
-            <View className="flex-1 px-6 justify-between pb-8">
+            <View className="flex-1 px-6 justify-between pb-10">
                 <View>
                     <View className="items-center mb-0 w-full">
                          <Text className="text-4xl font-q-bold text-text mb-2 text-center">Make it a habit</Text>

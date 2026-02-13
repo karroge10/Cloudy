@@ -149,16 +149,31 @@ export const AuthScreen = () => {
                 if (error) throw error;
                 
                 if (data.session) {
-                    navigation.reset({
-                        index: 0,
-                        routes: [{ name: 'MainApp' }],
-                    });
+                    // Check if profile exists and onboarding is done
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('onboarding_completed')
+                        .eq('id', data.session.user.id)
+                        .single();
+
+                    if (profile?.onboarding_completed) {
+                        navigation.reset({
+                            index: 0,
+                            routes: [{ name: 'MainApp' }],
+                        });
+                    } else {
+                        // New user or incomplete profile
+                        navigation.reset({
+                            index: 0,
+                            routes: [{ name: 'ProfileSetup' }],
+                        });
+                    }
                 }
             } else {
                 throw new Error('No ID Token found');
             }
         } catch (error: any) {
-            if (error.code !== 'ASYNC_OP_IN_PROGRESS') {
+            if (error.code !== 'ASYNC_OP_IN_PROGRESS' && error.code !== 'SIGN_IN_CANCELLED') {
                 showAlert('Error', error.message, 'error');
             }
         } finally {
@@ -177,7 +192,7 @@ export const AuthScreen = () => {
                 </View>
 
                 <ScrollView 
-                    contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingBottom: 24 }}
+                    contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingBottom: 40 }}
                     showsVerticalScrollIndicator={false}
                 >
                     <View className="items-center mb-4">

@@ -1,6 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, View, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { haptics } from '../utils/haptics';
 
 interface ButtonProps {
     label: string;
@@ -27,9 +28,14 @@ export const Button: React.FC<ButtonProps> = ({
     const primaryText = "text-white";
     const outlineText = "text-primary";
 
+    const handlePress = () => {
+        haptics.medium();
+        onPress();
+    };
+
     return (
         <TouchableOpacity
-            onPress={onPress}
+            onPress={handlePress}
             disabled={disabled || loading}
             className={`${baseClasses} ${variant === 'primary' ? primaryClasses : outlineClasses}`}
         >

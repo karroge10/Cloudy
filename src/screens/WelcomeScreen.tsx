@@ -1,14 +1,32 @@
-import React from 'react';
-import { View, Text, Image, TouchableOpacity } from 'react-native';
+import React, { useRef } from 'react';
+import { View, Text, Image, TouchableOpacity, Animated, Pressable } from 'react-native';
 import { Button } from '../components/Button';
 import { useNavigation } from '@react-navigation/native';
 import { MASCOTS } from '../constants/Assets';
 import { Ionicons } from '@expo/vector-icons';
+import { haptics } from '../utils/haptics';
 
 import { Layout } from '../components/Layout';
 
 export const WelcomeScreen = () => {
     const navigation = useNavigation();
+    const scaleAnim = useRef(new Animated.Value(1)).current;
+
+    const handleMascotPress = () => {
+        haptics.light();
+        Animated.sequence([
+            Animated.timing(scaleAnim, {
+                toValue: 0.8,
+                duration: 100,
+                useNativeDriver: true,
+            }),
+            Animated.spring(scaleAnim, {
+                toValue: 1,
+                friction: 3,
+                useNativeDriver: true,
+            })
+        ]).start();
+    };
 
     return (
         <Layout useSafePadding={false}>
@@ -16,14 +34,17 @@ export const WelcomeScreen = () => {
                  <View className="flex-row justify-between items-center w-full min-h-[48px]" />
             </View>
 
-            <View className="flex-1 px-6 justify-between pb-8">
+            <View className="flex-1 px-6 justify-between pb-10">
                 {/* Content */}
                 <View className="items-center">
-                    <Image
-                        source={MASCOTS.HELLO}
-                        className="w-72 h-72 mb-10"
-                        resizeMode="contain"
-                    />
+                    <Pressable onPress={handleMascotPress}>
+                        <Animated.Image
+                            source={MASCOTS.HELLO}
+                            className="w-72 h-72 mb-10"
+                            resizeMode="contain"
+                            style={{ transform: [{ scale: scaleAnim }] }}
+                        />
+                    </Pressable>
 
                     <Text className="text-5xl font-q-bold text-text mb-6 text-center leading-[60px]">
                         Hi, I'm Cloudy

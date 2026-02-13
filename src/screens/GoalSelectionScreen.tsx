@@ -32,7 +32,7 @@ export const GoalSelectionScreen = () => {
                 <TopNav showBack={true} />
             </View>
 
-            <View className="flex-1 px-6 justify-between pb-8">
+            <View className="flex-1 px-6 justify-between pb-10">
                 <View>
                     {/* Main Content Area */}
                     <View className="items-center mb-6">

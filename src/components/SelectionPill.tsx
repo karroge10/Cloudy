@@ -1,5 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, View } from 'react-native';
+import { haptics } from '../utils/haptics';
 // If I want icons, I might need Lucide or Ionicons. I'll stick to a simple ✓ character or install vector-icons.
 // Since I installed @expo/vector-icons implicitly? No. I should verify.
 // Expo includes vector icons usually.
@@ -23,9 +24,14 @@ export const SelectionPill: React.FC<SelectionPillProps> = ({ label, selected, o
     const textSelected = "text-white";
     const textInactive = "text-text";
 
+    const handlePress = () => {
+        haptics.selection();
+        onPress();
+    };
+
     return (
         <TouchableOpacity
-            onPress={onPress}
+            onPress={handlePress}
             activeOpacity={0.8}
             className={`${containerBase} ${selected ? containerSelected : containerInactive}`}
         >

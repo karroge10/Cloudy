@@ -30,7 +30,7 @@ export const JournalEntryScreen = () => {
             >
                 <ScrollView 
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ flexGrow: 1 }}
+                    contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
                 >
                     {/* Header Content */}
                     <View className="items-center mb-8">
