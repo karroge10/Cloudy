@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { useNavigation } from '@react-navigation/native';
 import { MASCOTS } from '../constants/Assets';
@@ -10,8 +10,10 @@ import { MascotCard } from '../components/MascotCard';
 import { haptics } from '../utils/haptics';
 
 import { COMPANIONS } from '../constants/Companions';
+import { useAlert } from '../context/AlertContext';
 
 export const ProfileSetupScreen = () => {
+    const { showAlert } = useAlert();
     const [displayName, setDisplayName] = useState('');
     const [selectedMascot, setSelectedMascot] = useState<typeof COMPANIONS[number]>(COMPANIONS[0]); // Default to Hero
     const [loading, setLoading] = useState(false);
@@ -19,7 +21,7 @@ export const ProfileSetupScreen = () => {
 
     function finishSetup() {
         if (!displayName.trim()) {
-            Alert.alert('Hey there!', 'Please enter a name so we know what to call you.');
+            showAlert('Hey there!', 'Please enter a name so we know what to call you.', [{ text: 'Okay' }], 'info');
             return;
         }
 

@@ -5,19 +5,28 @@ import { useNavigation } from '@react-navigation/native';
 import { Layout } from '../components/Layout';
 import { TopNav } from '../components/TopNav';
 import { haptics } from '../utils/haptics';
+import { useAlert } from '../context/AlertContext';
+
+import { Button } from '../components/Button';
 
 export const JournalEntryScreen = () => {
+    const { showAlert } = useAlert();
     const [gratitude, setGratitude] = useState('');
     const navigation = useNavigation();
 
     const handleSave = () => {
         if (gratitude.trim().length === 0) return;
-        haptics.selection();
+        // Haptics now handled by the Button component
         // In a real app, save to storage here
         console.log("Saved gratitude:", gratitude);
         setGratitude('');
-        alert("Gratitude saved! See you tomorrow!");
-        navigation.goBack();
+        
+        showAlert(
+            "Gratitude Saved!", 
+            "See you tomorrow!", 
+            [{ text: "Okay", onPress: () => navigation.goBack() }],
+            'success'
+        );
     };
 
     return (
@@ -65,16 +74,14 @@ export const JournalEntryScreen = () => {
                         />
                     </View>
 
-                    <TouchableOpacity
-                        onPress={handleSave}
-                        className={`mt-8 py-4 rounded-full items-center shadow-lg active:scale-95 transition-transform ${gratitude.trim().length > 0 ? "bg-primary" : "bg-inactive"
-                            }`}
-                        disabled={gratitude.trim().length === 0}
-                    >
-                        <Text className="text-white text-lg font-q-bold">
-                            Save Entry
-                        </Text>
-                    </TouchableOpacity>
+                    <View className="mt-8">
+                        <Button
+                            label="Save Entry"
+                            onPress={handleSave}
+                            disabled={gratitude.trim().length === 0}
+                            haptic="heavy"
+                        />
+                    </View>
                 </ScrollView>
             </KeyboardAvoidingView>
         </Layout>

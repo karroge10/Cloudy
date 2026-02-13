@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Alert, Image } from 'react-native';
+import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { MASCOTS } from '../constants/Assets';
 import { Layout } from '../components/Layout';
@@ -8,8 +8,10 @@ import { TimePicker } from '../components/TimePicker';
 import { Button } from '../components/Button';
 import { haptics } from '../utils/haptics';
 import { useProfile } from '../context/ProfileContext';
+import { useAlert } from '../context/AlertContext';
 
 export const ReminderSetupScreen = () => {
+    const { showAlert } = useAlert();
     const [date, setDate] = useState(new Date());
     const [loading, setLoading] = useState(false);
     const navigation = useNavigation<any>();
@@ -34,7 +36,7 @@ export const ReminderSetupScreen = () => {
             
             navigation.navigate('MainApp');
         } catch (error: any) {
-            Alert.alert('Error', error.message);
+            showAlert('Error', error.message, [{ text: 'Okay' }], 'error');
         } finally {
             setLoading(false);
         }
@@ -52,7 +54,7 @@ export const ReminderSetupScreen = () => {
             
             navigation.navigate('MainApp');
         } catch (error: any) {
-            Alert.alert('Error', error.message);
+            showAlert('Error', error.message, [{ text: 'Okay' }], 'error');
         } finally {
             setLoading(false);
         }
@@ -84,6 +86,7 @@ export const ReminderSetupScreen = () => {
                         label="Start My Journey"
                         onPress={finishReminderSetup}
                         loading={loading}
+                        haptic="heavy"
                     />
 
                     <TouchableOpacity 

@@ -24,7 +24,7 @@ export const TopNav = ({ title, subtitle, showBack = true, onBack, rightElement,
                 {showBack && (
                     <TouchableOpacity 
                         onPress={() => { haptics.selection(); if (onBack) onBack(); else navigation.goBack(); }} 
-                        className="p-2 -ml-2 items-center justify-center w-12 h-12"
+                        className="p-2 -ml-2 items-center justify-center w-12 h-12 active:scale-90 transition-transform"
                     >
                         <Ionicons 
                             name={roundButtons ? "close" : "arrow-back"} 

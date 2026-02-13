@@ -8,6 +8,7 @@ import {
     NativeSyntheticEvent,
     NativeScrollEvent,
     Platform,
+    Pressable,
 } from 'react-native';
 import { haptics } from '../utils/haptics';
 
@@ -17,6 +18,7 @@ import { haptics } from '../utils/haptics';
  * 2. Animated.Value tracks scroll position for smooth visual scaling/opacity.
  * 3. Haptics fire on every index change for tactile feedback.
  * 4. ListHeader/Footer components provide padding for selection centering.
+ * 5. Pressable items allow tapping top/bottom numbers to slide them into focus.
  */
 
 const ITEM_HEIGHT = 64; 
@@ -35,7 +37,17 @@ interface ScrollWheelProps {
     label: string;
 }
 
-const ScrollItem = memo(({ item, index, scrollY }: { item: string, index: number, scrollY: Animated.Value }) => {
+const ScrollItem = memo(({ 
+    item, 
+    index, 
+    scrollY, 
+    onPress 
+}: { 
+    item: string, 
+    index: number, 
+    scrollY: Animated.Value,
+    onPress: (index: number) => void
+}) => {
     const inputRange = [
         (index - 1) * ITEM_HEIGHT,
         index * ITEM_HEIGHT,
@@ -55,22 +67,24 @@ const ScrollItem = memo(({ item, index, scrollY }: { item: string, index: number
     });
 
     return (
-        <Animated.View
-            style={[
-                styles.itemContainer,
-                {
-                    opacity,
-                    transform: [{ scale }],
-                },
-            ]}
-        >
-            <Text 
-                style={styles.itemText}
-                className="font-q-bold text-3xl"
+        <Pressable onPress={() => onPress(index)}>
+            <Animated.View
+                style={[
+                    styles.itemContainer,
+                    {
+                        opacity,
+                        transform: [{ scale }],
+                    },
+                ]}
             >
-                {item}
-            </Text>
-        </Animated.View>
+                <Text 
+                    style={styles.itemText}
+                    className="font-q-bold text-3xl"
+                >
+                    {item}
+                </Text>
+            </Animated.View>
+        </Pressable>
     );
 });
 
@@ -103,6 +117,13 @@ const ScrollWheel = ({ data, initialValue, onSelect, label }: ScrollWheelProps) 
         }
     };
 
+    const handlePressItem = useCallback((index: number) => {
+        flatListRef.current?.scrollToIndex({
+            index,
+            animated: true,
+        });
+    }, []);
+
     return (
         <View className="items-center">
             <View 
@@ -120,7 +141,12 @@ const ScrollWheel = ({ data, initialValue, onSelect, label }: ScrollWheelProps) 
                     ref={flatListRef}
                     data={data}
                     renderItem={({ item, index }) => (
-                        <ScrollItem item={item} index={index} scrollY={scrollY} />
+                        <ScrollItem 
+                            item={item} 
+                            index={index} 
+                            scrollY={scrollY} 
+                            onPress={handlePressItem}
+                        />
                     )}
                     keyExtractor={(_, i) => i.toString()}
                     showsVerticalScrollIndicator={false}

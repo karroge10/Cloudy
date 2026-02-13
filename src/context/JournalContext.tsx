@@ -13,7 +13,7 @@ export interface JournalEntry {
     is_favorite: boolean;
     created_at: string;
     type?: string;
-    is_deleted?: boolean;
+    deleted_at?: string | null;
 }
 
 interface JournalContextType {
@@ -65,12 +65,9 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
         fetchEntries();
     }, [fetchEntries]);
 
-    // Derived raw dates for streak calculation
+    // Derived raw dates for streak calculation - includes soft-deleted entries to maintain streak
     const rawStreakData = useMemo(() => {
-        // Filter out soft-deleted entries for streak calculation
-        return entries
-            .filter(e => !e.is_deleted)
-            .map(e => ({ created_at: e.created_at }));
+        return entries.map(e => ({ created_at: e.created_at }));
     }, [entries]);
 
     useEffect(() => {
@@ -104,7 +101,9 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
         if (data) {
             setEntries(prev => [data, ...prev]);
             // Schedule a flashback notification (nostalgic nudge) for 7 days in the future
-            notifications.scheduleFlashback(data.id, data.text, 7);
+            if (data.text) {
+                notifications.scheduleFlashback(data.id, data.text, 7);
+            }
         }
     };
 
@@ -131,15 +130,16 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
     const deleteEntry = async (id: string, soft: boolean = true) => {
         // Optimistic UI update
         if (soft) {
-            setEntries(prev => prev.map(e => e.id === id ? { ...e, is_deleted: true } : e));
+            const now = new Date().toISOString();
+            setEntries(prev => prev.map(e => e.id === id ? { ...e, deleted_at: now } : e));
             
             const { error } = await supabase
                 .from('posts')
-                .update({ is_deleted: true })
+                .update({ deleted_at: now })
                 .eq('id', id);
 
             if (error) {
-                setEntries(prev => prev.map(e => e.id === id ? { ...e, is_deleted: false } : e));
+                setEntries(prev => prev.map(e => e.id === id ? { ...e, deleted_at: null } : e));
                 throw error;
             }
         } else {
@@ -157,8 +157,10 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
         }
     };
 
+    const activeEntries = useMemo(() => entries.filter(e => !e.deleted_at), [entries]);
+
     const value = useMemo(() => ({
-        entries,
+        entries: activeEntries,
         loading,
         streak,
         rawStreakData,
@@ -166,7 +168,7 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
         toggleFavorite,
         deleteEntry,
         refreshEntries: fetchEntries
-    }), [entries, loading, streak, rawStreakData, fetchEntries]);
+    }), [activeEntries, loading, streak, rawStreakData, fetchEntries]);
 
     return (
         <JournalContext.Provider value={value}>

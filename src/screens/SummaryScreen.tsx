@@ -1,4 +1,4 @@
-import { View, Text, Image, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '../components/Button';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -9,8 +9,10 @@ import { TopNav } from '../components/TopNav';
 import { haptics } from '../utils/haptics';
 
 import { Layout } from '../components/Layout';
+import { useAlert } from '../context/AlertContext';
 
 export const SummaryScreen = () => {
+    const { showAlert } = useAlert();
     const navigation = useNavigation();
     const route = useRoute();
     const [loading, setLoading] = useState(false);
@@ -56,7 +58,7 @@ export const SummaryScreen = () => {
             // Note: App.tsx has an auth listener that will pick up the session 
             // change and update the navigation stack automatically.
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'Something went wrong. Please try again.');
+            showAlert('Error', error.message || 'Something went wrong. Please try again.', [{ text: 'Okay' }], 'error');
         } finally {
             setLoading(false);
         }

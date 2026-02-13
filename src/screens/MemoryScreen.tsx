@@ -23,7 +23,7 @@ export const MemoryScreen = () => {
     const [currentIndex, setCurrentIndex] = useState(0);
     
     // Filter non-deleted entries
-    const journalEntries = entries.filter(e => !e.is_deleted);
+    const journalEntries = entries.filter(e => !e.deleted_at);
 
     // Initial effect to jump to a specific entry if entryId is provided in navigation params
     useEffect(() => {
@@ -87,7 +87,7 @@ export const MemoryScreen = () => {
         try {
             const dateStr = new Date(currentMemory.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
             await Share.share({
-                message: `Check out this memory from Cloudy: "${currentMemory.content}" - ${dateStr}`,
+                message: `Check out this memory from Cloudy: "${currentMemory.text}" - ${dateStr}`,
             });
         } catch (error) {
             console.error(error);
@@ -134,7 +134,7 @@ export const MemoryScreen = () => {
                         </View>
                         <Text className="text-3xl font-q-bold text-text mb-6">I am grateful for...</Text>
                         <Text className="text-xl font-q-medium text-text/70 leading-relaxed mb-10">
-                            {currentMemory.content}
+                            {currentMemory.text}
                         </Text>
                         <View className="flex-row justify-between items-center">
                              <View className="flex-row items-center bg-[#FF9E7D10] px-5 py-2.5 rounded-full">

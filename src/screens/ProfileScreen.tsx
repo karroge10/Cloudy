@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, TouchableOpacity, Switch, ScrollView, TextInput, Alert } from 'react-native';
+import { View, Text, Image, TouchableOpacity, Switch, ScrollView, TextInput } from 'react-native';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
@@ -22,8 +22,10 @@ import { TimePicker } from '../components/TimePicker';
 import { Button } from '../components/Button';
 import { haptics } from '../utils/haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAlert } from '../context/AlertContext';
 
 export const ProfileScreen = () => {
+    const { showAlert } = useAlert();
     const { streak, rawStreakData } = useJournal();
     const { profile, loading: profileLoading, updateProfile } = useProfile();
     
@@ -94,7 +96,7 @@ export const ProfileScreen = () => {
             const { error } = await supabase.auth.signOut();
             if (error) throw error;
         } catch (error: any) {
-            Alert.alert('Error', error.message);
+            showAlert('Error', error.message, [{ text: 'Okay' }], 'error');
         }
     };
 

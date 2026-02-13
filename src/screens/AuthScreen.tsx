@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { useNavigation } from '@react-navigation/native';
 import { MASCOTS } from '../constants/Assets';
 import { Ionicons } from '@expo/vector-icons';
-import { CustomAlert } from '../components/CustomAlert';
 import { TopNav } from '../components/TopNav';
 import { Layout } from '../components/Layout';
 import { haptics } from '../utils/haptics';
+import { useAlert } from '../context/AlertContext';
 
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
@@ -16,39 +16,18 @@ GoogleSignin.configure({
 });
 
 export const AuthScreen = () => {
+    const { showAlert } = useAlert();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [isLogin, setIsLogin] = useState(true);
-    const [alertConfig, setAlertConfig] = useState<{
-        visible: boolean;
-        title: string;
-        message: string;
-        type: 'error' | 'success' | 'info';
-        buttons: any[];
-    }>({
-        visible: false,
-        title: '',
-        message: '',
-        type: 'info',
-        buttons: []
-    });
-
+    
     const navigation = useNavigation<any>();
-
-    const showAlert = (title: string, message: string, type: 'error' | 'success' | 'info' = 'info', buttons: any[] = []) => {
-        setAlertConfig({ visible: true, title, message, type, buttons });
-    };
-
-    const hideAlert = () => {
-        haptics.selection();
-        setAlertConfig(prev => ({ ...prev, visible: false }));
-    };
     
     async function signInWithEmail() {
         haptics.selection();
         if (!email || !password) {
-            showAlert('Missing info', 'Please enter both email and password.', 'error');
+            showAlert('Missing info', 'Please enter both email and password.', [{ text: 'Okay' }], 'error');
             return;
         }
         setLoading(true);
@@ -58,7 +37,7 @@ export const AuthScreen = () => {
         });
 
         if (error) {
-            showAlert('Error', error.message, 'error');
+            showAlert('Error', error.message, [{ text: 'Okay' }], 'error');
         } else {
             navigation.reset({
                 index: 0,
@@ -71,7 +50,7 @@ export const AuthScreen = () => {
     async function signUpWithEmail() {
         haptics.selection();
         if (!email || !password) {
-            showAlert('Missing info', 'Please enter both email and password.', 'error');
+            showAlert('Missing info', 'Please enter both email and password.', [{ text: 'Okay' }], 'error');
             return;
         }
         setLoading(true);
@@ -89,7 +68,6 @@ export const AuthScreen = () => {
                         showAlert(
                             'Account already exists',
                             'Would you like to log into your existing journey instead? Your current temporary data will not be merged.',
-                            'info',
                             [
                                 { text: 'Cancel', style: 'cancel' },
                                 { 
@@ -99,18 +77,19 @@ export const AuthScreen = () => {
                                         setIsLogin(true);
                                     } 
                                 }
-                            ]
+                            ],
+                            'info'
                         );
                     } else {
                         throw error;
                     }
                 } else {
-                    showAlert('Success', 'Your journey is secured!', 'success', [
+                    showAlert('Success', 'Your journey is secured!', [
                         { text: 'Okay', onPress: () => navigation.reset({
                             index: 0,
                             routes: [{ name: 'MainApp' }],
                         }) }
-                    ]);
+                    ], 'success');
                 }
             } else {
                 const { data, error } = await supabase.auth.signUp({
@@ -126,13 +105,13 @@ export const AuthScreen = () => {
                         routes: [{ name: 'MainApp' }],
                     });
                 } else {
-                    showAlert('Success', 'Please check your email to confirm your account.', 'success', [
+                    showAlert('Success', 'Please check your email to confirm your account.', [
                         { text: 'Okay', onPress: () => navigation.goBack() }
-                    ]);
+                    ], 'success');
                 }
             }
         } catch (error: any) {
-            showAlert('Error', error.message, 'error');
+            showAlert('Error', error.message, [{ text: 'Okay' }], 'error');
         } finally {
             setLoading(false);
         }
@@ -179,7 +158,7 @@ export const AuthScreen = () => {
             }
         } catch (error: any) {
             if (error.code !== 'ASYNC_OP_IN_PROGRESS' && error.code !== 'SIGN_IN_CANCELLED') {
-                showAlert('Error', error.message, 'error');
+                showAlert('Error', error.message, [{ text: 'Okay' }], 'error');
             }
         } finally {
             setLoading(false);
@@ -290,15 +269,6 @@ export const AuthScreen = () => {
                     </TouchableOpacity>
                 </ScrollView>
             </KeyboardAvoidingView>
-
-            <CustomAlert
-                visible={alertConfig.visible}
-                title={alertConfig.title}
-                message={alertConfig.message}
-                type={alertConfig.type}
-                buttons={alertConfig.buttons}
-                onClose={hideAlert}
-            />
         </Layout>
     );
 };

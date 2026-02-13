@@ -10,6 +10,7 @@ interface ButtonProps {
     loading?: boolean;
     variant?: 'primary' | 'outline';
     showArrow?: boolean;
+    haptic?: 'light' | 'medium' | 'heavy' | 'selection' | 'success' | 'none';
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -18,9 +19,10 @@ export const Button: React.FC<ButtonProps> = ({
     disabled = false,
     loading = false,
     variant = 'primary',
-    showArrow = false
+    showArrow = false,
+    haptic = 'medium'
 }) => {
-    const baseClasses = "w-full py-4 min-h-[56px] rounded-full items-center justify-center flex-row shadow-sm";
+    const baseClasses = "w-full py-4 min-h-[56px] rounded-full items-center justify-center flex-row shadow-sm active:scale-95 transition-transform";
     const primaryClasses = (disabled || loading) ? "bg-inactive" : "bg-primary active:opacity-90";
     const outlineClasses = "bg-transparent border-2 border-primary"; 
 
@@ -29,7 +31,15 @@ export const Button: React.FC<ButtonProps> = ({
     const outlineText = "text-primary";
 
     const handlePress = () => {
-        haptics.medium();
+        if (haptic && haptic !== 'none') {
+            switch (haptic) {
+                case 'light': haptics.light(); break;
+                case 'medium': haptics.medium(); break;
+                case 'heavy': haptics.heavy(); break;
+                case 'selection': haptics.selection(); break;
+                case 'success': haptics.success(); break;
+            }
+        }
         onPress();
     };
 

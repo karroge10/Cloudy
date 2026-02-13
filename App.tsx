@@ -30,6 +30,7 @@ import { ProfileSetupScreen } from './src/screens/ProfileSetupScreen';
 import { ReminderSetupScreen } from './src/screens/ReminderSetupScreen';
 import { JournalProvider } from './src/context/JournalContext';
 import { ProfileProvider } from './src/context/ProfileContext';
+import { AlertProvider } from './src/context/AlertContext';
 import { useNotifications } from './src/hooks/useNotifications';
 
 const AppContent = () => {
@@ -96,37 +97,39 @@ export default function App() {
     <SafeAreaProvider>
       <ProfileProvider>
         <JournalProvider session={session}>
-          <NavigationContainer theme={CloudyTheme}>
-            <AppContent />
-            <Stack.Navigator
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: '#FFF9F0' },
-                animation: 'slide_from_right'
-              }}
-            >
-              {session ? (
-                <>
-                  <Stack.Screen name="MainApp" component={MainTabNavigator} />
-                  <Stack.Screen name="JournalEntry" component={JournalEntryScreen} />
-                  <Stack.Screen name="Memory" component={MemoryScreen} />
-                  <Stack.Screen name="Auth" component={AuthScreen} />
-                  <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
-                  <Stack.Screen name="ReminderSetup" component={ReminderSetupScreen} />
-                </>
-              ) : (
-                <>
-                  <Stack.Screen name="Welcome" component={WelcomeScreen} />
-                  <Stack.Screen name="StruggleSelection" component={StruggleSelectionScreen} />
-                  <Stack.Screen name="GoalSelection" component={GoalSelectionScreen} />
-                  <Stack.Screen name="Summary" component={SummaryScreen} />
-                  <Stack.Screen name="Auth" component={AuthScreen} />
-                </>
-              )}
-            </Stack.Navigator>
+          <AlertProvider>
+            <NavigationContainer theme={CloudyTheme}>
+              <AppContent />
+              <Stack.Navigator
+                screenOptions={{
+                  headerShown: false,
+                  contentStyle: { backgroundColor: '#FFF9F0' },
+                  animation: 'slide_from_right'
+                }}
+              >
+                {session ? (
+                  <>
+                    <Stack.Screen name="MainApp" component={MainTabNavigator} />
+                    <Stack.Screen name="JournalEntry" component={JournalEntryScreen} />
+                    <Stack.Screen name="Memory" component={MemoryScreen} />
+                    <Stack.Screen name="Auth" component={AuthScreen} />
+                    <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
+                    <Stack.Screen name="ReminderSetup" component={ReminderSetupScreen} />
+                  </>
+                ) : (
+                  <>
+                    <Stack.Screen name="Welcome" component={WelcomeScreen} />
+                    <Stack.Screen name="StruggleSelection" component={StruggleSelectionScreen} />
+                    <Stack.Screen name="GoalSelection" component={GoalSelectionScreen} />
+                    <Stack.Screen name="Summary" component={SummaryScreen} />
+                    <Stack.Screen name="Auth" component={AuthScreen} />
+                  </>
+                )}
+              </Stack.Navigator>
 
-            <StatusBar style="dark" />
-          </NavigationContainer>
+              <StatusBar style="dark" />
+            </NavigationContainer>
+          </AlertProvider>
         </JournalProvider>
       </ProfileProvider>
     </SafeAreaProvider>

@@ -127,7 +127,9 @@ class NotificationService {
                 identifier: `flashback-${entryId}`, // Unique ID per entry flashback
                 content: {
                     title: "A small memory for you ☁️",
-                    body: `Remember this? "${content.substring(0, 50)}${content.length > 50 ? '...' : ''}"`,
+                    body: content 
+                        ? `Remember this? "${content.substring(0, 50)}${content.length > 50 ? '...' : ''}"`
+                        : "Remember this moment? Tap to view.",
                     data: { type: 'MEMORY_FLASHBACK', entryId },
                     sound: true,
                 },

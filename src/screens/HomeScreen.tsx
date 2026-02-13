@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { View, Text, Image, TouchableOpacity, TextInput, Alert, ActivityIndicator, Keyboard, Animated, Pressable } from 'react-native';
+import { View, Text, Image, TouchableOpacity, TextInput, ActivityIndicator, Keyboard, Animated, Pressable } from 'react-native';
 import { MASCOTS } from '../constants/Assets';
 import { Ionicons } from '@expo/vector-icons';
 import { Layout } from '../components/Layout';
@@ -11,8 +11,10 @@ import { useJournal } from '../context/JournalContext';
 import { useProfile } from '../context/ProfileContext';
 import { haptics } from '../utils/haptics';
 import { InfoCard } from '../components/InfoCard';
+import { useAlert } from '../context/AlertContext';
 
 export const HomeScreen = () => {
+    const { showAlert } = useAlert();
     const navigation = useNavigation<any>();
     const { addEntry, streak } = useJournal();
     const { profile, updateProfile } = useProfile();
@@ -52,7 +54,7 @@ export const HomeScreen = () => {
 
     const handleSave = async () => {
         if (!text.trim()) {
-            Alert.alert('Empty Entry', 'Please write something to save.');
+            showAlert('Empty Entry', 'Please write something to save.', [{ text: 'Okay' }], 'info');
             return;
         }
 
@@ -81,7 +83,7 @@ export const HomeScreen = () => {
                  setText('');
             }
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'Could not save your entry.');
+            showAlert('Error', error.message || 'Could not save your entry.', [{ text: 'Okay' }], 'error');
         } finally {
             setLoading(false);
         }
@@ -89,7 +91,7 @@ export const HomeScreen = () => {
 
     const handleSaveProfile = async () => {
         if (!tempDisplayName.trim()) {
-            Alert.alert('Name Required', 'Please let us know what to call you.');
+            showAlert('Name Required', 'Please let us know what to call you.', [{ text: 'Okay' }], 'info');
             return;
         }
 
@@ -104,7 +106,7 @@ export const HomeScreen = () => {
             setShowSetupSheet(false);
             setText('');
         } catch (error: any) {
-            Alert.alert('Error', error.message);
+            showAlert('Error', error.message, [{ text: 'Okay' }], 'error');
         } finally {
             setIsSavingName(false);
         }

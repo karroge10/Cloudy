@@ -23,9 +23,10 @@ import { supabase } from '../lib/supabase';
 
 import { BottomSheet } from '../components/BottomSheet';
 import { MASCOTS } from '../constants/Assets';
-import { Image, Alert } from 'react-native';
+import { Image } from 'react-native';
 import { useJournal, JournalEntry } from '../context/JournalContext';
 import { ProfileNudge } from '../components/ProfileNudge';
+import { useAlert } from '../context/AlertContext';
 
 const ITEM_HEIGHT = 180;
 
@@ -177,7 +178,7 @@ const TimelineItem = ({
                     style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}
                 >
                     <View>
-                        <Text className="font-q-medium text-base leading-6 text-text">{item.content}</Text>
+                        <Text className="font-q-medium text-base leading-6 text-text">{item.text}</Text>
                     </View>
                     
                     <View className="flex-row justify-end mt-4 items-center space-x-4">
@@ -229,6 +230,7 @@ const TimelineItem = ({
 
 
 export const JourneyScreen = () => {
+    const { showAlert } = useAlert();
     const navigation = useNavigation();
     const { height: viewportHeight } = useWindowDimensions();
     const { entries, loading, toggleFavorite, deleteEntry } = useJournal();
@@ -295,7 +297,12 @@ export const JourneyScreen = () => {
         const diffInHours = (now.getTime() - entryDate.getTime()) / (1000 * 60 * 60);
 
         if (diffInHours > 24) {
-            Alert.alert("Too Late", "You can only delete memories within 24 hours of creating them.");
+            showAlert(
+                "Too Late", 
+                "You can only delete memories within 24 hours of creating them.", 
+                [{ text: "Okay" }],
+                'info'
+            );
             return;
         }
 
