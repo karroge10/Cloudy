@@ -1,159 +1,145 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { View, Text, FlatList, NativeSyntheticEvent, NativeScrollEvent, Animated, Platform } from 'react-native';
+import React, { useRef, useState, useCallback, memo } from 'react';
+import {
+    View,
+    Text,
+    StyleSheet,
+    FlatList,
+    Animated,
+    NativeSyntheticEvent,
+    NativeScrollEvent,
+    Platform,
+} from 'react-native';
 import { haptics } from '../utils/haptics';
+
+/**
+ * TIMEPICKER DESIGN RATIONALE:
+ * 1. Uses FlatList with snapToInterval for a native wheel feel.
+ * 2. Animated.Value tracks scroll position for smooth visual scaling/opacity.
+ * 3. Haptics fire on every index change for tactile feedback.
+ * 4. ListHeader/Footer components provide padding for selection centering.
+ */
+
+const ITEM_HEIGHT = 64; 
+const VISIBLE_ITEMS = 3;
+const CONTAINER_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
 
 interface TimePickerProps {
     value: Date;
     onChange: (date: Date) => void;
 }
 
-const ITEM_HEIGHT = 50;
-const VISIBLE_ITEMS = 3;
-const CONTAINER_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
-
-// Increased REPEAT_COUNT allows us to remove the aggressive "silent jump" logic during scroll
-// which is what causes the jittery/stuck feeling.
-const REPEAT_COUNT = 100; 
-
 interface ScrollWheelProps {
     data: string[];
-    index: number;
+    initialValue: number;
     onSelect: (value: number) => void;
     label: string;
 }
 
-const ScrollWheel: React.FC<ScrollWheelProps> = ({ data, index, onSelect, label }) => {
-    const scrollY = useRef(new Animated.Value(0)).current;
+const ScrollItem = memo(({ item, index, scrollY }: { item: string, index: number, scrollY: Animated.Value }) => {
+    const inputRange = [
+        (index - 1) * ITEM_HEIGHT,
+        index * ITEM_HEIGHT,
+        (index + 1) * ITEM_HEIGHT,
+    ];
+
+    const scale = scrollY.interpolate({
+        inputRange,
+        outputRange: [0.8, 1.2, 0.8],
+        extrapolate: 'clamp',
+    });
+
+    const opacity = scrollY.interpolate({
+        inputRange,
+        outputRange: [0.35, 1, 0.35],
+        extrapolate: 'clamp',
+    });
+
+    return (
+        <Animated.View
+            style={[
+                styles.itemContainer,
+                {
+                    opacity,
+                    transform: [{ scale }],
+                },
+            ]}
+        >
+            <Text 
+                style={styles.itemText}
+                className="font-q-bold text-3xl"
+            >
+                {item}
+            </Text>
+        </Animated.View>
+    );
+});
+
+const ScrollWheel = ({ data, initialValue, onSelect, label }: ScrollWheelProps) => {
+    const scrollY = useRef(new Animated.Value(initialValue * ITEM_HEIGHT)).current;
     const flatListRef = useRef<FlatList>(null);
-    const isScrolling = useRef(false);
-    
-    // Create an expanded array for infinite-like scrolling
-    const infiniteData = Array.from({ length: REPEAT_COUNT }, (_) => data).flat();
-    const centerOffset = Math.floor(REPEAT_COUNT / 2) * data.length;
-    const initialIndex = centerOffset + index;
-
-    // Use a ref and state together for performant haptics + visual feedback
-    const localIndexRef = useRef(initialIndex);
-    const [localIndex, setLocalIndex] = useState(initialIndex);
-
-    useEffect(() => {
-        // Initial positioning - using small delay to ensure layout is ready
-        const timer = setTimeout(() => {
-            flatListRef.current?.scrollToIndex({
-                index: initialIndex,
-                animated: false,
-                viewOffset: ITEM_HEIGHT // Offset by one ITEM_HEIGHT to center it
-            });
-            scrollY.setValue(initialIndex * ITEM_HEIGHT);
-            localIndexRef.current = initialIndex;
-            setLocalIndex(initialIndex);
-        }, 100);
-        return () => clearTimeout(timer);
-    }, []);
-
-    const handleScrollComplete = (offsetY: number) => {
-        const newIndex = Math.round(offsetY / ITEM_HEIGHT);
-        // Correctly handling negative indices if user swipes past header
-        const actualValue = ((newIndex % data.length) + data.length) % data.length;
-        
-        onSelect(actualValue);
-        isScrolling.current = false;
-    };
+    const lastIdx = useRef(initialValue);
 
     const onScroll = Animated.event(
         [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-        { 
+        {
             useNativeDriver: true,
             listener: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
                 const y = event.nativeEvent.contentOffset.y;
-                const newIndex = Math.round(y / ITEM_HEIGHT);
+                const idx = Math.round(y / ITEM_HEIGHT);
                 
-                // Haptics and local visual state update immediately when a new number centers
-                if (newIndex !== localIndexRef.current) {
-                    localIndexRef.current = newIndex;
-                    setLocalIndex(newIndex);
+                if (idx !== lastIdx.current && idx >= 0 && idx < data.length) {
+                    lastIdx.current = idx;
                     haptics.selection();
                 }
-            }
+            },
         }
     );
 
-    const renderItem = ({ item, index: itemIndex }: { item: string; index: number }) => {
-        const inputRange = [
-            (itemIndex - 1) * ITEM_HEIGHT,
-            itemIndex * ITEM_HEIGHT,
-            (itemIndex + 1) * ITEM_HEIGHT,
-        ];
-
-        const opacity = scrollY.interpolate({
-            inputRange,
-            outputRange: [0.3, 1, 0.3],
-            extrapolate: 'clamp',
-        });
-
-        const scale = scrollY.interpolate({
-            inputRange,
-            outputRange: [0.8, 1.1, 0.8],
-            extrapolate: 'clamp',
-        });
-
-        return (
-            <Animated.View 
-                style={{ 
-                    height: ITEM_HEIGHT, 
-                    opacity, 
-                    transform: [{ scale }] 
-                }} 
-                className="items-center justify-center w-full"
-            >
-                <Text className="font-q-bold text-3xl text-text">
-                    {item}
-                </Text>
-            </Animated.View>
-        );
+    const handleMomentumScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+        const y = event.nativeEvent.contentOffset.y;
+        const idx = Math.round(y / ITEM_HEIGHT);
+        if (idx >= 0 && idx < data.length) {
+            onSelect(idx);
+        }
     };
 
     return (
         <View className="items-center">
             <View 
-                className="bg-white rounded-[32px] w-[85px] items-center justify-center border-2 border-primary/20 shadow-sm overflow-hidden"
-                style={{ height: CONTAINER_HEIGHT }}
+                style={styles.wheelContainer}
+                className="bg-white rounded-[32px] border-2 border-primary/20 shadow-sm overflow-hidden"
             >
-                {/* Selection Highlight Track */}
+                {/* Horizontal Center Guide */}
                 <View 
-                    style={{ height: ITEM_HEIGHT, top: ITEM_HEIGHT }}
-                    className="absolute w-full border-y-2 border-primary/10 bg-primary/5 rounded-xl"
+                    style={styles.highlightBar}
+                    className="absolute w-full bg-primary/5 border-y border-primary/10"
+                    pointerEvents="none"
                 />
-
+                
                 <Animated.FlatList
                     ref={flatListRef}
-                    data={infiniteData}
-                    keyExtractor={(_, i) => `${label}-${i}`}
+                    data={data}
+                    renderItem={({ item, index }) => (
+                        <ScrollItem item={item} index={index} scrollY={scrollY} />
+                    )}
+                    keyExtractor={(_, i) => i.toString()}
                     showsVerticalScrollIndicator={false}
                     snapToInterval={ITEM_HEIGHT}
-                    snapToAlignment="center"
+                    snapToAlignment="start"
                     decelerationRate="fast"
-                    // disableIntervalMomentum is key for that "snap and lock" feel on Android/iOS
-                    disableIntervalMomentum={true}
                     onScroll={onScroll}
                     scrollEventThrottle={16}
-                    onScrollBeginDrag={() => { isScrolling.current = true; }}
-                    onScrollEndDrag={(e) => handleScrollComplete(e.nativeEvent.contentOffset.y)}
-                    onMomentumScrollEnd={(e) => handleScrollComplete(e.nativeEvent.contentOffset.y)}
-                    getItemLayout={(_, i) => ({
+                    onMomentumScrollEnd={handleMomentumScrollEnd}
+                    onScrollEndDrag={handleMomentumScrollEnd}
+                    getItemLayout={(_, index) => ({
                         length: ITEM_HEIGHT,
-                        offset: ITEM_HEIGHT * i,
-                        index: i,
+                        offset: ITEM_HEIGHT * index,
+                        index,
                     })}
-                    // Header and Footer provide the necessary padding to center items
+                    initialScrollIndex={initialValue}
                     ListHeaderComponent={<View style={{ height: ITEM_HEIGHT }} />}
                     ListFooterComponent={<View style={{ height: ITEM_HEIGHT }} />}
-                    renderItem={renderItem}
-                    removeClippedSubviews={true}
-                    initialNumToRender={VISIBLE_ITEMS + 2}
-                    onScrollToIndexFailed={() => {
-                        // Safe fallback for edge cases
-                    }}
+                    removeClippedSubviews={Platform.OS === 'android'}
                 />
             </View>
             <Text className="text-[10px] font-q-bold text-muted uppercase tracking-[2px] mt-3">{label}</Text>
@@ -162,45 +148,64 @@ const ScrollWheel: React.FC<ScrollWheelProps> = ({ data, index, onSelect, label 
 };
 
 export const TimePicker: React.FC<TimePickerProps> = ({ value, onChange }) => {
-    const hoursArr = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
-    const minutesArr = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
+    const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
+    const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
 
-    const currentHours = value.getHours();
-    const currentMinutes = value.getMinutes();
-
-    const handleHourSelect = (val: number) => {
+    const handleHourChange = useCallback((h: number) => {
         const next = new Date(value);
-        next.setHours(val);
+        next.setHours(h);
         onChange(next);
-    };
+    }, [value, onChange]);
 
-    const handleMinuteSelect = (val: number) => {
+    const handleMinuteChange = useCallback((m: number) => {
         const next = new Date(value);
-        next.setMinutes(val);
+        next.setMinutes(m);
         onChange(next);
-    };
+    }, [value, onChange]);
 
     return (
         <View className="w-full items-center">
             <View className="flex-row items-center justify-center">
-                <ScrollWheel 
-                    data={hoursArr} 
-                    index={currentHours} 
-                    onSelect={handleHourSelect} 
+                <ScrollWheel
+                    data={hours}
+                    initialValue={value.getHours()}
+                    onSelect={handleHourChange}
                     label="Hour"
                 />
-
+                
                 <View className="px-5 items-center justify-center mb-6">
                     <Text className="text-5xl font-q-bold text-primary/30">:</Text>
                 </View>
 
-                <ScrollWheel 
-                    data={minutesArr} 
-                    index={currentMinutes} 
-                    onSelect={handleMinuteSelect} 
+                <ScrollWheel
+                    data={minutes}
+                    initialValue={value.getMinutes()}
+                    onSelect={handleMinuteChange}
                     label="Min"
                 />
             </View>
         </View>
     );
 };
+
+const styles = StyleSheet.create({
+    wheelContainer: {
+        height: CONTAINER_HEIGHT,
+        width: 100,
+    },
+    itemContainer: {
+        height: ITEM_HEIGHT,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    itemText: {
+        // Fallback font family if font-q-bold fails
+        fontFamily: Platform.OS === 'ios' ? 'Quicksand-Bold' : 'Quicksand_700Bold',
+        color: '#333333',
+    },
+    highlightBar: {
+        height: ITEM_HEIGHT,
+        top: ITEM_HEIGHT,
+        zIndex: 1,
+    },
+});
