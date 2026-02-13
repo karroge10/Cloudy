@@ -9,10 +9,10 @@ import { notifications } from '../utils/notifications';
 export interface JournalEntry {
     id: string;
     user_id: string;
-    content: string;
+    text: string;
     is_favorite: boolean;
     created_at: string;
-    mood?: string;
+    type?: string;
     is_deleted?: boolean;
 }
 
@@ -21,7 +21,7 @@ interface JournalContextType {
     loading: boolean;
     streak: number;
     rawStreakData: { created_at: string }[];
-    addEntry: (content: string) => Promise<void>;
+    addEntry: (text: string) => Promise<void>;
     toggleFavorite: (id: string, isFavorite: boolean) => Promise<void>;
     deleteEntry: (id: string, soft?: boolean) => Promise<void>;
     refreshEntries: () => Promise<void>;
@@ -50,7 +50,7 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
         }
 
         const { data, error } = await supabase
-            .from('journal_entries')
+            .from('posts')
             .select('*')
             .eq('user_id', session.user.id)
             .order('created_at', { ascending: false });
@@ -86,14 +86,14 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
         }
     }, [rawStreakData]);
 
-    const addEntry = async (content: string) => {
+    const addEntry = async (text: string) => {
         if (!session?.user?.id) return;
 
         const { data, error } = await supabase
-            .from('journal_entries')
+            .from('posts')
             .insert([{
                 user_id: session.user.id,
-                content,
+                text: text,
                 is_favorite: false,
                 created_at: new Date().toISOString()
             }])
@@ -103,9 +103,8 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
         if (error) throw error;
         if (data) {
             setEntries(prev => [data, ...prev]);
-
             // Schedule a flashback notification (nostalgic nudge) for 7 days in the future
-            notifications.scheduleFlashback(data.id, data.content, 7);
+            notifications.scheduleFlashback(data.id, data.text, 7);
         }
     };
 
@@ -118,7 +117,7 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
         }
 
         const { error } = await supabase
-            .from('journal_entries')
+            .from('posts')
             .update({ is_favorite: isFavorite })
             .eq('id', id);
 
@@ -135,7 +134,7 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
             setEntries(prev => prev.map(e => e.id === id ? { ...e, is_deleted: true } : e));
             
             const { error } = await supabase
-                .from('journal_entries')
+                .from('posts')
                 .update({ is_deleted: true })
                 .eq('id', id);
 
@@ -147,7 +146,7 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
             setEntries(prev => prev.filter(e => e.id !== id));
 
             const { error } = await supabase
-                .from('journal_entries')
+                .from('posts')
                 .delete()
                 .eq('id', id);
 
