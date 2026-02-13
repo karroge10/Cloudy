@@ -13,7 +13,7 @@ export const WelcomeScreen = () => {
     const scaleAnim = useRef(new Animated.Value(1)).current;
 
     const handleMascotPress = () => {
-        haptics.light();
+        haptics.selection();
         Animated.sequence([
             Animated.timing(scaleAnim, {
                 toValue: 0.8,

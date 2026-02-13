@@ -7,6 +7,7 @@ import { Layout } from '../components/Layout';
 import { TopNav } from '../components/TopNav';
 import { Button } from '../components/Button';
 import { MascotCard } from '../components/MascotCard';
+import { haptics } from '../utils/haptics';
 
 import { COMPANIONS } from '../constants/Companions';
 
@@ -86,7 +87,7 @@ export const ProfileSetupScreen = () => {
 
                     <TouchableOpacity 
                         className="py-4 items-center mt-2"
-                        onPress={skipSetup}
+                        onPress={() => { haptics.selection(); skipSetup(); }}
                         disabled={loading}
                     >
                         <Text className="text-muted font-q-bold text-base">Skip for now</Text>

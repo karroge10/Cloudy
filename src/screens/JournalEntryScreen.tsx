@@ -4,6 +4,7 @@ import { MASCOTS } from '../constants/Assets';
 import { useNavigation } from '@react-navigation/native';
 import { Layout } from '../components/Layout';
 import { TopNav } from '../components/TopNav';
+import { haptics } from '../utils/haptics';
 
 export const JournalEntryScreen = () => {
     const [gratitude, setGratitude] = useState('');
@@ -11,6 +12,7 @@ export const JournalEntryScreen = () => {
 
     const handleSave = () => {
         if (gratitude.trim().length === 0) return;
+        haptics.selection();
         // In a real app, save to storage here
         console.log("Saved gratitude:", gratitude);
         setGratitude('');

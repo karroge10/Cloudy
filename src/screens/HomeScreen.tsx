@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { View, Text, Image, TouchableOpacity, TextInput, Alert, ActivityIndicator, Keyboard, Animated, Pressable } from 'react-native';
 import { MASCOTS } from '../constants/Assets';
@@ -35,7 +35,7 @@ export const HomeScreen = () => {
     });
 
     const handleMascotPress = () => {
-        haptics.light();
+        haptics.selection();
         Animated.sequence([
             Animated.timing(scaleAnim, {
                 toValue: 0.8,
@@ -58,6 +58,7 @@ export const HomeScreen = () => {
 
         setLoading(true);
         try {
+            haptics.selection();
             await addEntry(text.trim());
             haptics.success();
             
@@ -116,8 +117,18 @@ export const HomeScreen = () => {
     };
 
     const charCount = text.length;
-    const onboardingCompleted = profile?.onboarding_completed ?? false;
+    const isNewUser = !!(profile && profile.onboarding_completed === false);
 
+    const inputRef = useRef<TextInput>(null);
+
+    useEffect(() => {
+        if (isNewUser) {
+            // Small delay to ensure the component is fully ready
+            setTimeout(() => {
+                inputRef.current?.focus();
+            }, 100);
+        }
+    }, [isNewUser]);
 
     return (
         <Layout isTabScreen={true} useSafePadding={false} className="px-6 pt-4">
@@ -125,7 +136,7 @@ export const HomeScreen = () => {
             <View className="flex-row justify-between items-center mb-8">
                 <Pressable onPress={handleMascotPress}>
                     <Animated.Image 
-                        source={onboardingCompleted ? MASCOTS.WRITE : MASCOTS.HELLO} 
+                        source={isNewUser ? MASCOTS.HELLO : MASCOTS.WRITE} 
                         className="w-24 h-24" 
                         resizeMode="contain"
                         style={{ transform: [{ scale: scaleAnim }] }}
@@ -151,6 +162,7 @@ export const HomeScreen = () => {
                     Daily Gratitude
                 </Text>
                 <TextInput
+                    ref={inputRef}
                     multiline
                     placeholder="What's on your mind today?"
                     placeholderTextColor="#999"
@@ -159,7 +171,7 @@ export const HomeScreen = () => {
                     value={text}
                     onChangeText={setText}
                     maxLength={200}
-                    autoFocus={!onboardingCompleted}
+                    autoFocus={isNewUser}
                 />
                 
                 <View className="flex-row justify-between items-center pt-4 border-t border-gray-50">

@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { CustomAlert } from '../components/CustomAlert';
 import { TopNav } from '../components/TopNav';
 import { Layout } from '../components/Layout';
+import { haptics } from '../utils/haptics';
 
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
@@ -40,10 +41,12 @@ export const AuthScreen = () => {
     };
 
     const hideAlert = () => {
+        haptics.selection();
         setAlertConfig(prev => ({ ...prev, visible: false }));
     };
     
     async function signInWithEmail() {
+        haptics.selection();
         if (!email || !password) {
             showAlert('Missing info', 'Please enter both email and password.', 'error');
             return;
@@ -66,6 +69,7 @@ export const AuthScreen = () => {
     }
 
     async function signUpWithEmail() {
+        haptics.selection();
         if (!email || !password) {
             showAlert('Missing info', 'Please enter both email and password.', 'error');
             return;
@@ -136,6 +140,7 @@ export const AuthScreen = () => {
 
     const signInWithGoogle = async () => {
         try {
+            haptics.selection();
             setLoading(true);
             await GoogleSignin.hasPlayServices();
             const userInfo = await GoogleSignin.signIn();
@@ -258,7 +263,7 @@ export const AuthScreen = () => {
 
                         <TouchableOpacity 
                             className="mt-2 py-2 items-center"
-                            onPress={() => setIsLogin(!isLogin)}
+                            onPress={() => { haptics.selection(); setIsLogin(!isLogin); }}
                         >
                             <Text className="text-muted font-q-bold text-base">
                                 {isLogin ? "New here? " : "Already joined? "}

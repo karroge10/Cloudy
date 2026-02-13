@@ -9,6 +9,7 @@ import {
     Dimensions,
     TouchableWithoutFeedback
 } from 'react-native';
+import { haptics } from '../utils/haptics';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -44,6 +45,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
             },
             onPanResponderRelease: (_, gestureState) => {
                 if (gestureState.dy > 120 || gestureState.vy > 0.5) {
+                    haptics.selection();
                     closeModal();
                 } else {
                     Animated.spring(translateY, {
@@ -86,7 +88,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
             onRequestClose={closeModal}
         >
             <View className="flex-1 justify-end">
-                <TouchableWithoutFeedback onPress={closeModal}>
+                <TouchableWithoutFeedback onPress={() => { haptics.selection(); closeModal(); }}>
                     <Animated.View style={{ opacity: backdropOpacity }} className="absolute inset-0 bg-black/40" />
                 </TouchableWithoutFeedback>
                 

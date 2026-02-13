@@ -7,6 +7,7 @@ import { Layout } from '../components/Layout';
 import { TopNav } from '../components/TopNav';
 import { TimePicker } from '../components/TimePicker';
 import { Button } from '../components/Button';
+import { haptics } from '../utils/haptics';
 
 export const ReminderSetupScreen = () => {
     const [date, setDate] = useState(new Date());
@@ -111,7 +112,7 @@ export const ReminderSetupScreen = () => {
 
                     <TouchableOpacity 
                         className="py-4 items-center mt-2"
-                        onPress={skipReminder}
+                        onPress={() => { haptics.selection(); skipReminder(); }}
                         disabled={loading}
                     >
                         <Text className="text-muted font-q-bold text-base">No thanks, I'll remember myself</Text>

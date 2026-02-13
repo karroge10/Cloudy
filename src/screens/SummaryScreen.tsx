@@ -6,6 +6,7 @@ import { MASCOTS } from '../constants/Assets';
 import { supabase } from '../lib/supabase';
 import { useState } from 'react';
 import { TopNav } from '../components/TopNav';
+import { haptics } from '../utils/haptics';
 
 import { Layout } from '../components/Layout';
 
@@ -26,6 +27,7 @@ export const SummaryScreen = () => {
     const goalText = formatList(goals);
 
     const handleStartWriting = async () => {
+        haptics.selection();
         setLoading(true);
         try {
             // Sign in anonymously to bypass traditional auth for now

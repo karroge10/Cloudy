@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { haptics } from '../utils/haptics';
 
 interface InfoCardProps {
     title: string;
@@ -27,7 +27,7 @@ export const InfoCard = ({
     
     const handlePress = () => {
         if (onPress) {
-            Haptics.selectionAsync();
+            haptics.selection();
             onPress();
         }
     };

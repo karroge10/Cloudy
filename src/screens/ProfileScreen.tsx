@@ -127,7 +127,7 @@ export const ProfileScreen = () => {
                 {/* Streak & Mascot Header */}
                 <View className="flex-row justify-between items-center mb-8">
                     <View className="flex-1">
-                         <TouchableOpacity onPress={() => setIsNameSheetVisible(true)} className="mb-1">
+                         <TouchableOpacity onPress={() => { haptics.selection(); setIsNameSheetVisible(true); }} className="mb-1">
                               {profileLoading ? (
                                  <Skeleton width={120} height={24} style={{ marginBottom: 4 }} borderRadius={12} />
                               ) : (
@@ -147,7 +147,7 @@ export const ProfileScreen = () => {
                             </View>
                         )}
                     </View>
-                    <TouchableOpacity onPress={() => setIsMascotSheetVisible(true)} className="active:scale-95 transition-transform">
+                    <TouchableOpacity onPress={() => { haptics.selection(); setIsMascotSheetVisible(true); }} className="active:scale-95 transition-transform">
                         <Image 
                             source={currentMascot.asset} 
                             className="w-32 h-32" 
@@ -170,7 +170,7 @@ export const ProfileScreen = () => {
                     <View className="flex-row items-center justify-between py-4">
                         <View className="flex-1">
                             <Text className="text-lg font-q-bold text-text">Daily Reminder</Text>
-                            <TouchableOpacity onPress={() => setIsTimeSheetVisible(true)}>
+                            <TouchableOpacity onPress={() => { haptics.selection(); setIsTimeSheetVisible(true); }}>
                                 <Text className="text-primary font-q-bold text-base mt-1">{reminderTime}</Text>
                             </TouchableOpacity>
                         </View>
@@ -190,28 +190,28 @@ export const ProfileScreen = () => {
 
                     {/* Age, Gender, Country, Goals, Struggles row */}
                     <View className="py-2">
-                        <TouchableOpacity onPress={() => setIsAgeSheetVisible(true)} className="flex-row justify-between items-center py-3">
+                        <TouchableOpacity onPress={() => { haptics.selection(); setIsAgeSheetVisible(true); }} className="flex-row justify-between items-center py-3">
                             <Text className="text-lg font-q-bold text-text">Age</Text>
                             <View className="flex-1 items-end ml-4">
                                 <Text className="text-primary font-q-bold text-base">{profile?.age || 'Set Age'}</Text>
                             </View>
                         </TouchableOpacity>
                         <View className="h-[1px] bg-inactive opacity-10" />
-                        <TouchableOpacity onPress={() => setIsGenderSheetVisible(true)} className="flex-row justify-between items-center py-3">
+                        <TouchableOpacity onPress={() => { haptics.selection(); setIsGenderSheetVisible(true); }} className="flex-row justify-between items-center py-3">
                             <Text className="text-lg font-q-bold text-text">Gender</Text>
                             <View className="flex-1 items-end ml-4">
                                 <Text className="text-primary font-q-bold text-base">{profile?.gender || 'Set Gender'}</Text>
                             </View>
                         </TouchableOpacity>
                         <View className="h-[1px] bg-inactive opacity-10" />
-                        <TouchableOpacity onPress={() => setIsCountrySheetVisible(true)} className="flex-row justify-between items-center py-3">
+                        <TouchableOpacity onPress={() => { haptics.selection(); setIsCountrySheetVisible(true); }} className="flex-row justify-between items-center py-3">
                             <Text className="text-lg font-q-bold text-text">Location</Text>
                             <View className="flex-1 items-end ml-4">
                                 <Text className="text-primary font-q-bold text-base">{profile?.country || 'Set Country'}</Text>
                             </View>
                         </TouchableOpacity>
                         <View className="h-[1px] bg-inactive opacity-10" />
-                        <TouchableOpacity onPress={() => setIsGoalSheetVisible(true)} className="flex-row justify-between items-center py-3">
+                        <TouchableOpacity onPress={() => { haptics.selection(); setIsGoalSheetVisible(true); }} className="flex-row justify-between items-center py-3">
                             <Text className="text-lg font-q-bold text-text">Goals</Text>
                             <View className="flex-1 items-end ml-4">
                                 <Text className="text-primary font-q-bold text-base" numberOfLines={1}>
@@ -222,7 +222,7 @@ export const ProfileScreen = () => {
                             </View>
                         </TouchableOpacity>
                         <View className="h-[1px] bg-inactive opacity-10" />
-                        <TouchableOpacity onPress={() => setIsStruggleSheetVisible(true)} className="flex-row justify-between items-center py-3">
+                        <TouchableOpacity onPress={() => { haptics.selection(); setIsStruggleSheetVisible(true); }} className="flex-row justify-between items-center py-3">
                             <Text className="text-lg font-q-bold text-text">Struggles</Text>
                             <View className="flex-1 items-end ml-4">
                                 <Text className="text-primary font-q-bold text-base" numberOfLines={1}>
@@ -273,7 +273,7 @@ export const ProfileScreen = () => {
                 </View>
 
                 {/* Log Out */}
-                <TouchableOpacity onPress={handleLogout} className="mb-20 items-center py-4">
+                <TouchableOpacity onPress={() => { haptics.selection(); handleLogout(); }} className="mb-20 items-center py-4">
                     <Text className="text-lg font-q-bold text-red-400 opacity-60">Log Out</Text>
                     <Text className="text-[10px] font-q-medium text-muted mt-2 opacity-30">Cloudy v1.0.42</Text>
                 </TouchableOpacity>

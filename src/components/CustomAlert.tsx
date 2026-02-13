@@ -1,6 +1,7 @@
-import React from 'react';
 import { Modal, Text, View, TouchableOpacity, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { haptics } from '../utils/haptics';
+import { useEffect } from 'react';
 
 
 const { width } = Dimensions.get('window');
@@ -29,6 +30,14 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
     type = 'info'
 }) => {
     
+    useEffect(() => {
+        if (visible) {
+            if (type === 'error') haptics.error();
+            else if (type === 'success') haptics.success();
+            else haptics.selection();
+        }
+    }, [visible, type]);
+
     const getIconName = () => {
         switch (type) {
             case 'error': return 'warning';
@@ -72,6 +81,7 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
                                 <TouchableOpacity
                                     key={index}
                                     onPress={() => {
+                                        haptics.selection();
                                         btn.onPress?.();
                                         onClose();
                                     }}
@@ -92,7 +102,7 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
                             ))
                         ) : (
                             <TouchableOpacity
-                                onPress={onClose}
+                                onPress={() => { haptics.selection(); onClose(); }}
                                 className="bg-primary py-4 rounded-full items-center"
                             >
                                 <Text className="text-white font-q-bold text-lg">Okay</Text>

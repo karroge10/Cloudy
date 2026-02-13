@@ -5,7 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { MASCOTS } from '../constants/Assets';
 import { Layout } from '../components/Layout';
 import { TopNav } from '../components/TopNav';
-import * as Haptics from 'expo-haptics';
+import { haptics } from '../utils/haptics';
 import Animated, { 
     useSharedValue, 
     useAnimatedStyle, 
@@ -49,7 +49,7 @@ export const MemoryScreen = () => {
     const isLiked = !!favorites[currentMemory.id];
 
     const handleNextMemory = () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        haptics.medium();
         
         // Simple fade out/in sequence without scale/shadow effects
         contentOpacity.value = withTiming(0, { duration: 150 }, () => {
@@ -60,7 +60,7 @@ export const MemoryScreen = () => {
 
 
     const toggleHeart = () => {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        haptics.success();
         
         heartScale.value = withSequence(
             withTiming(1.4, { duration: 100 }),
@@ -83,7 +83,7 @@ export const MemoryScreen = () => {
     }));
 
     const handleShare = async () => {
-        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        haptics.selection();
         try {
             await Share.share({
                 message: `Check out this memory from Cloudy: "${currentMemory.text}" - ${currentMemory.date}`,

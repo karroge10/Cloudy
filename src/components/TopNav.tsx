@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { haptics } from '../utils/haptics';
 
 interface TopNavProps {
     title?: string;
@@ -22,7 +23,7 @@ export const TopNav = ({ title, subtitle, showBack = true, onBack, rightElement,
             <View className="w-12 items-start">
                 {showBack && (
                     <TouchableOpacity 
-                        onPress={onBack || (() => navigation.goBack())} 
+                        onPress={() => { haptics.selection(); if (onBack) onBack(); else navigation.goBack(); }} 
                         className="p-2 -ml-2 items-center justify-center w-12 h-12"
                     >
                         <Ionicons 

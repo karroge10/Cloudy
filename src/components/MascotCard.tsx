@@ -1,5 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Image, Text, ImageSourcePropType } from 'react-native';
+import { haptics } from '../utils/haptics';
 
 interface MascotCardProps {
     name: string;
@@ -9,9 +10,14 @@ interface MascotCardProps {
 }
 
 export const MascotCard = ({ name, asset, isSelected, onPress }: MascotCardProps) => {
+    const handlePress = () => {
+        haptics.selection();
+        onPress();
+    };
+
     return (
         <TouchableOpacity
-            onPress={onPress}
+            onPress={handlePress}
             className={`w-[30%] aspect-square mb-4 rounded-[32px] items-center justify-center border-2 ${
                 isSelected 
                     ? 'bg-secondary border-primary shadow-sm' 

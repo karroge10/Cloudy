@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, useWindowDimensions, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import * as Haptics from 'expo-haptics';
+import { haptics } from '../utils/haptics';
 import Animated, { 
     useAnimatedScrollHandler, 
     useSharedValue, 
@@ -47,7 +47,7 @@ const TimelineItem = ({
     isLast: boolean; 
     isFirst: boolean;
     viewportHeight: number;
-    onToggleFavorite: (id: string) => void;
+    onToggleFavorite: (id: string, isFavorite: boolean) => void;
     onDelete: (id: string) => void;
     isDeletingProp: boolean;
     onDeleteAnimationComplete: (id: string) => void;
@@ -70,7 +70,7 @@ const TimelineItem = ({
 
     const handleTrashPress = () => {
         if (isDeletingProp) return;
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        haptics.success();
         
         // Immediate trigger for bottom sheet
         onDelete(item.id);
@@ -119,7 +119,7 @@ const TimelineItem = ({
         const borderColor = interpolateColor(
             scrollY.value,
             isActiveRange,
-            ['#E5E5E5', item.color, '#E5E5E5'],
+            ['#E5E5E5', '#FF9E7D', '#E5E5E5'],
         );
 
         return { borderColor };
@@ -139,9 +139,9 @@ const TimelineItem = ({
                     style={[{ backgroundColor: 'white', borderWidth: 2 }, circleAnimatedStyle]}
                     className="w-16 h-16 rounded-full items-center justify-center shadow-sm z-10 bg-white shadow-[#00000010]"
                 >
-                     <Animated.View 
+                    <Animated.View 
                          className="absolute inset-0 rounded-full items-center justify-center"
-                         style={[{ backgroundColor: item.color }, useAnimatedStyle(() => {
+                         style={[{ backgroundColor: '#FF9E7D' }, useAnimatedStyle(() => {
                              const isActiveRange = [
                                 (index - 0.5) * ITEM_HEIGHT,
                                 index * ITEM_HEIGHT,
@@ -158,8 +158,12 @@ const TimelineItem = ({
                      />
 
                     <View className="items-center justify-center">
-                        <Text className="text-[10px] font-q-bold text-text">{item.month}</Text>
-                        <Text className="text-xl font-q-bold text-text">{item.day}</Text>
+                        <Text className="text-[10px] font-q-bold text-text">
+                            {new Date(item.created_at).toLocaleDateString('en-US', { month: 'short' })}
+                        </Text>
+                        <Text className="text-xl font-q-bold text-text">
+                            {new Date(item.created_at).getDate()}
+                        </Text>
                     </View>
                 </Animated.View>
 
@@ -173,25 +177,26 @@ const TimelineItem = ({
                     style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}
                 >
                     <View>
-                        <Text className="font-q-medium text-base leading-6 text-text">{item.text}</Text>
+                        <Text className="font-q-medium text-base leading-6 text-text">{item.content}</Text>
                     </View>
                     
                     <View className="flex-row justify-end mt-4 items-center space-x-4">
                         <TouchableOpacity 
-                            onPress={() => onToggleFavorite(item.id)}
+                            onPress={() => { haptics.selection(); onToggleFavorite(item.id, !item.is_favorite); }}
                             className="p-2"
                         >
                             <Ionicons 
-                                name={item.isFavorite ? "heart" : "heart-outline"} 
+                                name={item.is_favorite ? "heart" : "heart-outline"} 
                                 size={22} 
-                                color={item.isFavorite ? "#FF9E7D" : "#333"} 
-                                style={{ opacity: item.isFavorite ? 1 : 0.2 }}
+                                color={item.is_favorite ? "#FF9E7D" : "#333"} 
+                                style={{ opacity: item.is_favorite ? 1 : 0.2 }}
                             />
                         </TouchableOpacity>
                         
                         {(() => {
                             const now = new Date();
-                            const diffInHours = (now.getTime() - item.createdAt.getTime()) / (1000 * 60 * 60);
+                            const entryDate = new Date(item.created_at);
+                            const diffInHours = (now.getTime() - entryDate.getTime()) / (1000 * 60 * 60);
                             const canDelete = diffInHours <= 24;
                             
                             if (!canDelete) return null;
@@ -276,16 +281,18 @@ export const JourneyScreen = () => {
     };
 
     const filteredEntries = useMemo(() => {
-        if (filter === 'favorites') return entries.filter(e => e.isFavorite);
+        if (filter === 'favorites') return entries.filter(e => e.is_favorite);
         return entries;
     }, [entries, filter]);
 
     const handleTrashPress = (id: string) => {
         const item = entries.find(e => e.id === id);
         if (!item) return;
-
+        
+        haptics.selection();
         const now = new Date();
-        const diffInHours = (now.getTime() - item.createdAt.getTime()) / (1000 * 60 * 60);
+        const entryDate = new Date(item.created_at);
+        const diffInHours = (now.getTime() - entryDate.getTime()) / (1000 * 60 * 60);
 
         if (diffInHours > 24) {
             Alert.alert("Too Late", "You can only delete memories within 24 hours of creating them.");
@@ -297,6 +304,7 @@ export const JourneyScreen = () => {
 
     const confirmDelete = () => {
         if (!deletingId) return;
+        haptics.selection();
         const id = deletingId;
         setDeletingId(null);
         
@@ -330,7 +338,7 @@ export const JourneyScreen = () => {
             {entries.length >= 7 && (
                 <TouchableOpacity 
                     activeOpacity={0.9}
-                    onPress={() => (navigation as any).navigate('Memory')}
+                    onPress={() => { haptics.selection(); navigation.navigate('Memory' as never); }}
                     className="bg-secondary rounded-[32px] p-6 mb-8 flex-row items-center justify-between border border-primary/20 shadow-[#FF9E7D20] shadow-lg"
                     style={{ elevation: 4 }}
                 >
@@ -354,13 +362,13 @@ export const JourneyScreen = () => {
             {/* Filter Tabs */}
             <View className="flex-row mb-8 bg-inactive/10 p-1.5 rounded-2xl self-start">
                 <TouchableOpacity 
-                    onPress={() => setFilter('all')}
+                    onPress={() => { haptics.selection(); setFilter('all'); }}
                     className={`px-6 py-2 rounded-[14px] ${filter === 'all' ? 'bg-white shadow-sm' : ''}`}
                 >
                     <Text className={`font-q-bold ${filter === 'all' ? 'text-text' : 'text-muted'}`}>All</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
-                    onPress={() => setFilter('favorites')}
+                    onPress={() => { haptics.selection(); setFilter('favorites'); }}
                     className={`px-6 py-2 rounded-[14px] ${filter === 'favorites' ? 'bg-white shadow-sm' : ''}`}
                 >
                     <View className="flex-row items-center">
