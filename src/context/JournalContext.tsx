@@ -4,6 +4,7 @@ import { Session } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { calculateStreak } from '../utils/streakUtils';
 import { haptics } from '../utils/haptics';
+import { notifications } from '../utils/notifications';
 
 export interface JournalEntry {
     id: string;
@@ -102,6 +103,9 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
         if (error) throw error;
         if (data) {
             setEntries(prev => [data, ...prev]);
+
+            // Schedule a flashback notification (nostalgic nudge) for 7 days in the future
+            notifications.scheduleFlashback(data.id, data.content, 7);
         }
     };
 

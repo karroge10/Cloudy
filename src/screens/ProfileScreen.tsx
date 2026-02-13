@@ -101,7 +101,8 @@ export const ProfileScreen = () => {
     const GENDERS = ['Male', 'Female', 'Non-binary', 'Prefer not to say'];
     
     const currentMascot = COMPANIONS.find(c => c.name === profile?.mascot_name) || COMPANIONS[0];
-    const reminderTime = profile?.reminder_time || '8:00 PM';
+    const reminderTime = profile?.reminder_time;
+    const displayReminderTime = reminderTime || '8:00 PM';
     const isHapticsEnabled = profile?.haptics_enabled ?? true;
     const displayName = profile?.display_name || '';
 
@@ -171,16 +172,21 @@ export const ProfileScreen = () => {
                         <View className="flex-1">
                             <Text className="text-lg font-q-bold text-text">Daily Reminder</Text>
                             <TouchableOpacity onPress={() => { haptics.selection(); setIsTimeSheetVisible(true); }}>
-                                <Text className="text-primary font-q-bold text-base mt-1">{reminderTime}</Text>
+                                <Text className="text-primary font-q-bold text-base mt-1">{displayReminderTime}</Text>
                             </TouchableOpacity>
                         </View>
                         <Switch
                             trackColor={{ false: '#E0E0E0', true: '#FF9E7D' }}
                             thumbColor="#FFFFFF"
                             onValueChange={(val) => {
-                                // For now, we don't have a separate is_reminder_enabled column, 
-                                // but we could implement one or just clear the time.
-                                // Logic omitted for brevity but UI is there.
+                                haptics.selection();
+                                if (val) {
+                                    // Turn on: use current display time or default
+                                    updateProfile({ reminder_time: displayReminderTime });
+                                } else {
+                                    // Turn off: set to null
+                                    updateProfile({ reminder_time: null });
+                                }
                             }}
                             value={!!reminderTime}
                         />

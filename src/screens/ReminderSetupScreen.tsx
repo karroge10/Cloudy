@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Alert, Image, DeviceEventEmitter } from 'react-native';
-import { supabase } from '../lib/supabase';
+import { View, Text, TouchableOpacity, Alert, Image } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { MASCOTS } from '../constants/Assets';
 import { Layout } from '../components/Layout';
@@ -8,12 +7,14 @@ import { TopNav } from '../components/TopNav';
 import { TimePicker } from '../components/TimePicker';
 import { Button } from '../components/Button';
 import { haptics } from '../utils/haptics';
+import { useProfile } from '../context/ProfileContext';
 
 export const ReminderSetupScreen = () => {
     const [date, setDate] = useState(new Date());
     const [loading, setLoading] = useState(false);
     const navigation = useNavigation<any>();
     const route = useRoute();
+    const { updateProfile } = useProfile();
     
     // Get data passed from ProfileSetupScreen
     const { displayName, mascotName } = (route.params as any) || {};
@@ -24,27 +25,14 @@ export const ReminderSetupScreen = () => {
     async function finishReminderSetup() {
         setLoading(true);
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error('No user found');
-
-            const updates = {
-                id: user.id,
+            await updateProfile({
                 display_name: displayName,
                 mascot_name: mascotName,
                 reminder_time: formattedTime,
                 onboarding_completed: true,
-                updated_at: new Date(),
-            };
-
-            const { error } = await supabase
-                .from('profiles')
-                .update(updates)
-                .eq('id', user.id);
-            if (error) throw error;
+            });
             
-            DeviceEventEmitter.emit('refresh_profile');
             navigation.navigate('MainApp');
-
         } catch (error: any) {
             Alert.alert('Error', error.message);
         } finally {
@@ -55,26 +43,14 @@ export const ReminderSetupScreen = () => {
     async function skipReminder() {
         setLoading(true);
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error('No user found');
-
-            const updates = {
-                id: user.id,
+            await updateProfile({
                 display_name: displayName,
                 mascot_name: mascotName,
                 reminder_time: null,
                 onboarding_completed: true,
-                updated_at: new Date(),
-            };
-            const { error } = await supabase
-                .from('profiles')
-                .update(updates)
-                .eq('id', user.id);
-            if (error) throw error;
+            });
             
-            DeviceEventEmitter.emit('refresh_profile');
             navigation.navigate('MainApp');
-
         } catch (error: any) {
             Alert.alert('Error', error.message);
         } finally {
@@ -122,4 +98,3 @@ export const ReminderSetupScreen = () => {
         </Layout>
     );
 };
-

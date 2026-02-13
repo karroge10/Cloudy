@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { DeviceEventEmitter } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { haptics } from '../utils/haptics';
+import { notifications } from '../utils/notifications';
 
 interface Profile {
     display_name: string | null;
@@ -57,8 +59,9 @@ export const ProfileProvider = ({ children }: { children: React.ReactNode }) => 
             };
             setProfile(mappedProfile);
             
-            // Sync current setting to the HapticService
+            // Sync current settings to services
             haptics.setEnabled(mappedProfile.haptics_enabled);
+            notifications.scheduleDailyReminder(mappedProfile.reminder_time);
         }
         setLoading(false);
     };
@@ -72,9 +75,12 @@ export const ProfileProvider = ({ children }: { children: React.ReactNode }) => 
             const newProfile = { ...profile, ...updates };
             setProfile(newProfile);
             
-            // Immediately sync haptics if that was the change
+            // Immediately sync haptics/notifications if they were the change
             if (updates.haptics_enabled !== undefined) {
                 haptics.setEnabled(updates.haptics_enabled);
+            }
+            if (updates.reminder_time !== undefined) {
+                notifications.scheduleDailyReminder(updates.reminder_time);
             }
         }
 
@@ -93,6 +99,8 @@ export const ProfileProvider = ({ children }: { children: React.ReactNode }) => 
     useEffect(() => {
         fetchProfile();
 
+        const refreshListener = DeviceEventEmitter.addListener('refresh_profile', fetchProfile);
+
         // Optional: Listen for auth state changes to re-fetch
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             if (session) {
@@ -104,6 +112,7 @@ export const ProfileProvider = ({ children }: { children: React.ReactNode }) => 
 
         return () => {
             subscription.unsubscribe();
+            refreshListener.remove();
         };
     }, []);
 

@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { View, Text, FlatList, NativeSyntheticEvent, NativeScrollEvent, Animated } from 'react-native';
+import { View, Text, FlatList, NativeSyntheticEvent, NativeScrollEvent, Animated, Platform } from 'react-native';
 import { haptics } from '../utils/haptics';
 
 interface TimePickerProps {
@@ -11,8 +11,9 @@ const ITEM_HEIGHT = 50;
 const VISIBLE_ITEMS = 3;
 const CONTAINER_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
 
-// To create an infinite feel, we repeat the data
-const REPEAT_COUNT = 10; 
+// Increased REPEAT_COUNT allows us to remove the aggressive "silent jump" logic during scroll
+// which is what causes the jittery/stuck feeling.
+const REPEAT_COUNT = 100; 
 
 interface ScrollWheelProps {
     data: string[];
@@ -24,33 +25,37 @@ interface ScrollWheelProps {
 const ScrollWheel: React.FC<ScrollWheelProps> = ({ data, index, onSelect, label }) => {
     const scrollY = useRef(new Animated.Value(0)).current;
     const flatListRef = useRef<FlatList>(null);
-    const [localIndex, setLocalIndex] = useState(index);
     const isScrolling = useRef(false);
     
     // Create an expanded array for infinite-like scrolling
     const infiniteData = Array.from({ length: REPEAT_COUNT }, (_) => data).flat();
-    const centerOffset = (REPEAT_COUNT / 2) * data.length;
+    const centerOffset = Math.floor(REPEAT_COUNT / 2) * data.length;
     const initialIndex = centerOffset + index;
 
+    // Use a ref and state together for performant haptics + visual feedback
+    const localIndexRef = useRef(initialIndex);
+    const [localIndex, setLocalIndex] = useState(initialIndex);
+
     useEffect(() => {
-        // Initial positioning
+        // Initial positioning - using small delay to ensure layout is ready
         const timer = setTimeout(() => {
             flatListRef.current?.scrollToIndex({
                 index: initialIndex,
                 animated: false,
-                viewOffset: 0
+                viewOffset: ITEM_HEIGHT // Offset by one ITEM_HEIGHT to center it
             });
             scrollY.setValue(initialIndex * ITEM_HEIGHT);
-        }, 50);
+            localIndexRef.current = initialIndex;
+            setLocalIndex(initialIndex);
+        }, 100);
         return () => clearTimeout(timer);
     }, []);
 
-    // We only update the parent DATE when the user is done interacting.
-    // This prevents the whole screen from re-rendering 60 times a second,
-    // which is what causes the "buggy" feel/jumping.
     const handleScrollComplete = (offsetY: number) => {
         const newIndex = Math.round(offsetY / ITEM_HEIGHT);
-        const actualValue = newIndex % data.length;
+        // Correctly handling negative indices if user swipes past header
+        const actualValue = ((newIndex % data.length) + data.length) % data.length;
+        
         onSelect(actualValue);
         isScrolling.current = false;
     };
@@ -63,21 +68,11 @@ const ScrollWheel: React.FC<ScrollWheelProps> = ({ data, index, onSelect, label 
                 const y = event.nativeEvent.contentOffset.y;
                 const newIndex = Math.round(y / ITEM_HEIGHT);
                 
-                // Haptics and local visual state update immediately
-                if (newIndex !== localIndex) {
+                // Haptics and local visual state update immediately when a new number centers
+                if (newIndex !== localIndexRef.current) {
+                    localIndexRef.current = newIndex;
                     setLocalIndex(newIndex);
                     haptics.selection();
-                }
-
-                // Handle silent jump for infinite looping
-                if (y <= data.length * ITEM_HEIGHT || y >= (infiniteData.length - data.length * 2) * ITEM_HEIGHT) {
-                    const actualValue = newIndex % data.length;
-                    const jumpIndex = centerOffset + actualValue;
-                    flatListRef.current?.scrollToIndex({
-                        index: jumpIndex,
-                        animated: false,
-                        viewOffset: 0
-                    });
                 }
             }
         }
@@ -126,7 +121,7 @@ const ScrollWheel: React.FC<ScrollWheelProps> = ({ data, index, onSelect, label 
             >
                 {/* Selection Highlight Track */}
                 <View 
-                    style={{ height: ITEM_HEIGHT + 4, top: ITEM_HEIGHT - 2 }}
+                    style={{ height: ITEM_HEIGHT, top: ITEM_HEIGHT }}
                     className="absolute w-full border-y-2 border-primary/10 bg-primary/5 rounded-xl"
                 />
 
@@ -138,6 +133,8 @@ const ScrollWheel: React.FC<ScrollWheelProps> = ({ data, index, onSelect, label 
                     snapToInterval={ITEM_HEIGHT}
                     snapToAlignment="center"
                     decelerationRate="fast"
+                    // disableIntervalMomentum is key for that "snap and lock" feel on Android/iOS
+                    disableIntervalMomentum={true}
                     onScroll={onScroll}
                     scrollEventThrottle={16}
                     onScrollBeginDrag={() => { isScrolling.current = true; }}
@@ -148,9 +145,15 @@ const ScrollWheel: React.FC<ScrollWheelProps> = ({ data, index, onSelect, label 
                         offset: ITEM_HEIGHT * i,
                         index: i,
                     })}
+                    // Header and Footer provide the necessary padding to center items
                     ListHeaderComponent={<View style={{ height: ITEM_HEIGHT }} />}
                     ListFooterComponent={<View style={{ height: ITEM_HEIGHT }} />}
                     renderItem={renderItem}
+                    removeClippedSubviews={true}
+                    initialNumToRender={VISIBLE_ITEMS + 2}
+                    onScrollToIndexFailed={() => {
+                        // Safe fallback for edge cases
+                    }}
                 />
             </View>
             <Text className="text-[10px] font-q-bold text-muted uppercase tracking-[2px] mt-3">{label}</Text>
@@ -188,7 +191,7 @@ export const TimePicker: React.FC<TimePickerProps> = ({ value, onChange }) => {
                 />
 
                 <View className="px-5 items-center justify-center mb-6">
-                    <Text className="text-4xl font-q-bold text-primary/30">:</Text>
+                    <Text className="text-5xl font-q-bold text-primary/30">:</Text>
                 </View>
 
                 <ScrollWheel 

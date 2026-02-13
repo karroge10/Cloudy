@@ -30,6 +30,13 @@ import { ProfileSetupScreen } from './src/screens/ProfileSetupScreen';
 import { ReminderSetupScreen } from './src/screens/ReminderSetupScreen';
 import { JournalProvider } from './src/context/JournalContext';
 import { ProfileProvider } from './src/context/ProfileContext';
+import { useNotifications } from './src/hooks/useNotifications';
+
+const AppContent = () => {
+  useNotifications();
+  return null; // This component just runs the hook
+};
+
 
 
 const Stack = createNativeStackNavigator();
@@ -90,6 +97,7 @@ export default function App() {
       <ProfileProvider>
         <JournalProvider session={session}>
           <NavigationContainer theme={CloudyTheme}>
+            <AppContent />
             <Stack.Navigator
               screenOptions={{
                 headerShown: false,
