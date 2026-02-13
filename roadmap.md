@@ -20,7 +20,6 @@ This is a living document for all the things we want to polish or add later that
 ## ✨ Experience & Polish
 *   **Export as PDF**: The button is in the Profile, but it needs an engine. Use `expo-print` to generate beautiful, themed layouts of the user's journal for printing or backup.
 *   **Haptic Engine**: Create a global haptic utility that respects the "Haptic Feedback" toggle. Currently, vibrations fire regardless of the user's preference in settings.
-*   **Dark Mode ("Midnight")**: A warm, high-contrast dark theme for late-night journaling in bed.
 *   **Dynamic Versioning**: Automate the version footer in the Profile screen to pull directly from `app.json` instead of being hardcoded.
 
 ## 🎨 Creative Expression

@@ -263,7 +263,7 @@ export const HomeScreen = () => {
                         onPress={() => {
                             setShowStreakNudge(false);
                             setText('');
-                            navigation.navigate('Auth');
+                            navigation.navigate('Auth', { initialMode: 'signup' });
                         }}
                         className="w-full bg-primary py-4 rounded-full items-center shadow-md active:opacity-90 mb-4"
                     >

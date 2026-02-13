@@ -20,7 +20,7 @@ export const ProfileNudge = ({ isAnonymous, isComplete, onPressCompleteProfile, 
 
     const handlePress = () => {
         if (isAnonymous) {
-            navigation.navigate('Auth');
+            navigation.navigate('Auth', { initialMode: 'signup' });
         } else if (onPressCompleteProfile) {
             onPressCompleteProfile();
         } else {

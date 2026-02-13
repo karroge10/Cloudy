@@ -101,9 +101,9 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
         if (data) {
             setEntries(prev => [data, ...prev]);
             // Schedule a flashback notification (nostalgic nudge) for 7 days in the future
-            if (data.text) {
-                notifications.scheduleFlashback(data.id, data.text, 7);
-            }
+            // if (data.text) {
+            //     notifications.scheduleFlashback(data.id, data.text, 7);
+            // }
         }
     };
 

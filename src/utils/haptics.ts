@@ -23,13 +23,6 @@ class HapticService {
 
     private run(impact: () => Promise<void>, label: string) {
         if (!this.enabled) return;
-
-        // EMULATOR TESTING: Since emulators don't vibrate, we log to the console
-        // so the developer can see the interaction firing.
-        if (__DEV__) {
-            console.log(`[HapticService] ${label} impact generated`);
-        }
-
         impact().catch(e => console.warn('Haptic failed', e));
     }
 

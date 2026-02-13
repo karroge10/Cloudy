@@ -36,8 +36,10 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
 
     const panResponder = useRef(
         PanResponder.create({
-            onStartShouldSetPanResponder: () => true,
-            onMoveShouldSetPanResponder: () => true,
+            onStartShouldSetPanResponder: () => false,
+            onMoveShouldSetPanResponder: (_, gestureState) => {
+                return Math.abs(gestureState.dy) > 5;
+            },
             onPanResponderMove: (_, gestureState) => {
                 if (gestureState.dy > 0) {
                     translateY.setValue(gestureState.dy);
@@ -51,7 +53,8 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
                     Animated.spring(translateY, {
                         toValue: 0,
                         useNativeDriver: true,
-                        bounciness: 5,
+                        bounciness: 4,
+                        speed: 14,
                     }).start();
                 }
             },
@@ -60,12 +63,16 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
 
     useEffect(() => {
         if (visible) {
+            // Initial spring to bring it up
             Animated.spring(translateY, {
                 toValue: 0,
                 useNativeDriver: true,
-                tension: 50,
-                friction: 10,
+                bounciness: 4,
+                speed: 14,
             }).start();
+        } else {
+            // Ensure it's reset when not visible
+            translateY.setValue(SCREEN_HEIGHT);
         }
     }, [visible]);
 
