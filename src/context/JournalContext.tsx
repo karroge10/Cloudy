@@ -100,10 +100,6 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
         if (error) throw error;
         if (data) {
             setEntries(prev => [data, ...prev]);
-            // Schedule a flashback notification (nostalgic nudge) for 7 days in the future
-            // if (data.text) {
-            //     notifications.scheduleFlashback(data.id, data.text, 7);
-            // }
         }
     };
 
@@ -158,6 +154,13 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
     };
 
     const activeEntries = useMemo(() => entries.filter(e => !e.deleted_at), [entries]);
+
+    // Notification algorithm trigger
+    useEffect(() => {
+        if (!loading && activeEntries.length > 0) {
+            notifications.performBackgroundCheck(activeEntries);
+        }
+    }, [loading, activeEntries.length]);
 
     const value = useMemo(() => ({
         entries: activeEntries,
