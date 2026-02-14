@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text } from 'react-native';
 import { Button } from '../components/Button';
 import { SelectionPill } from '../components/SelectionPill';
 import { useNavigation } from '@react-navigation/native';
 import { MASCOTS } from '../constants/Assets';
 import { TopNav } from '../components/TopNav';
+import { MascotImage } from '../components/MascotImage';
 
 import { Layout } from '../components/Layout';
 
 import { STRUGGLES } from '../constants/Struggles';
 
 export const StruggleSelectionScreen = () => {
-    const navigation = useNavigation(); // Typing omitted for brevity
+    const navigation = useNavigation();
     const [selected, setSelected] = useState<string[]>([]);
 
     const toggleSelection = (item: string) => {
@@ -38,7 +38,7 @@ export const StruggleSelectionScreen = () => {
                         <Text className="text-4xl font-q-bold text-text text-center mb-6 pt-4 leading-tight">
                             What's been weighing on you lately?
                         </Text>
-                        <Image
+                        <MascotImage
                             source={MASCOTS.SAD}
                             className="w-72 h-72"
                             resizeMode="contain"

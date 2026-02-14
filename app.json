@@ -7,12 +7,12 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "backgroundColor": "#FFFFFF",
+    "backgroundColor": "#FFF9F0",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FFFFFF"
+      "backgroundColor": "#FFF9F0"
     },
     "ios": {
       "supportsTablet": true
@@ -20,7 +20,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FFFFFF"
+        "backgroundColor": "#FFF9F0"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": true,
@@ -32,7 +32,8 @@
     "plugins": [
       "expo-font",
       "@react-native-google-signin/google-signin",
-      "expo-notifications"
+      "expo-notifications",
+      "expo-asset"
     ]
   }
 }

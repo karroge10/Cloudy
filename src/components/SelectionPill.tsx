@@ -33,6 +33,7 @@ export const SelectionPill: React.FC<SelectionPillProps> = ({ label, selected, o
         <TouchableOpacity
             onPress={handlePress}
             activeOpacity={0.8}
+            delayPressIn={0}
             className={`${containerBase} ${selected ? containerSelected : containerInactive}`}
         >
             <Text className={`${textBase} ${selected ? textSelected : textInactive} text-center`}>

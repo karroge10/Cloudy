@@ -1,5 +1,4 @@
-import { View, Text, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Button } from '../components/Button';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { MASCOTS } from '../constants/Assets';
@@ -7,9 +6,11 @@ import { supabase } from '../lib/supabase';
 import { useState } from 'react';
 import { TopNav } from '../components/TopNav';
 import { haptics } from '../utils/haptics';
+import { MascotImage } from '../components/MascotImage';
 
 import { Layout } from '../components/Layout';
 import { useAlert } from '../context/AlertContext';
+import { getFriendlyAuthErrorMessage } from '../utils/authErrors';
 
 export const SummaryScreen = () => {
     const { showAlert } = useAlert();
@@ -50,15 +51,11 @@ export const SummaryScreen = () => {
                 
                 if (profileError) {
                     console.warn('Profile init error:', profileError.message);
-                    // We don't throw here as the session is already active and 
-                    // the user can continue, we'll just have missing initial data
                 }
             }
-            
-            // Note: App.tsx has an auth listener that will pick up the session 
-            // change and update the navigation stack automatically.
         } catch (error: any) {
-            showAlert('Error', error.message || 'Something went wrong. Please try again.', [{ text: 'Okay' }], 'error');
+            const { title, message } = getFriendlyAuthErrorMessage(error);
+            showAlert(title, message, [{ text: 'Okay' }], 'error');
         } finally {
             setLoading(false);
         }
@@ -76,7 +73,7 @@ export const SummaryScreen = () => {
                         We can get there, together.
                     </Text>
 
-                    <Image
+                    <MascotImage
                         source={MASCOTS.SHINE}
                         className="w-96 h-96 mb-4"
                         resizeMode="contain"

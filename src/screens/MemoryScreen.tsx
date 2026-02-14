@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, TouchableOpacity, Share } from 'react-native';
+import { View, Text, TouchableOpacity, Share, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { MASCOTS } from '../constants/Assets';
@@ -7,6 +7,7 @@ import { Layout } from '../components/Layout';
 import { TopNav } from '../components/TopNav';
 import { haptics } from '../utils/haptics';
 import { useJournal } from '../context/JournalContext';
+import { MascotImage } from '../components/MascotImage';
 import Animated, { 
     useSharedValue, 
     useAnimatedStyle, 
@@ -46,7 +47,7 @@ export const MemoryScreen = () => {
                     <TopNav title="No Memories Yet" onBack={() => navigation.goBack()} />
                 </View>
                 <View className="flex-1 items-center justify-center px-10">
-                    <Image source={MASCOTS.SAD} className="w-64 h-64 mb-6" resizeMode="contain" />
+                    <MascotImage source={MASCOTS.SAD} className="w-64 h-64 mb-6" resizeMode="contain" />
                     <Text className="text-2xl font-q-bold text-text text-center mb-4">You haven't written anything yet</Text>
                     <Text className="text-lg font-q-medium text-muted text-center">Start your journey on the home screen!</Text>
                 </View>
@@ -106,6 +107,8 @@ export const MemoryScreen = () => {
         year: 'numeric' 
     });
 
+    const isInspectorMode = !!route.params?.entryId;
+
     return (
         <Layout 
             noScroll={true} 
@@ -113,33 +116,55 @@ export const MemoryScreen = () => {
             className="px-0 py-0"
         >
             <View className="px-6 pt-4">
-                <TopNav 
-                    subtitle="Memory"
-                    title={formattedDate}
-                    rightElement={ShareButton}
-                    onBack={() => navigation.goBack()}
-                    roundButtons={true}
-                />
+                <Animated.View style={animatedContentStyle}>
+                    <TopNav 
+                        subtitle={isInspectorMode ? "Memory Inspector" : "Sunrays"}
+                        title={formattedDate}
+                        rightElement={ShareButton}
+                        onBack={() => navigation.goBack()}
+                        roundButtons={true}
+                    />
+                </Animated.View>
             </View>
 
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
-                <View className="mb-12 items-center justify-center">
-                    <Image source={MASCOTS.ZEN} className="w-56 h-56" resizeMode="contain" />
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'space-evenly', paddingHorizontal: 24, paddingVertical: 10 }}>
+                <View style={{ height: 180, justifyContent: 'center', alignItems: 'center' }}>
+                    <MascotImage 
+                        source={isInspectorMode ? MASCOTS.INSPECT : MASCOTS.SUN} 
+                        className="w-48 h-48" 
+                        resizeMode="contain" 
+                    />
                 </View>
 
-                <View className="bg-card rounded-[48px] p-10 shadow-sm w-full relative">
-                    <Animated.View style={animatedContentStyle}>
-                        <View className="absolute top-8 left-8">
+                {/* Fixed Card Container - Optimized height */}
+                <View 
+                    className="bg-card rounded-[48px] p-8 shadow-sm w-full relative"
+                    style={{ height: 380 }} // Reduced from 420 for better universal fit
+                >
+                    <View style={{ flex: 1 }}>
+                        <View className="absolute -top-2 -left-2">
                             <Text className="text-[#FF9E7D15] text-7xl font-q-bold">“</Text>
                         </View>
-                        <Text className="text-3xl font-q-bold text-text mb-6">I am grateful for...</Text>
-                        <Text className="text-xl font-q-medium text-text/70 leading-relaxed mb-10">
-                            {currentMemory.text}
-                        </Text>
-                        <View className="flex-row justify-between items-center">
-                             <View className="flex-row items-center bg-[#FF9E7D10] px-5 py-2.5 rounded-full">
-                                <Ionicons name="leaf" size={18} color="#FF9E7D" />
-                                <Text className="text-primary font-q-semibold ml-2 text-lg">Daily Gratitude</Text>
+                        
+                        <Text className="text-2xl font-q-bold text-text mb-3 px-2">I am grateful for...</Text>
+                        
+                        {/* ONLY the text animates during transitions */}
+                        <Animated.View style={[{ flex: 1 }, animatedContentStyle]}>
+                            <ScrollView 
+                                style={{ flex: 1 }} 
+                                showsVerticalScrollIndicator={false}
+                                contentContainerStyle={{ paddingBottom: 10, paddingHorizontal: 8 }}
+                            >
+                                <Text className="text-lg font-q-medium text-text/70 leading-relaxed">
+                                    {currentMemory.text}
+                                </Text>
+                            </ScrollView>
+                        </Animated.View>
+
+                        <View className="flex-row justify-between items-center pt-4 border-t border-primary/10">
+                             <View className="flex-row items-center bg-[#FF9E7D10] px-4 py-2 rounded-full">
+                                <Ionicons name="leaf" size={16} color="#FF9E7D" />
+                                <Text className="text-primary font-q-semibold ml-2 text-sm">Daily Gratitude</Text>
                             </View>
                             <TouchableOpacity onPress={toggleHeart} activeOpacity={0.6}>
                                 <Animated.View style={animatedHeartStyle}>
@@ -151,18 +176,31 @@ export const MemoryScreen = () => {
                                 </Animated.View>
                             </TouchableOpacity>
                         </View>
-                    </Animated.View>
+                    </View>
                 </View>
             </View>
 
-            <View className="items-center pb-12">
-                <TouchableOpacity onPress={handleNextMemory} className="items-center active:opacity-70">
-                    <View className="bg-white/60 w-16 h-16 items-center justify-center rounded-full mb-4 shadow-sm">
-                        <Ionicons name="chevron-down" size={32} color="#FF9E7D" />
-                    </View>
-                    <Text className="text-muted font-q-bold text-[10px] tracking-[2px] uppercase">Tap for next memory</Text>
-                </TouchableOpacity>
-            </View>
+            {/* Bottom Actions - Hidden in Inspector Mode to focus on single entry */}
+            {!isInspectorMode ? (
+                <View className="items-center pb-12">
+                    <TouchableOpacity 
+                        onPress={handleNextMemory} 
+                        className="items-center active:scale-95" 
+                        activeOpacity={1}
+                        delayPressIn={0}
+                    >
+                        <View 
+                            className="bg-white w-16 h-16 items-center justify-center rounded-full mb-4 shadow-xl shadow-[#00000015]"
+                            style={{ elevation: 5 }}
+                        >
+                            <Ionicons name="chevron-down" size={32} color="#FF9E7D" />
+                        </View>
+                        <Text className="text-muted font-q-bold text-[10px] tracking-[2px] uppercase">Tap for next memory</Text>
+                    </TouchableOpacity>
+                </View>
+            ) : (
+                <View className="pb-20" /> 
+            )}
         </Layout>
     );
 };

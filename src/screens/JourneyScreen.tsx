@@ -53,7 +53,7 @@ const TimelineItem = ({
     isDeletingProp: boolean;
     onDeleteAnimationComplete: (id: string) => void;
 }) => {
-    
+    const navigation = useNavigation();
     const trashScale = useSharedValue(1);
     const itemHeight = useSharedValue(ITEM_HEIGHT);
     const itemOpacity = useSharedValue(1);
@@ -71,7 +71,7 @@ const TimelineItem = ({
 
     const handleTrashPress = () => {
         if (isDeletingProp) return;
-        haptics.success();
+        haptics.selection();
         
         // Immediate trigger for bottom sheet
         onDelete(item.id);
@@ -173,12 +173,24 @@ const TimelineItem = ({
 
             {/* Right Column: Entry Card */}
             <View className="flex-1 pb-10">
-                <View 
+                <TouchableOpacity 
+                    activeOpacity={0.9}
+                    onPress={() => {
+                        haptics.selection();
+                        // Navigate to MemoryScreen with specific entryId
+                        // This effectively acts as our "Inspector"
+                        (navigation as any).navigate('Memory', { entryId: item.id });
+                    }}
                     className="bg-card rounded-[32px] p-6 shadow-[#0000000D] shadow-xl min-h-[140px] justify-between"
                     style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}
                 >
                     <View>
-                        <Text className="font-q-medium text-base leading-6 text-text">{item.text}</Text>
+                        <Text 
+                            className="font-q-medium text-base leading-6 text-text"
+                            numberOfLines={3}
+                        >
+                            {item.text}
+                        </Text>
                     </View>
                     
                     <View className="flex-row justify-end mt-4 items-center space-x-4">
@@ -204,7 +216,10 @@ const TimelineItem = ({
 
                             return (
                                 <TouchableOpacity 
-                                    onPress={handleTrashPress}
+                                    onPress={(e) => {
+                                        e.stopPropagation(); // Don't trigger card navigation
+                                        handleTrashPress();
+                                    }}
                                     className="p-2"
                                     disabled={isDeletingProp}
                                 >
@@ -221,7 +236,7 @@ const TimelineItem = ({
                             );
                         })()}
                     </View>
-                </View>
+                </TouchableOpacity>
             </View>
         </Animated.View>
     );
@@ -311,7 +326,7 @@ export const JourneyScreen = () => {
 
     const confirmDelete = () => {
         if (!deletingId) return;
-        haptics.selection();
+        haptics.heavy();
         const id = deletingId;
         setDeletingId(null);
         
@@ -370,13 +385,15 @@ export const JourneyScreen = () => {
             <View className="flex-row mb-8 bg-inactive/10 p-1.5 rounded-2xl self-start">
                 <TouchableOpacity 
                     onPress={() => { haptics.selection(); setFilter('all'); }}
-                    className={`px-6 py-2 rounded-[14px] ${filter === 'all' ? 'bg-white shadow-sm' : ''}`}
+                    delayPressIn={0}
+                    className={`px-6 py-2 rounded-[14px] active:scale-95 transition-transform ${filter === 'all' ? 'bg-white shadow-sm' : ''}`}
                 >
                     <Text className={`font-q-bold ${filter === 'all' ? 'text-text' : 'text-muted'}`}>All</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
                     onPress={() => { haptics.selection(); setFilter('favorites'); }}
-                    className={`px-6 py-2 rounded-[14px] ${filter === 'favorites' ? 'bg-white shadow-sm' : ''}`}
+                    delayPressIn={0}
+                    className={`px-6 py-2 rounded-[14px] active:scale-95 transition-transform ${filter === 'favorites' ? 'bg-white shadow-sm' : ''}`}
                 >
                     <View className="flex-row items-center">
                         <Ionicons 
@@ -452,14 +469,15 @@ export const JourneyScreen = () => {
 
                 <TouchableOpacity 
                     onPress={confirmDelete}
-                    className="w-full bg-[#FF7D7D] py-4 rounded-full items-center shadow-md active:opacity-90 mb-4"
+                    delayPressIn={0}
+                    className="w-full bg-[#FF7D7D] py-4 rounded-full items-center shadow-md active:scale-95 transition-transform mb-4"
                 >
                     <Text className="text-white font-q-bold text-lg">Yes, Delete It</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity 
-                    onPress={() => setDeletingId(null)}
-                    className="py-2"
+                    onPress={() => { haptics.selection(); setDeletingId(null); }}
+                    className="py-2 active:scale-95 transition-transform"
                 >
                     <Text className="text-muted font-q-bold text-base">No, Keep It</Text>
                 </TouchableOpacity>

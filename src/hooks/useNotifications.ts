@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
 import { useNavigation } from '@react-navigation/native';
+import { notifications } from '../utils/notifications';
 
 /**
  * useNotifications Hook: Listens for notification interactions and handles deep linking.
@@ -14,12 +15,19 @@ export const useNotifications = () => {
         // Listener for when a notification is received while the app is in foreground
         notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
             if (__DEV__) console.log('[useNotifications] Foreground notification received:', notification);
+            if (notification.request.content.data?.type === 'DAILY_REMINDER') {
+                notifications.markReminderAsSent();
+            }
         });
 
         // Listener for when a user interactions with a notification (taps it)
         responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
             const data = response.notification.request.content.data;
             if (__DEV__) console.log('[useNotifications] Notification interaction:', data);
+
+            if (data?.type === 'DAILY_REMINDER') {
+                notifications.markReminderAsSent();
+            }
 
             // Handle deep linking based on data
             if (data?.type === 'MEMORY_FLASHBACK' && data?.entryId) {

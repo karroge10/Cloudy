@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, TouchableOpacity, Switch, ScrollView, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, Switch, ScrollView, TextInput } from 'react-native';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
@@ -23,6 +23,9 @@ import { Button } from '../components/Button';
 import { haptics } from '../utils/haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAlert } from '../context/AlertContext';
+import { MascotImage } from '../components/MascotImage';
+import { security } from '../utils/security';
+import { getFriendlyAuthErrorMessage } from '../utils/authErrors';
 
 export const ProfileScreen = () => {
     const { showAlert } = useAlert();
@@ -47,6 +50,7 @@ export const ProfileScreen = () => {
     
     const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
     const [selectedStruggles, setSelectedStruggles] = useState<string[]>([]);
+    const [bioSupported, setBioSupported] = useState(false);
 
     const navigation = useNavigation<any>();
 
@@ -59,14 +63,9 @@ export const ProfileScreen = () => {
             setSelectedStruggles(profile.struggles || []);
             
             if (profile.reminder_time) {
-                const [time, period] = profile.reminder_time.split(' ');
-                const [hours, minutes] = time.split(':');
-                let h = parseInt(hours);
-                if (period === 'PM' && h < 12) h += 12;
-                if (period === 'AM' && h === 12) h = 0;
-                
+                const [hours, minutes] = profile.reminder_time.split(':');
                 const d = new Date();
-                d.setHours(h);
+                d.setHours(parseInt(hours));
                 d.setMinutes(parseInt(minutes));
                 setReminderDate(d);
             }
@@ -78,13 +77,20 @@ export const ProfileScreen = () => {
             const { data: { user } } = await supabase.auth.getUser();
             setIsAnonymous(user?.is_anonymous || false);
         };
+        const checkBio = async () => {
+            const supported = await security.isSupported();
+            setBioSupported(supported);
+        };
         checkAnon();
+        checkBio();
     }, []);
 
     const handleLogout = async () => {
         try {
             await AsyncStorage.removeItem('has_seen_first_entry');
             await AsyncStorage.removeItem('user_streak_cache');
+            await AsyncStorage.removeItem('pending_merge_anonymous_id');
+            await AsyncStorage.removeItem('security_lock_enabled');
             
             // Log out from Google if applicable
             try {
@@ -96,7 +102,8 @@ export const ProfileScreen = () => {
             const { error } = await supabase.auth.signOut();
             if (error) throw error;
         } catch (error: any) {
-            showAlert('Error', error.message, [{ text: 'Okay' }], 'error');
+            const { title, message } = getFriendlyAuthErrorMessage(error);
+            showAlert(title, message, [{ text: 'Okay' }], 'error');
         }
     };
 
@@ -104,7 +111,7 @@ export const ProfileScreen = () => {
     
     const currentMascot = COMPANIONS.find(c => c.name === profile?.mascot_name) || COMPANIONS[0];
     const reminderTime = profile?.reminder_time;
-    const displayReminderTime = reminderTime || '8:00 PM';
+    const displayReminderTime = reminderTime || '20:00';
     const isHapticsEnabled = profile?.haptics_enabled ?? true;
     const displayName = profile?.display_name || '';
 
@@ -151,7 +158,7 @@ export const ProfileScreen = () => {
                         )}
                     </View>
                     <TouchableOpacity onPress={() => { haptics.selection(); setIsMascotSheetVisible(true); }} className="active:scale-95 transition-transform">
-                        <Image 
+                        <MascotImage 
                             source={currentMascot.asset} 
                             className="w-32 h-32" 
                             resizeMode="contain" 
@@ -193,6 +200,8 @@ export const ProfileScreen = () => {
                             value={!!reminderTime}
                         />
                     </View>
+
+                    <View className="h-[1px] bg-inactive opacity-10" />
 
                     <View className="h-[1px] bg-inactive opacity-10" />
 
@@ -265,6 +274,34 @@ export const ProfileScreen = () => {
 
                     <View className="h-[1px] bg-inactive opacity-10" />
 
+                    {/* Biometric Lock */}
+                    <View className="flex-row items-center justify-between py-4">
+                        <View className="flex-1">
+                            <Text className="text-lg font-q-bold text-text">Lock my Cloud</Text>
+                            <Text className="text-muted font-q-medium text-xs">Biometric protection for your diary</Text>
+                        </View>
+                        <Switch
+                            trackColor={{ false: '#E0E0E0', true: '#FF9E7D' }}
+                            thumbColor="#FFFFFF"
+                            onValueChange={(val) => {
+                                haptics.selection();
+                                if (val && !bioSupported) {
+                                    showAlert(
+                                        'Not Supported', 
+                                        'Your device does not support biometrics or none are enrolled.', 
+                                        [{ text: 'Okay' }], 
+                                        'info'
+                                    );
+                                    return;
+                                }
+                                updateProfile({ security_lock_enabled: val });
+                            }}
+                            value={profile?.security_lock_enabled ?? false}
+                        />
+                    </View>
+
+                    <View className="h-[1px] bg-inactive opacity-10" />
+
                     {/* Export Data */}
                     <TouchableOpacity className="flex-row items-center justify-between py-4">
                         <Text className="text-lg font-q-bold text-text">Export Journal (.pdf)</Text>
@@ -281,7 +318,7 @@ export const ProfileScreen = () => {
                 </View>
 
                 {/* Log Out */}
-                <TouchableOpacity onPress={() => { haptics.selection(); handleLogout(); }} className="mb-20 items-center py-4">
+                <TouchableOpacity onPress={() => { haptics.heavy(); handleLogout(); }} className="mb-20 items-center py-4 active:scale-95 transition-transform">
                     <Text className="text-lg font-q-bold text-red-400 opacity-60">Log Out</Text>
                     <Text className="text-[10px] font-q-medium text-muted mt-2 opacity-30">Cloudy v1.0.42</Text>
                 </TouchableOpacity>
@@ -289,7 +326,7 @@ export const ProfileScreen = () => {
 
              <BottomSheet visible={isNameSheetVisible} onClose={() => setIsNameSheetVisible(false)}>
                 <View className="items-center mt-2">
-                     <Image source={MASCOTS.THINK} className="w-40 h-40 mb-4" resizeMode="contain" />
+                     <MascotImage source={MASCOTS.THINK} className="w-40 h-40 mb-4" resizeMode="contain" />
                      <Text className="text-2xl font-q-bold text-text text-center mb-6">What should Cloudy call you?</Text>
                     <TextInput
                         className="w-full bg-card px-6 py-5 rounded-[24px] font-q-bold text-lg text-text border-2 border-inactive/10 mb-6"
@@ -306,11 +343,12 @@ export const ProfileScreen = () => {
                             setIsNameSheetVisible(false);
                             haptics.success();
                         }}
-                        className="w-full bg-primary py-4 rounded-full items-center shadow-md active:opacity-90 mb-4"
+                        delayPressIn={0}
+                        className="w-full bg-primary py-4 rounded-full items-center shadow-md active:scale-95 transition-transform mb-4"
                     >
                         <Text className="text-white font-q-bold text-lg">Save Name</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => setIsNameSheetVisible(false)} className="py-2">
+                    <TouchableOpacity onPress={() => { haptics.selection(); setIsNameSheetVisible(false); }} className="py-2 active:scale-95 transition-transform">
                          <Text className="text-muted font-q-bold text-base">Cancel</Text>
                     </TouchableOpacity>
                 </View>
@@ -318,7 +356,7 @@ export const ProfileScreen = () => {
 
              <BottomSheet visible={isAgeSheetVisible} onClose={() => setIsAgeSheetVisible(false)}>
                 <View className="items-center mt-2">
-                     <Image source={MASCOTS.CAKE} className="w-40 h-40 mb-4" resizeMode="contain" />
+                     <MascotImage source={MASCOTS.CAKE} className="w-40 h-40 mb-4" resizeMode="contain" />
                      <Text className="text-2xl font-q-bold text-text text-center mb-6">How old are you?</Text>
                     <TextInput
                         className="w-full bg-card px-6 py-5 rounded-[24px] font-q-bold text-lg text-text border-2 border-inactive/10 mb-6"
@@ -338,11 +376,12 @@ export const ProfileScreen = () => {
                             }
                             setIsAgeSheetVisible(false);
                         }}
-                        className="w-full bg-primary py-4 rounded-full items-center shadow-md active:opacity-90 mb-4"
+                        delayPressIn={0}
+                        className="w-full bg-primary py-4 rounded-full items-center shadow-md active:scale-95 transition-transform mb-4"
                     >
                         <Text className="text-white font-q-bold text-lg">Save Age</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => setIsAgeSheetVisible(false)} className="py-2">
+                    <TouchableOpacity onPress={() => { haptics.selection(); setIsAgeSheetVisible(false); }} className="py-2 active:scale-95 transition-transform">
                          <Text className="text-muted font-q-bold text-base">Cancel</Text>
                     </TouchableOpacity>
                 </View>
@@ -350,7 +389,7 @@ export const ProfileScreen = () => {
 
              <BottomSheet visible={isGenderSheetVisible} onClose={() => setIsGenderSheetVisible(false)}>
                 <View className="items-center mt-2">
-                    <Image source={MASCOTS.MIRROR} className="w-40 h-40 mb-4" resizeMode="contain" />
+                    <MascotImage source={MASCOTS.MIRROR} className="w-40 h-40 mb-4" resizeMode="contain" />
                     <Text className="text-2xl font-q-bold text-text text-center mb-6">How do you identify?</Text>
                     <View className="flex-row flex-wrap gap-3 justify-center w-full mb-6">
                         {GENDERS.map((g) => (
@@ -374,7 +413,7 @@ export const ProfileScreen = () => {
 
              <BottomSheet visible={isCountrySheetVisible} onClose={() => setIsCountrySheetVisible(false)}>
                 <View className="items-center mt-2">
-                     <Image source={MASCOTS.GLOBE} className="w-40 h-40 mb-4" resizeMode="contain" />
+                     <MascotImage source={MASCOTS.GLOBE} className="w-40 h-40 mb-4" resizeMode="contain" />
                      <Text className="text-2xl font-q-bold text-text text-center mb-6">Where are you from?</Text>
                     <TextInput
                         className="w-full bg-card px-6 py-5 rounded-[24px] font-q-bold text-lg text-text border-2 border-inactive/10 mb-6"
@@ -390,11 +429,12 @@ export const ProfileScreen = () => {
                             setIsCountrySheetVisible(false);
                             haptics.success();
                         }}
-                        className="w-full bg-primary py-4 rounded-full items-center shadow-md active:opacity-90 mb-4"
+                        delayPressIn={0}
+                        className="w-full bg-primary py-4 rounded-full items-center shadow-md active:scale-95 transition-transform mb-4"
                     >
                         <Text className="text-white font-q-bold text-lg">Save Location</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => setIsCountrySheetVisible(false)} className="py-2">
+                    <TouchableOpacity onPress={() => { haptics.selection(); setIsCountrySheetVisible(false); }} className="py-2 active:scale-95 transition-transform">
                          <Text className="text-muted font-q-bold text-base">Cancel</Text>
                     </TouchableOpacity>
                 </View>
@@ -406,7 +446,7 @@ export const ProfileScreen = () => {
                 title="My Goals"
             >
                 <View className="items-center mt-2">
-                    <Image source={MASCOTS.ZEN} className="w-40 h-40 mb-4" resizeMode="contain" />
+                    <MascotImage source={MASCOTS.ZEN} className="w-40 h-40 mb-4" resizeMode="contain" />
                     <Text className="text-lg font-q-medium text-muted text-center mb-6 px-4">
                         What are your main goals for using Cloudy?
                     </Text>
@@ -430,19 +470,18 @@ export const ProfileScreen = () => {
                             />
                         ))}
                     </View>
-
                     <TouchableOpacity 
                         onPress={() => {
                             updateProfile({ goals: selectedGoals });
                             setIsGoalSheetVisible(false);
                             haptics.success();
                         }}
-                        className="w-full bg-primary py-4 rounded-full items-center shadow-md active:opacity-90 mb-4"
+                        delayPressIn={0}
+                        className="w-full bg-primary py-4 rounded-full items-center shadow-md active:scale-95 transition-transform mb-4"
                     >
                         <Text className="text-white font-q-bold text-lg">Save Goals</Text>
                     </TouchableOpacity>
-
-                    <TouchableOpacity onPress={() => setIsGoalSheetVisible(false)} className="py-2">
+                    <TouchableOpacity onPress={() => { haptics.selection(); setIsGoalSheetVisible(false); }} className="py-2 active:scale-95 transition-transform">
                          <Text className="text-muted font-q-bold text-base">Cancel</Text>
                     </TouchableOpacity>
                 </View>
@@ -454,7 +493,7 @@ export const ProfileScreen = () => {
                 title="My Struggles"
             >
                 <View className="items-center mt-2">
-                    <Image source={MASCOTS.SAD} className="w-40 h-40 mb-4" resizeMode="contain" />
+                    <MascotImage source={MASCOTS.SAD} className="w-40 h-40 mb-4" resizeMode="contain" />
                     <Text className="text-lg font-q-medium text-muted text-center mb-6 px-4">
                         What's been weighing on you lately?
                     </Text>
@@ -476,19 +515,18 @@ export const ProfileScreen = () => {
                             />
                         ))}
                     </View>
-
                     <TouchableOpacity 
                         onPress={() => {
                             updateProfile({ struggles: selectedStruggles });
                             setIsStruggleSheetVisible(false);
                             haptics.success();
                         }}
-                        className="w-full bg-primary py-4 rounded-full items-center shadow-md active:opacity-90 mb-4"
+                        delayPressIn={0}
+                        className="w-full bg-primary py-4 rounded-full items-center shadow-md active:scale-95 transition-transform mb-4"
                     >
                         <Text className="text-white font-q-bold text-lg">Save Struggles</Text>
                     </TouchableOpacity>
-
-                    <TouchableOpacity onPress={() => setIsStruggleSheetVisible(false)} className="py-2">
+                    <TouchableOpacity onPress={() => { haptics.selection(); setIsStruggleSheetVisible(false); }} className="py-2 active:scale-95 transition-transform">
                          <Text className="text-muted font-q-bold text-base">Cancel</Text>
                     </TouchableOpacity>
                 </View>
@@ -496,7 +534,7 @@ export const ProfileScreen = () => {
 
              <BottomSheet visible={isTimeSheetVisible} onClose={() => setIsTimeSheetVisible(false)}>
                 <View className="items-center mt-2 w-full">
-                    <Image source={MASCOTS.WATCH} className="w-40 h-40 mb-4" resizeMode="contain" />
+                    <MascotImage source={MASCOTS.WATCH} className="w-40 h-40 mb-4" resizeMode="contain" />
                     <Text className="text-2xl font-q-bold text-text text-center mb-6">When to remind you?</Text>
                     
                     <View className="w-full mb-8">
@@ -506,14 +544,16 @@ export const ProfileScreen = () => {
                     <Button 
                         label="Update Time"
                         onPress={() => {
-                            const formatted = reminderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                            const h = reminderDate.getHours().toString().padStart(2, '0');
+                            const m = reminderDate.getMinutes().toString().padStart(2, '0');
+                            const formatted = `${h}:${m}`;
                             updateProfile({ reminder_time: formatted });
                             setIsTimeSheetVisible(false);
                             haptics.success();
                         }}
                     />
 
-                    <TouchableOpacity onPress={() => setIsTimeSheetVisible(false)} className="mt-4 py-2">
+                    <TouchableOpacity onPress={() => { haptics.selection(); setIsTimeSheetVisible(false); }} className="mt-4 py-2 active:scale-95 transition-transform">
                          <Text className="text-muted font-q-bold text-base">Cancel</Text>
                     </TouchableOpacity>
                 </View>
@@ -521,7 +561,7 @@ export const ProfileScreen = () => {
 
             <BottomSheet visible={isMascotSheetVisible} onClose={() => setIsMascotSheetVisible(false)}>
                 <View className="items-center mt-2 w-full">
-                    <Image source={MASCOTS.HUG} className="w-40 h-40 mb-4" resizeMode="contain" />
+                    <MascotImage source={MASCOTS.HUG} className="w-40 h-40 mb-4" resizeMode="contain" />
                     <Text className="text-2xl font-q-bold text-text text-center mb-6">Choose your companion</Text>
                     <View className="flex-row flex-wrap justify-between w-full">
                         {COMPANIONS.map((companion) => (
@@ -538,7 +578,7 @@ export const ProfileScreen = () => {
                             />
                         ))}
                     </View>
-                    <TouchableOpacity onPress={() => setIsMascotSheetVisible(false)} className="mt-6 py-2">
+                    <TouchableOpacity onPress={() => { haptics.selection(); setIsMascotSheetVisible(false); }} className="mt-6 py-2 active:scale-95 transition-transform">
                          <Text className="text-muted font-q-bold text-base">Cancel</Text>
                     </TouchableOpacity>
                 </View>

@@ -63,12 +63,12 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
 
     useEffect(() => {
         if (visible) {
-            // Initial spring to bring it up
-            Animated.spring(translateY, {
+            // Use timing for more predictable arrival and faster settling
+            // than spring, which can have "tails" that keep the UI thread busy
+            Animated.timing(translateY, {
                 toValue: 0,
+                duration: 300,
                 useNativeDriver: true,
-                bounciness: 4,
-                speed: 14,
             }).start();
         } else {
             // Ensure it's reset when not visible
@@ -94,9 +94,12 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
             animationType="none"
             onRequestClose={closeModal}
         >
-            <View className="flex-1 justify-end">
+            <View className="flex-1 justify-end" pointerEvents="box-none">
                 <TouchableWithoutFeedback onPress={() => { haptics.selection(); closeModal(); }}>
-                    <Animated.View style={{ opacity: backdropOpacity }} className="absolute inset-0 bg-black/40" />
+                    <Animated.View 
+                        style={{ opacity: backdropOpacity }} 
+                        className="absolute inset-0 bg-black/40" 
+                    />
                 </TouchableWithoutFeedback>
                 
                 <Animated.View 
@@ -105,6 +108,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
                         maxHeight: SCREEN_HEIGHT * 0.85
                     }}
                     className="bg-background rounded-t-[40px] shadow-2xl overflow-hidden"
+                    collapsable={false} // Ensure it's not collapsed on Android for better touch reliability
                 >
                     {/* Handle Bar Area */}
                     <View 

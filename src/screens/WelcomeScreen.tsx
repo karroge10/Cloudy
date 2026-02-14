@@ -1,10 +1,11 @@
 import React, { useRef } from 'react';
-import { View, Text, Image, TouchableOpacity, Animated, Pressable } from 'react-native';
+import { View, Text, TouchableOpacity, Animated, Pressable } from 'react-native';
 import { Button } from '../components/Button';
 import { useNavigation } from '@react-navigation/native';
 import { MASCOTS } from '../constants/Assets';
 import { Ionicons } from '@expo/vector-icons';
 import { haptics } from '../utils/haptics';
+import { MascotImage } from '../components/MascotImage';
 
 import { Layout } from '../components/Layout';
 
@@ -38,8 +39,9 @@ export const WelcomeScreen = () => {
                 {/* Content */}
                 <View className="items-center">
                     <Pressable onPress={handleMascotPress}>
-                        <Animated.Image
-                            source={MASCOTS.HELLO}
+                        <MascotImage
+                            isAnimated
+                            source={MASCOTS.WRITE}
                             className="w-72 h-72 mb-10"
                             resizeMode="contain"
                             style={{ transform: [{ scale: scaleAnim }] }}

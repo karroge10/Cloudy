@@ -2,6 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { haptics } from '../utils/haptics';
 import { HomeScreen } from '../screens/HomeScreen';
 import { JourneyScreen } from '../screens/JourneyScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
@@ -29,6 +30,8 @@ const CustomTabBar = ({ state, descriptors, navigation }: any) => {
             target: route.key,
             canPreventDefault: true,
           });
+          
+          haptics.selection();
 
           if (!isFocused && !event.defaultPrevented) {
             navigation.navigate(route.name, route.params);
@@ -63,6 +66,7 @@ const CustomTabBar = ({ state, descriptors, navigation }: any) => {
             testID={options.tabBarTestID}
             onPress={onPress}
             onLongPress={onLongPress}
+            delayPressIn={0}
             style={styles.tabItem}
           >
             <Ionicons 

@@ -49,20 +49,29 @@ export const Button: React.FC<ButtonProps> = ({
             disabled={disabled || loading}
             className={`${baseClasses} ${variant === 'primary' ? primaryClasses : outlineClasses}`}
         >
-            {loading ? (
-                <ActivityIndicator color={variant === 'primary' ? 'white' : '#FF9E7D'} size="small" className="scale-125" />
-            ) : (
-                <>
-                    <Text className={`${textClasses} ${variant === 'primary' ? primaryText : outlineText}`}>
-                        {label}
-                    </Text>
-                    {showArrow && (
-                        <View className="ml-2 absolute right-8">
-                            <Ionicons name="arrow-forward" size={28} color={variant === 'primary' ? 'white' : '#FF9E7D'} />
-                        </View>
-                    )}
-                </>
-            )}
+            <View className="flex-row items-center justify-center">
+                <Text 
+                    className={`${textClasses} ${variant === 'primary' ? primaryText : outlineText} ${loading ? "opacity-0" : "opacity-100"}`}
+                >
+                    {label}
+                </Text>
+                
+                {loading && (
+                    <View className="absolute inset-0 items-center justify-center">
+                        <ActivityIndicator 
+                            color={variant === 'primary' ? 'white' : '#FF9E7D'} 
+                            size="small" 
+                            className="scale-125" 
+                        />
+                    </View>
+                )}
+
+                {!loading && showArrow && (
+                    <View className="ml-2 absolute right-8">
+                        <Ionicons name="arrow-forward" size={28} color={variant === 'primary' ? 'white' : '#FF9E7D'} />
+                    </View>
+                )}
+            </View>
         </TouchableOpacity>
     );
 };

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text } from 'react-native';
 import { Button } from '../components/Button';
 import { SelectionPill } from '../components/SelectionPill';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -8,6 +7,7 @@ import { MASCOTS } from '../constants/Assets';
 import { TopNav } from '../components/TopNav';
 import { Layout } from '../components/Layout';
 import { GOALS } from '../constants/Goals';
+import { MascotImage } from '../components/MascotImage';
 
 export const GoalSelectionScreen = () => {
     const navigation = useNavigation();
@@ -39,7 +39,7 @@ export const GoalSelectionScreen = () => {
                         <Text className="text-4xl font-q-bold text-text text-center mb-6 pt-4 leading-tight">
                             What are your goals?
                         </Text>
-                        <Image
+                        <MascotImage
                             source={MASCOTS.ZEN}
                             className="w-72 h-72"
                             resizeMode="contain"

@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, KeyboardAvoidingView, Platform, TouchableOpacity, Image, ScrollView } from 'react-native';
+import { View, Text, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { MASCOTS } from '../constants/Assets';
 import { useNavigation } from '@react-navigation/native';
 import { Layout } from '../components/Layout';
 import { TopNav } from '../components/TopNav';
-import { haptics } from '../utils/haptics';
 import { useAlert } from '../context/AlertContext';
-
 import { Button } from '../components/Button';
+import { MascotImage } from '../components/MascotImage';
 
 export const JournalEntryScreen = () => {
     const { showAlert } = useAlert();
@@ -45,7 +44,7 @@ export const JournalEntryScreen = () => {
                 >
                     {/* Header Content */}
                     <View className="items-center mb-8">
-                        <Image
+                        <MascotImage
                             source={MASCOTS.WRITE}
                             className="w-40 h-40 mb-4"
                             resizeMode="contain"

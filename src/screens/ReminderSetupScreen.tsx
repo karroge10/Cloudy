@@ -12,7 +12,7 @@ import { useAlert } from '../context/AlertContext';
 
 export const ReminderSetupScreen = () => {
     const { showAlert } = useAlert();
-    const [date, setDate] = useState(new Date());
+    const [date, setDate] = useState(new Date(new Date().setHours(20, 0, 0, 0)));
     const [loading, setLoading] = useState(false);
     const navigation = useNavigation<any>();
     const route = useRoute();
@@ -21,8 +21,10 @@ export const ReminderSetupScreen = () => {
     // Get data passed from ProfileSetupScreen
     const { displayName, mascotName } = (route.params as any) || {};
 
-    // Helper to format time for display (e.g. "09:00 PM")
-    const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    // Helper to format time for display (e.g. "21:00")
+    const h = date.getHours().toString().padStart(2, '0');
+    const m = date.getMinutes().toString().padStart(2, '0');
+    const formattedTime = `${h}:${m}`;
 
     async function finishReminderSetup() {
         setLoading(true);

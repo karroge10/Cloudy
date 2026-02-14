@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { calculateStreak } from '../utils/streakUtils';
 import { haptics } from '../utils/haptics';
 import { notifications } from '../utils/notifications';
+import { useAlert } from './AlertContext';
 
 export interface JournalEntry {
     id: string;
@@ -30,6 +31,7 @@ interface JournalContextType {
 const JournalContext = createContext<JournalContextType | undefined>(undefined);
 
 export const JournalProvider: React.FC<{ children: React.ReactNode, session: Session | null }> = ({ children, session }) => {
+    const { showAlert } = useAlert();
     const [entries, setEntries] = useState<JournalEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [streak, setStreak] = useState(0);
@@ -60,6 +62,44 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
         }
         setLoading(false);
     }, [session]);
+
+    // Handle anonymous account merging
+    useEffect(() => {
+        const handleMerge = async () => {
+            if (!session?.user?.id || session.user.is_anonymous) return;
+
+            try {
+                const anonId = await AsyncStorage.getItem('pending_merge_anonymous_id');
+                if (anonId && anonId !== session.user.id) {
+                    const { data: name, error } = await supabase.rpc('merge_anonymous_data', { 
+                        old_uid: anonId, 
+                        new_uid: session.user.id 
+                    });
+                    
+                    if (error) {
+                        console.warn('Merge failed:', error.message);
+                    } else {
+                        await AsyncStorage.removeItem('pending_merge_anonymous_id');
+                        
+                        // Success Toast (The "Pro" Way)
+                        showAlert(
+                            'Success', 
+                            `Welcome back, ${name}! We've added your recent memories to your journal.`,
+                            [{ text: 'Great!' }],
+                            'success'
+                        );
+
+                        // Re-fetch now that data has moved
+                        fetchEntries();
+                    }
+                }
+            } catch (err) {
+                console.error('Merge check error:', err);
+            }
+        };
+
+        handleMerge();
+    }, [session, fetchEntries]);
 
     useEffect(() => {
         fetchEntries();

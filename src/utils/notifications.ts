@@ -17,12 +17,25 @@ const STORAGE_KEYS = {
     LAST_FLASHBACK_CHECK: 'cloudy_last_flashback_check',
     NEXT_FLASHBACK_DATE: 'cloudy_next_flashback_date',
     LAST_APP_OPEN: 'cloudy_last_app_open',
+    LAST_REMINDER_SENT_DATE: 'cloudy_last_reminder_sent_date',
 };
 
-// Configure foreground behavior
+const REMINDER_TITLES = [
+    "Time to reflect? ☁️",
+    "How was your day? ✨",
+    "A moment for yourself 🧘",
+    "Penny for your thoughts? 💭",
+    "Capture a memory 📸",
+    "Your cloud is waiting 🌫️",
+    "Dear Diary... ✍️",
+    "Evening check-in 🌙",
+    "Daily brain dump 🧠",
+    "Stay mindful 🌊"
+];
+
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
-        shouldShowAlert: true,
+        shouldShowAlert: true, // Legacy support
         shouldPlaySound: true,
         shouldSetBadge: false,
         shouldShowBanner: true,
@@ -31,17 +44,17 @@ Notifications.setNotificationHandler({
 });
 
 class NotificationService {
-    async requestPermissions(): Promise<boolean> {
+    async requestPermissions(ask: boolean = true): Promise<boolean> {
         const { status: existingStatus } = await Notifications.getPermissionsAsync();
         let finalStatus = existingStatus;
 
-        if (existingStatus !== 'granted') {
+        if (existingStatus !== 'granted' && ask) {
             const { status } = await Notifications.requestPermissionsAsync();
             finalStatus = status;
         }
 
         if (finalStatus !== 'granted') {
-            if (__DEV__) console.log('[NotificationService] Permission not granted');
+            if (__DEV__ && ask) console.log('[NotificationService] Permission not granted after request');
             return false;
         }
 
@@ -61,7 +74,7 @@ class NotificationService {
      * Schedules the daily nudge with a random prompt.
      * @param forceDate Optional date to start the daily reminder from (used to skip days)
      */
-    async scheduleDailyReminder(timeString: string | null, forceDate?: Date) {
+    async scheduleDailyReminder(timeString: string | null, request: boolean = true, forceDate?: Date) {
         if (!timeString) {
             await Notifications.cancelScheduledNotificationAsync('daily-reminder');
             await AsyncStorage.removeItem('cloudy_reminder_time');
@@ -69,21 +82,22 @@ class NotificationService {
         }
 
         await AsyncStorage.setItem('cloudy_reminder_time', timeString);
-        const hasPermission = await this.requestPermissions();
+        const hasPermission = await this.requestPermissions(request);
         if (!hasPermission) return;
 
         try {
-            const [time, period] = timeString.split(' ');
-            const [hours, minutes] = time.split(':');
-            let h = parseInt(hours);
-            if (period === 'PM' && h < 12) h += 12;
-            if (period === 'AM' && h === 12) h = 0;
+            const [hours, minutes] = timeString.split(':');
+            const h = parseInt(hours);
             const m = parseInt(minutes);
 
             const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
+            const randomTitle = REMINDER_TITLES[Math.floor(Math.random() * REMINDER_TITLES.length)];
 
-            // If forceDate is provided, we set the trigger to that date/time
-            // Otherwise, it's just a standard daily repeat starting now/today
+            // Daily Cap Mechanism: 
+            // If we already sent a reminder today, we must ensure the next one is tomorrow.
+            const today = new Date().toDateString();
+            const lastSent = await AsyncStorage.getItem(STORAGE_KEYS.LAST_REMINDER_SENT_DATE);
+            
             let trigger: any = {
                 hour: h,
                 minute: m,
@@ -91,30 +105,63 @@ class NotificationService {
                 type: Notifications.SchedulableTriggerInputTypes.DAILY,
             };
 
-            if (forceDate) {
-                const nextTrigger = new Date(forceDate);
-                nextTrigger.setHours(h, m, 0, 0);
-                trigger = nextTrigger; // This makes it a one-time thing, so we need to be careful
-                // Actually, expo-notifications DAILY trigger starting from a specific date is tricky.
-                // We'll just stick to the standard one for now, but the "Low Noise" policy 
-                // means we'll mostly rely on performBackgroundCheck to reshuffle if needed.
+            // If we already sent today, or if the time for today has passed,
+            // we should ideally schedule starting from tomorrow. 
+            // Expo's DAILY trigger handles "past time" by default, but we need to
+            // handle the "already sent" case specifically.
+            if (lastSent === today) {
+                if (__DEV__) console.log('[NotificationService] Already sent today. Pushing next to tomorrow.');
+                // To force "starting tomorrow", we can use a date trigger for the first one.
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                tomorrow.setHours(h, m, 0, 0);
+                
+                // We schedule a one-time for tomorrow, and the daily repetition will pick up.
+                // Actually, the most reliable way in Expo is to just use the DAILY trigger.
+                // If lastSent === today AND the time is in the future today, 
+                // we have a problem.
+                
+                const now = new Date();
+                const targetToday = new Date();
+                targetToday.setHours(h, m, 0, 0);
+                
+                if (targetToday > now) {
+                    // It's in the future today, but we already sent one.
+                    const seconds = Math.floor((tomorrow.getTime() - Date.now()) / 1000);
+                    trigger = {
+                        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+                        seconds,
+                        repeats: false,
+                    };
+                    if (__DEV__) console.log(`[NotificationService] Overriding DAILY trigger with ${seconds}s delay to respect cap.`);
+                }
             }
 
             await Notifications.scheduleNotificationAsync({
                 identifier: 'daily-reminder',
                 content: {
-                    title: "Time to reflect? ☁️",
+                    title: randomTitle,
                     body: randomPrompt,
                     sound: true,
                     priority: Notifications.AndroidNotificationPriority.HIGH,
+                    data: { type: 'DAILY_REMINDER', sent_at: new Date().toISOString() },
+                    // Explicit channel for Android safety
+                    ...(Platform.OS === 'android' ? { channelId: 'default' } : {})
                 },
                 trigger,
             });
 
-            if (__DEV__) console.log(`[NotificationService] Daily nudge scheduled for ${h}:${m}`);
+            const isRepeating = !!(trigger as any).repeats;
+            if (__DEV__) console.log(`[NotificationService] Daily nudge scheduled for ${h}:${m} (Repeating: ${isRepeating})`);
         } catch (error) {
             console.error('[NotificationService] Error scheduling daily nudge:', error);
         }
+    }
+
+    async markReminderAsSent() {
+        const today = new Date().toDateString();
+        await AsyncStorage.setItem(STORAGE_KEYS.LAST_REMINDER_SENT_DATE, today);
+        if (__DEV__) console.log('[NotificationService] Marked daily reminder as sent for today.');
     }
 
     /**
@@ -139,6 +186,15 @@ class NotificationService {
         if (hasFlashback) {
             if (__DEV__) console.log('[NotificationService] Flashback already in queue.');
             return;
+        }
+
+        // Clean up delivered notifications and track reminder sent status
+        const delivered = await Notifications.getPresentedNotificationsAsync();
+        const hasDeliveredReminder = delivered.some(n => n.request.content.data?.type === 'DAILY_REMINDER');
+        if (hasDeliveredReminder) {
+            await this.markReminderAsSent();
+            // Optionally clear them to keep drawer clean
+            // await Notifications.dismissAllNotificationsAsync();
         }
 
         const findEntry = (monthsAgo: number) => {
@@ -176,7 +232,8 @@ class NotificationService {
             const reminderTime = await AsyncStorage.getItem('cloudy_reminder_time');
             if (reminderTime) {
                 // Refreshing it here ensures a new random prompt for the next day it fires.
-                this.scheduleDailyReminder(reminderTime);
+                // We definitely don't want to request permissions here if they were revoked.
+                this.scheduleDailyReminder(reminderTime, false);
             }
         }
 
@@ -184,7 +241,8 @@ class NotificationService {
     }
 
     private async scheduleFlashback(entryId: string, content: string, label: string) {
-        const hasPermission = await this.requestPermissions();
+        // Flashbacks are automated; never prompt from here
+        const hasPermission = await this.requestPermissions(false);
         if (!hasPermission) return;
 
         const triggerDate = new Date();
@@ -215,7 +273,8 @@ class NotificationService {
      * If the user opens the app before then, this gets reset.
      */
     async scheduleRescueNotification() {
-        const hasPermission = await this.requestPermissions();
+        // Rescue nudges are automated; never prompt from here
+        const hasPermission = await this.requestPermissions(false);
         if (!hasPermission) return;
 
         // Cancel previous rescue if any

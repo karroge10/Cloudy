@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { supabase } from '../lib/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { MASCOTS } from '../constants/Assets';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,8 +9,10 @@ import { TopNav } from '../components/TopNav';
 import { Layout } from '../components/Layout';
 import { haptics } from '../utils/haptics';
 import { useAlert } from '../context/AlertContext';
+import { Button } from '../components/Button';
+import { getFriendlyAuthErrorMessage } from '../utils/authErrors';
 
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 
 GoogleSignin.configure({
     webClientId: '110002315879-19osagf9f4s3spnpns5jckcdc5dq0g5r.apps.googleusercontent.com',
@@ -32,18 +35,21 @@ export const AuthScreen = () => {
             return;
         }
         setLoading(true);
+        
+        // Capture anonymous ID for merging if signing in to existing account
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (currentUser?.is_anonymous) {
+            await AsyncStorage.setItem('pending_merge_anonymous_id', currentUser.id);
+        }
+
         const { error } = await supabase.auth.signInWithPassword({
             email,
             password,
         });
 
         if (error) {
-            showAlert('Error', error.message, [{ text: 'Okay' }], 'error');
-        } else {
-            navigation.reset({
-                index: 0,
-                routes: [{ name: 'MainApp' }],
-            });
+            const { title, message } = getFriendlyAuthErrorMessage(error);
+            showAlert(title, message, [{ text: 'Okay' }], 'error');
         }
         setLoading(false);
     }
@@ -86,10 +92,7 @@ export const AuthScreen = () => {
                     }
                 } else {
                     showAlert('Success', 'Your journey is secured!', [
-                        { text: 'Okay', onPress: () => navigation.reset({
-                            index: 0,
-                            routes: [{ name: 'MainApp' }],
-                        }) }
+                        { text: 'Okay' }
                     ], 'success');
                 }
             } else {
@@ -101,10 +104,7 @@ export const AuthScreen = () => {
                 if (error) throw error;
                 
                 if (data.session) {
-                    navigation.reset({
-                        index: 0,
-                        routes: [{ name: 'MainApp' }],
-                    });
+                    // App.tsx handles the switch
                 } else {
                     showAlert('Success', 'Please check your email to confirm your account.', [
                         { text: 'Okay', onPress: () => navigation.goBack() }
@@ -112,7 +112,8 @@ export const AuthScreen = () => {
                 }
             }
         } catch (error: any) {
-            showAlert('Error', error.message, [{ text: 'Okay' }], 'error');
+            const { title, message } = getFriendlyAuthErrorMessage(error);
+            showAlert(title, message, [{ text: 'Okay' }], 'error');
         } finally {
             setLoading(false);
         }
@@ -123,43 +124,38 @@ export const AuthScreen = () => {
             haptics.selection();
             setLoading(true);
             await GoogleSignin.hasPlayServices();
-            const userInfo = await GoogleSignin.signIn();
+            const response = await GoogleSignin.signIn();
             
-            if (userInfo.data?.idToken) {
+            if (response.type === 'cancelled') {
+                return;
+            }
+
+            if (response.type === 'success' && response.data.idToken) {
+                // Capture anonymous ID for merging
+                const { data: { user: currentUser } } = await supabase.auth.getUser();
+                if (currentUser?.is_anonymous) {
+                    await AsyncStorage.setItem('pending_merge_anonymous_id', currentUser.id);
+                }
+
                 const { data, error } = await supabase.auth.signInWithIdToken({
                     provider: 'google',
-                    token: userInfo.data.idToken,
+                    token: response.data.idToken,
                 });
                 
                 if (error) throw error;
                 
                 if (data.session) {
-                    // Check if profile exists and onboarding is done
-                    const { data: profile } = await supabase
-                        .from('profiles')
-                        .select('onboarding_completed')
-                        .eq('id', data.session.user.id)
-                        .single();
-
-                    if (profile?.onboarding_completed) {
-                        navigation.reset({
-                            index: 0,
-                            routes: [{ name: 'MainApp' }],
-                        });
-                    } else {
-                        // New user or incomplete profile
-                        navigation.reset({
-                            index: 0,
-                            routes: [{ name: 'ProfileSetup' }],
-                        });
-                    }
+                    // The stack switch in App.tsx will take care of navigation.
+                    // We don't need to manually reset or check profile here for navigation purposes.
                 }
-            } else {
+            } else if (response.type === 'success' && !response.data.idToken) {
                 throw new Error('No ID Token found');
             }
         } catch (error: any) {
-            if (error.code !== 'ASYNC_OP_IN_PROGRESS' && error.code !== 'SIGN_IN_CANCELLED') {
-                showAlert('Error', error.message, [{ text: 'Okay' }], 'error');
+            // Only show alert if it's not a cancellation or operation in progress
+            if (error.code !== statusCodes.IN_PROGRESS && error.code !== statusCodes.SIGN_IN_CANCELLED) {
+                const { title, message } = getFriendlyAuthErrorMessage(error);
+                showAlert(title, message, [{ text: 'Okay' }], 'error');
             }
         } finally {
             setLoading(false);
@@ -227,19 +223,11 @@ export const AuthScreen = () => {
                             />
                         </View>
 
-                        <TouchableOpacity
-                            className="bg-primary py-4 rounded-full items-center shadow-lg active:scale-[0.98] transition-all"
+                        <Button
+                            label={isLogin ? 'Sign In' : 'Sign Up'}
                             onPress={() => isLogin ? signInWithEmail() : signUpWithEmail()}
-                            disabled={loading}
-                        >
-                            {loading ? (
-                                <ActivityIndicator color="#FFF" />
-                            ) : (
-                                <Text className="text-white font-q-bold text-xl">
-                                    {isLogin ? 'Sign In' : 'Sign Up'}
-                                </Text>
-                            )}
-                        </TouchableOpacity>
+                            loading={loading}
+                        />
 
                         <TouchableOpacity 
                             className="mt-2 py-2 items-center"
@@ -262,11 +250,21 @@ export const AuthScreen = () => {
                     </View>
 
                     <TouchableOpacity
-                        className="bg-white/80 py-4 rounded-full flex-row justify-center items-center border-2 border-inactive/10 shadow-sm"
+                        className="bg-white/80 py-4 rounded-full border-2 border-inactive/10 shadow-sm min-h-[58px] justify-center"
                         onPress={signInWithGoogle}
+                        disabled={loading}
                     >
-                        <Ionicons name="logo-google" size={20} color="#64748B" />
-                        <Text className="text-[#64748B] font-q-bold text-lg ml-2">Continue with Google</Text>
+                        <View className="flex-row items-center justify-center">
+                            <View className={`flex-row items-center justify-center ${loading ? "opacity-0" : "opacity-100"}`}>
+                                <Ionicons name="logo-google" size={20} color="#64748B" />
+                                <Text className="text-[#64748B] font-q-bold text-lg ml-2">Continue with Google</Text>
+                            </View>
+                            {loading && (
+                                <View className="absolute inset-0 items-center justify-center">
+                                    <ActivityIndicator color="#64748B" size="small" />
+                                </View>
+                            )}
+                        </View>
                     </TouchableOpacity>
                 </ScrollView>
             </KeyboardAvoidingView>

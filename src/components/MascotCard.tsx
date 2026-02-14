@@ -1,6 +1,7 @@
 import React from 'react';
-import { TouchableOpacity, Image, Text, ImageSourcePropType } from 'react-native';
+import { TouchableOpacity, Text, ImageSourcePropType } from 'react-native';
 import { haptics } from '../utils/haptics';
+import { MascotImage } from './MascotImage';
 
 interface MascotCardProps {
     name: string;
@@ -18,6 +19,7 @@ export const MascotCard = ({ name, asset, isSelected, onPress }: MascotCardProps
     return (
         <TouchableOpacity
             onPress={handlePress}
+            delayPressIn={0}
             className={`w-[30%] aspect-square mb-4 rounded-[32px] items-center justify-center border-2 active:scale-95 transition-transform ${
                 isSelected 
                     ? 'bg-secondary border-primary shadow-sm' 
@@ -25,7 +27,7 @@ export const MascotCard = ({ name, asset, isSelected, onPress }: MascotCardProps
             }`}
             style={isSelected ? { elevation: 2 } : { elevation: 1 }}
         >
-            <Image 
+            <MascotImage 
                 source={asset} 
                 className="w-14 h-14" 
                 resizeMode="contain" 

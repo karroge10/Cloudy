@@ -7,7 +7,8 @@ import { useFonts, Quicksand_400Regular, Quicksand_500Medium, Quicksand_600SemiB
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Session } from '@supabase/supabase-js';
-import { DeviceEventEmitter } from 'react-native';
+import { DeviceEventEmitter, View, ActivityIndicator } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { supabase } from './src/lib/supabase';
 import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
@@ -32,13 +33,15 @@ import { JournalProvider } from './src/context/JournalContext';
 import { ProfileProvider } from './src/context/ProfileContext';
 import { AlertProvider } from './src/context/AlertContext';
 import { useNotifications } from './src/hooks/useNotifications';
+import { LockScreen } from './src/components/LockScreen';
+import { preloadAssets } from './src/utils/assetLoader';
+import { AssetWarmup } from './src/components/AssetWarmup';
+import { CustomSplashScreen } from './src/components/CustomSplashScreen';
 
 const AppContent = () => {
   useNotifications();
   return null; // This component just runs the hook
 };
-
-
 
 const Stack = createNativeStackNavigator();
 
@@ -64,8 +67,15 @@ export default function App() {
 
   const [session, setSession] = useState<Session | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [showAnimatedSplash, setShowAnimatedSplash] = useState(true);
+  const [isBioLocked, setIsBioLocked] = useState<boolean | null>(null);
 
   useEffect(() => {
+    // 0. Quick check for biometric lock to decide on splash strategy
+    AsyncStorage.getItem('security_lock_enabled').then(val => {
+      setIsBioLocked(val === 'true');
+    });
+
     // 1. Check initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -78,62 +88,100 @@ export default function App() {
       setIsAuthLoading(false);
     });
 
+    // 3. Preload mascot assets silently in the background
+    preloadAssets();
+
     return () => {
         subscription.unsubscribe();
     };
   }, []);
 
   useEffect(() => {
-    if (fontsLoaded && !isAuthLoading) {
-      SplashScreen.hideAsync().catch(console.warn);
-    }
-  }, [fontsLoaded, isAuthLoading]);
+    // Decision: Hide native splash and show app
+    if (fontsLoaded && !isAuthLoading && isBioLocked !== null) {
+      // If we are bio locked AND authenticated, we want to give the stack 
+      // a tiny bit of time to layout before we hide the native splash.
+      // This prevents the "empty cream screen" flash.
+      const settleTime = (isBioLocked && session) ? 400 : 0;
 
-  if (!fontsLoaded || isAuthLoading) {
-    return null;
-  }
+      setTimeout(() => {
+        SplashScreen.hideAsync().catch(console.warn);
+      
+        if (isBioLocked && session) {
+            setShowAnimatedSplash(false);
+        }
+      }, settleTime);
+    }
+  }, [fontsLoaded, isAuthLoading, isBioLocked, session]);
 
   return (
-    <SafeAreaProvider>
-      <ProfileProvider>
-        <JournalProvider session={session}>
-          <AlertProvider>
-            <NavigationContainer theme={CloudyTheme}>
-              <AppContent />
-              <Stack.Navigator
-                screenOptions={{
-                  headerShown: false,
-                  contentStyle: { backgroundColor: '#FFF9F0' },
-                  animation: 'slide_from_right'
-                }}
-              >
-                {session ? (
-                  <>
-                    <Stack.Screen name="MainApp" component={MainTabNavigator} />
-                    <Stack.Screen name="JournalEntry" component={JournalEntryScreen} />
-                    <Stack.Screen name="Memory" component={MemoryScreen} />
-                    <Stack.Screen name="Auth" component={AuthScreen} />
-                    <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
-                    <Stack.Screen name="ReminderSetup" component={ReminderSetupScreen} />
-                  </>
-                ) : (
-                  <>
-                    <Stack.Screen name="Welcome" component={WelcomeScreen} />
-                    <Stack.Screen name="StruggleSelection" component={StruggleSelectionScreen} />
-                    <Stack.Screen name="GoalSelection" component={GoalSelectionScreen} />
-                    <Stack.Screen name="Summary" component={SummaryScreen} />
-                    <Stack.Screen name="Auth" component={AuthScreen} />
-                  </>
-                )}
-              </Stack.Navigator>
+    <View style={{ flex: 1, backgroundColor: '#FFF9F0' }}>
+      {/* Universal Fallback Loader: Visible during heavy navigation mount or asset gaps */}
+      <View 
+        style={{ 
+            position: 'absolute', 
+            top: 0, left: 0, right: 0, bottom: 0, 
+            justifyContent: 'center', 
+            alignItems: 'center' 
+        }}
+      >
+        <ActivityIndicator color="#FF9E7D" size="large" />
+      </View>
 
-              <StatusBar style="dark" />
-            </NavigationContainer>
-          </AlertProvider>
-        </JournalProvider>
-      </ProfileProvider>
-    </SafeAreaProvider>
+      <SafeAreaProvider>
+        <AlertProvider>
+          <ProfileProvider>
+            <JournalProvider session={session}>
+              <NavigationContainer theme={CloudyTheme}>
+                <AppContent />
+                
+                {fontsLoaded && !isAuthLoading ? (
+                  <>
+                    <AssetWarmup />
+                    <LockScreen 
+                        isActive={!!session} 
+                        initialLocked={isBioLocked === true && !!session}
+                    >
+                      <Stack.Navigator
+                        screenOptions={{
+                          headerShown: false,
+                          contentStyle: { backgroundColor: '#FFF9F0' },
+                          animation: 'slide_from_right'
+                        }}
+                      >
+                        {session ? (
+                          <>
+                            <Stack.Screen name="MainApp" component={MainTabNavigator} />
+                            <Stack.Screen name="JournalEntry" component={JournalEntryScreen} />
+                            <Stack.Screen name="Memory" component={MemoryScreen} />
+                            <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
+                            <Stack.Screen name="ReminderSetup" component={ReminderSetupScreen} />
+                          </>
+                        ) : (
+                          <>
+                            <Stack.Screen name="Welcome" component={WelcomeScreen} />
+                            <Stack.Screen name="StruggleSelection" component={StruggleSelectionScreen} />
+                            <Stack.Screen name="GoalSelection" component={GoalSelectionScreen} />
+                            <Stack.Screen name="Summary" component={SummaryScreen} />
+                            <Stack.Screen name="Auth" component={AuthScreen} />
+                          </>
+                        )}
+                      </Stack.Navigator>
+                    </LockScreen>
+                  </>
+                ) : null}
+
+                {showAnimatedSplash && !(isBioLocked && session) && (
+                   <CustomSplashScreen 
+                    onFinish={() => setShowAnimatedSplash(false)} 
+                   />
+                )}
+                <StatusBar style="dark" />
+              </NavigationContainer>
+            </JournalProvider>
+          </ProfileProvider>
+        </AlertProvider>
+      </SafeAreaProvider>
+    </View>
   );
 }
-
-

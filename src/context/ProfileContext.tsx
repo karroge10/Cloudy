@@ -3,10 +3,12 @@ import { DeviceEventEmitter } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { haptics } from '../utils/haptics';
 import { notifications } from '../utils/notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Profile {
     display_name: string | null;
     haptics_enabled: boolean;
+    security_lock_enabled: boolean;
     onboarding_completed: boolean;
     reminder_time: string | null;
     age: number | null;
@@ -48,6 +50,7 @@ export const ProfileProvider = ({ children }: { children: React.ReactNode }) => 
             const mappedProfile: Profile = {
                 display_name: data.display_name,
                 haptics_enabled: data.haptics_enabled ?? true,
+                security_lock_enabled: data.security_lock_enabled ?? false,
                 onboarding_completed: data.onboarding_completed ?? false,
                 reminder_time: data.reminder_time,
                 age: data.age,
@@ -61,28 +64,43 @@ export const ProfileProvider = ({ children }: { children: React.ReactNode }) => 
             
             // Sync current settings to services
             haptics.setEnabled(mappedProfile.haptics_enabled);
-            notifications.scheduleDailyReminder(mappedProfile.reminder_time);
+            notifications.scheduleDailyReminder(mappedProfile.reminder_time, false);
+            
+            // Cache lock state
+            if (mappedProfile.security_lock_enabled) {
+                await AsyncStorage.setItem('security_lock_enabled', 'true');
+            } else {
+                await AsyncStorage.removeItem('security_lock_enabled');
+            }
         }
         setLoading(false);
     };
 
     const updateProfile = async (updates: Partial<Profile>) => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        // Optimistic UI update
+        // 1. TRUE INSTANT Optimistic UI Update (Zero awaits before this)
         if (profile) {
             const newProfile = { ...profile, ...updates };
             setProfile(newProfile);
             
-            // Immediately sync haptics/notifications if they were the change
+            // Fire side effects immediately
             if (updates.haptics_enabled !== undefined) {
                 haptics.setEnabled(updates.haptics_enabled);
             }
+            if (updates.security_lock_enabled !== undefined) {
+                if (updates.security_lock_enabled) {
+                    AsyncStorage.setItem('security_lock_enabled', 'true');
+                } else {
+                    AsyncStorage.removeItem('security_lock_enabled');
+                }
+            }
             if (updates.reminder_time !== undefined) {
-                notifications.scheduleDailyReminder(updates.reminder_time);
+                notifications.scheduleDailyReminder(updates.reminder_time, true);
             }
         }
+
+        // 2. Async work happens in background
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
 
         const { error } = await supabase
             .from('profiles')
@@ -91,7 +109,7 @@ export const ProfileProvider = ({ children }: { children: React.ReactNode }) => 
 
         if (error) {
             console.error('Error updating profile:', error);
-            // Revert on error
+            // Revert ONLY on serious DB error
             fetchProfile();
         }
     };
