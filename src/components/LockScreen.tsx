@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, AppState, AppStateStatus, ActivityIndicator, Keyboard, Pressable } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, AppState, AppStateStatus, ActivityIndicator, Keyboard, Pressable, BackHandler } from 'react-native';
 import { security } from '../utils/security';
 import { haptics } from '../utils/haptics';
 import { useProfile } from '../context/ProfileContext';
@@ -21,11 +21,13 @@ import { MascotImage } from './MascotImage';
 export const LockScreen = ({ 
     children, 
     isActive, 
-    initialLocked = false 
+    initialLocked = false,
+    isColdStart = true
 }: { 
     children: React.ReactNode, 
     isActive: boolean,
-    initialLocked?: boolean
+    initialLocked?: boolean,
+    isColdStart?: boolean
 }) => {
     const { profile, loading } = useProfile();
     const [isLocked, setIsLocked] = useState(initialLocked);
@@ -35,38 +37,38 @@ export const LockScreen = ({
     const sessionAuthenticated = useRef(false);
     const isFirstMount = useRef(true);
 
-    // 1. Instant Boot Protection: Check local cache first
+    // 0. Session Tracking: If it's not a cold start, we consider the session authenticated
+    useEffect(() => {
+        if (isActive && !isColdStart) {
+            sessionAuthenticated.current = true;
+        }
+    }, [isActive, isColdStart]);
+
+    // 1. Instant Boot Protection: Only check cache on initial mount OR cold start
     useEffect(() => {
         const checkCache = async () => {
             if (!isActive) return;
 
-            const cachedLock = await AsyncStorage.getItem('security_lock_enabled');
-            if (cachedLock === 'true') {
+            // If we've already authenticated in this session, don't lock
+            if (sessionAuthenticated.current) return;
+
+            // ONLY auto-lock from cache if we are in a cold start scenario
+            if (initialLocked) {
                 setIsLocked(true);
             }
-            
-            // If this is the first mount and we have a session, 
-            // it's a cold start. If not, it's a login.
-            if (!isFirstMount.current) {
-                sessionAuthenticated.current = true;
-                setIsLocked(false);
-            }
-            isFirstMount.current = false;
         };
         checkCache();
-    }, [isActive]);
+    }, [isActive, initialLocked]);
 
     // 2. Main Logic: Sync with Profile & Handle Authentication
     useEffect(() => {
         if (!loading && profile) {
             const isEnabled = profile.security_lock_enabled;
             
-            if (isEnabled && !sessionAuthenticated.current) {
-                // If the app is active and we JUST turned this on,
-                // we handle the prompt but don't necessarily need to lock the whole screen
-                // with the overlay yet. Actually, handleAuthentication handles successful 
-                // unlock setting sessionAuthenticated.current = true.
-                
+            // SECURITY TWEAK: Only trigger the "auto-lock on mount" if we are in a cold start.
+            // If the user just logged in (isColdStart === false), we don't want to 
+            // immediately prompt for biometrics since they JUST authenticated.
+            if (isEnabled && !sessionAuthenticated.current && isColdStart) {
                 if (!isLocked && !isAuthenticating) {
                     setIsLocked(true);
                     handleAuthentication();
@@ -76,7 +78,7 @@ export const LockScreen = ({
                 sessionAuthenticated.current = false;
             }
         }
-    }, [loading, profile?.security_lock_enabled, isLocked, isAuthenticating]);
+    }, [loading, profile?.security_lock_enabled, isLocked, isAuthenticating, isColdStart]);
 
     // 3. Re-lock on Background with Grace Period
     const backgroundTimestamp = useRef<number | null>(null);
@@ -113,10 +115,17 @@ export const LockScreen = ({
         return () => subscription.remove();
     }, [profile?.security_lock_enabled, isActive]);
     
-    // 4. Keyboard Management
+    // 4. Keyboard Management & BackHandler
     useEffect(() => {
         if (isLocked) {
             Keyboard.dismiss();
+            
+            // Android BackHandler Guard: Prevent bypassing the lock screen
+            const backAction = () => {
+                return true; // Consume the event, doing nothing
+            };
+            const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+            return () => backHandler.remove();
         }
     }, [isLocked]);
 
@@ -136,20 +145,14 @@ export const LockScreen = ({
         setIsAuthenticating(false);
     };
 
+    // ACCESSIBILITY SHIELD: If locked, we don't render children at all 
+    // to prevent screen readers from leaking content.
     if (!isLocked) {
         return <>{children}</>;
     }
 
     return (
         <View style={styles.container}>
-            {/* The app content is rendered but obscured by the gradient overlay */}
-            <View 
-                style={StyleSheet.absoluteFill}
-                pointerEvents={isLocked ? 'none' : 'auto'}
-            >
-                {children}
-            </View>
-            
             <LinearGradient 
                 colors={['#FFF9F0', '#fff1db']} 
                 style={styles.overlay}

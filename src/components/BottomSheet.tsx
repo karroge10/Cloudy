@@ -36,15 +36,21 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
 
     const panResponder = useRef(
         PanResponder.create({
-            onStartShouldSetPanResponder: () => false,
+            // Claim the touch if it hits the background area
+            onStartShouldSetPanResponder: () => true,
+            onStartShouldSetPanResponderCapture: () => false,
+            
+            // Steal the touch if moving down, even from children
+            onMoveShouldSetPanResponderCapture: (_, gestureState) => {
+                return gestureState.dy > 10 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
+            },
+            
             onMoveShouldSetPanResponder: (_, gestureState) => {
-                const isVerticalSwipe = Math.abs(gestureState.dy) > Math.abs(gestureState.dx) * 2;
-                const isSwipeDown = gestureState.dy > 5;
-                
-                if (isVerticalSwipe && isSwipeDown) {
-                    return true;
-                }
-                return false;
+                return Math.abs(gestureState.dy) > 5;
+            },
+
+            onPanResponderGrant: (evt) => {
+                console.log('[BottomSheet] Responder Granted at Y:', evt.nativeEvent.locationY);
             },
             onPanResponderMove: (_, gestureState) => {
                 if (gestureState.dy > 0) {
@@ -52,7 +58,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
                 }
             },
             onPanResponderRelease: (_, gestureState) => {
-                if (gestureState.dy > 100 || gestureState.vy > 0.3) {
+                if (gestureState.dy > 120 || gestureState.vy > 0.5) {
                     haptics.selection();
                     closeModal();
                 } else {
@@ -72,6 +78,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
                     stiffness: 150,
                 }).start();
             },
+            onPanResponderTerminationRequest: () => false,
         })
     ).current;
 
@@ -116,28 +123,32 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
                 
                 <Animated.View 
                     {...panResponder.panHandlers}
+                    collapsable={false}
                     style={{ 
                         transform: [{ translateY }],
                         maxHeight: SCREEN_HEIGHT * 0.9
                     }}
                     className="bg-background rounded-t-[44px] shadow-2xl overflow-hidden"
                 >
-                    {/* Handle Bar Area */}
-                    <View className="items-center pt-4 pb-2 w-full">
-                        <View className="w-16 h-1.5 bg-text/10 rounded-full" />
-                    </View>
-
-                    {title && (
-                        <View className="px-8 pt-4 pb-2">
-                            <Text className="text-2xl font-q-bold text-text">
-                                {title}
-                            </Text>
+                    {/* Entire container is now the swipe area */}
+                    <View pointerEvents="box-none">
+                        {/* Visual Handle Bar */}
+                        <View className="items-center pt-4 pb-2 w-full">
+                            <View className="w-16 h-1.5 bg-text/10 rounded-full" />
                         </View>
-                    )}
 
-                    {/* Content - wrapped in a View that stops propagation if needed, but currently allowing swipes from empty space */}
-                    <View className="px-8 pb-12 pt-4">
-                        {children}
+                        {title && (
+                            <View className="px-8 pt-4 pb-2">
+                                <Text className="text-2xl font-q-bold text-text">
+                                    {title}
+                                </Text>
+                            </View>
+                        )}
+
+                        {/* Content area */}
+                        <View className="px-8 pb-12 pt-4" pointerEvents="box-none">
+                            {children}
+                        </View>
                     </View>
                 </Animated.View>
             </View>

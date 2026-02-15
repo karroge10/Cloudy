@@ -13,6 +13,7 @@ import { useAlert } from '../context/AlertContext';
 import { getFriendlyAuthErrorMessage } from '../utils/authErrors';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { identifyUser } from '../lib/posthog';
+import { useProfile } from '../context/ProfileContext';
 
 
 
@@ -21,6 +22,7 @@ export const SummaryScreen = () => {
     const navigation = useNavigation();
     const route = useRoute();
     const { trackEvent } = useAnalytics();
+    const { updateProfile } = useProfile();
 
     const [loading, setLoading] = useState(false);
     const { struggles, goals } = route.params as { struggles: string[], goals: string[] } || { struggles: [], goals: [] };
@@ -51,27 +53,18 @@ export const SummaryScreen = () => {
                     primary_struggle: struggles[0] || 'none'
                 });
 
-                // Initialize profile with onboarding data
-                const { error: profileError } = await supabase
-                    .from('profiles')
-                    .upsert({
-                        id: user.id,
-                        goals: goals,
-                        struggles: struggles,
-                        onboarding_completed: true,
-                        updated_at: new Date(),
-                    });
-                
-                if (profileError) {
-                    console.warn('Profile init error:', profileError.message);
-                }
+                // Initialize profile with onboarding data via Context
+                await updateProfile({
+                    goals: goals,
+                    struggles: struggles,
+                    onboarding_completed: true,
+                });
             }
 
             trackEvent('onboarding_finished', { struggles, goals });
         } catch (error: any) {
             const { title, message } = getFriendlyAuthErrorMessage(error);
             showAlert(title, message, [{ text: 'Okay' }], 'error');
-        } finally {
             setLoading(false);
         }
     };

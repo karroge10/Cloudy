@@ -64,8 +64,8 @@ export const AuthScreen = () => {
         if (error) {
             const { title, message } = getFriendlyAuthErrorMessage(error);
             showAlert(title, message, [{ text: 'Okay' }], 'error');
+            setLoading(false);
         }
-        setLoading(false);
     }
 
     async function signUpWithEmail() {
@@ -137,7 +137,6 @@ export const AuthScreen = () => {
         } catch (error: any) {
             const { title, message } = getFriendlyAuthErrorMessage(error);
             showAlert(title, message, [{ text: 'Okay' }], 'error');
-        } finally {
             setLoading(false);
         }
     }
@@ -187,7 +186,6 @@ export const AuthScreen = () => {
                 const { title, message } = getFriendlyAuthErrorMessage(error);
                 showAlert(title, message, [{ text: 'Okay' }], 'error');
             }
-        } finally {
             setLoading(false);
         }
     }

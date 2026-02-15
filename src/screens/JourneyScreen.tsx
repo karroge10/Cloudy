@@ -261,7 +261,7 @@ export const JourneyScreen = () => {
     const { showAlert } = useAlert();
     const navigation = useNavigation();
     const { height: viewportHeight } = useWindowDimensions();
-    const { profile, loading: profileLoading } = useProfile();
+    const { profile, isAnonymous, loading: profileLoading } = useProfile();
     const { 
         entries, 
         loading, 
@@ -291,11 +291,6 @@ export const JourneyScreen = () => {
         setIsRefreshing(false);
     };
 
-    const isAnonymous = useMemo(() => {
-        // We'll need to check the session for actual anonymity, 
-        // but for UI logic, we check if they have a display name.
-        return !profile?.display_name;
-    }, [profile]);
 
     const isProfileIncomplete = useMemo(() => {
         return !profile?.display_name || !profile?.onboarding_completed;

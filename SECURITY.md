@@ -25,12 +25,12 @@ This document tracks identified security gaps, architectural vulnerabilities, an
 ## 🏗️ Security Hardening Roadmap
 
 ### Phase 1: Storage & Persistence (Immediate)
-- [ ] **Secure Session Storage:** Swap `AsyncStorage` for `SecureStore` in the Supabase client initialization.
-- [ ] **Snapshot Protection:** Obscure the app in the App Switcher using `expo-blur` or a native "Privacy Overlay" when the app state is `inactive` or `background`.
-- [ ] **Accessibility Shield:** Unmount sensitive UI (like the journal feed) when the app is locked, preventing Screen Readers (TalkBack/VoiceOver) from reading content "behind" the lock screen.
+- [x] **Secure Session Storage:** Swap `AsyncStorage` for `SecureStore` in the Supabase client initialization. (Implemented)
+- [x] **Snapshot Protection:** Obscure the app in the App Switcher using a "Privacy Overlay" when the app state is `inactive` or `background`. (Implemented in `App.tsx`)
+- [x] **Accessibility Shield:** Unmount sensitive UI (like the journal feed) when the app is locked, preventing Screen Readers (TalkBack/VoiceOver) from reading content "behind" the lock screen. (Implemented in `LockScreen.tsx`)
 
 ### Phase 2: Input & UI Security
-- [ ] **Android BackHandler Guard:** Implement logic to prevent users from using the hardware Back button to bypass the `LockScreen` component.
+- [x] **Android BackHandler Guard:** Implement logic to prevent users from using the hardware Back button to bypass the `LockScreen` component. (Implemented)
 - [ ] **Zero-Frame Leakage:** Optimize `isBioLocked` initialization in `App.tsx` to ensure the journal content is never rendered for a fraction of a second during a cold start.
 
 ### Phase 3: Zero-Knowledge (Advanced)
@@ -40,8 +40,8 @@ This document tracks identified security gaps, architectural vulnerabilities, an
 ---
 
 ## 📋 Security Checklist
-- [ ] Use `SecureStore` for Auth storage.
-- [ ] Implement `AppState` listener for privacy blur.
+- [x] Use `SecureStore` for Auth storage.
+- [x] Implement `AppState` listener for privacy blur.
 - [ ] Audit all third-party libraries for data leakage.
 - [ ] Ensure `deleted_at` records are purged from the database after 30 days.
 - [ ] Verify that biometric keys are stored in the device's Secure Enclave.

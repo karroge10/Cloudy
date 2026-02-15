@@ -1,15 +1,22 @@
-import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COMPANIONS } from '../constants/Companions';
 import { MascotImage } from './MascotImage';
+import { haptics } from '../utils/haptics';
 
 interface StreakGoalProps {
     streak: number;
     className?: string;
+    onPress?: () => void;
 }
 
-export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, className }) => {
+export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, className, onPress }) => {
+    const handlePress = () => {
+        if (onPress) {
+            haptics.selection();
+            onPress();
+        }
+    };
     // Determine the next companion reward
     const nextCompanion = COMPANIONS.find(c => c.requiredStreak > streak);
     
@@ -21,7 +28,11 @@ export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, className }) => 
     const daysLeft = nextMilestoneValue - streak;
 
     return (
-        <View className={`bg-white/60 p-5 rounded-[24px] border border-primary/5 ${className}`}>
+        <TouchableOpacity 
+            onPress={handlePress}
+            activeOpacity={onPress ? 0.8 : 1}
+            className={`bg-white/60 p-5 rounded-[24px] border border-primary/5 ${className}`}
+        >
             <View className="flex-row justify-between items-center mb-4">
                 <View className="flex-row items-center flex-1">
                     <View className="bg-primary/10 p-2.5 rounded-2xl mr-3">
@@ -61,6 +72,6 @@ export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, className }) => 
                 </View>
                 <Text className="text-[11px] font-q-bold text-muted">{nextMilestoneValue} days goal</Text>
             </View>
-        </View>
+        </TouchableOpacity>
     );
 };

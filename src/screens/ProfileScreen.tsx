@@ -36,7 +36,7 @@ import { ActivityIndicator } from 'react-native';
 export const ProfileScreen = () => {
     const { showAlert } = useAlert();
     const { streak, rawStreakData } = useJournal();
-    const { profile, loading: profileLoading, updateProfile } = useProfile();
+    const { profile, isAnonymous, loading: profileLoading, updateProfile } = useProfile();
     const { trackEvent } = useAnalytics();
 
     
@@ -55,8 +55,6 @@ export const ProfileScreen = () => {
     const [tempName, setTempName] = useState('');
     const [tempCountry, setTempCountry] = useState('');
     const [reminderDate, setReminderDate] = useState(new Date());
-    const [isAnonymous, setIsAnonymous] = useState(false);
-    
     const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
     const [selectedStruggles, setSelectedStruggles] = useState<string[]>([]);
     const [tempGender, setTempGender] = useState('');
@@ -87,15 +85,10 @@ export const ProfileScreen = () => {
     }, [profile]);
 
     useEffect(() => {
-        const checkAnon = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            setIsAnonymous(user?.is_anonymous || false);
-        };
         const checkBio = async () => {
             const supported = await security.isSupported();
             setBioSupported(supported);
         };
-        checkAnon();
         checkBio();
     }, []);
 

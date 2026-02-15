@@ -17,6 +17,7 @@ import { MascotImage } from '../components/MascotImage';
 import { StreakGoal } from '../components/StreakGoal';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { Button } from '../components/Button';
+import { COMPANIONS } from '../constants/Companions';
 
 export const HomeScreen = () => {
     const { showAlert } = useAlert();
@@ -210,6 +211,16 @@ export const HomeScreen = () => {
                 </View>
             </View>
 
+            {/* Streak Goal Milestone - Now at the top */}
+            <StreakGoal 
+                streak={streak} 
+                className="mb-8" 
+                onPress={() => {
+                    trackEvent('roadmap_viewed');
+                    navigation.navigate('Roadmap');
+                }}
+            />
+
             {/* Main Writing Card */}
             <View className="bg-card rounded-[32px] p-6 shadow-[#0000000D] shadow-xl mb-6 flex-1" style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 20, elevation: 5 }}>
                 <Text className="text-xl font-q-bold text-text mb-4 text-center">
@@ -251,10 +262,6 @@ export const HomeScreen = () => {
                     </TouchableOpacity>
                 </View>
             </View>
-
-            {/* Streak Goal Milestone - Now more prominent below the writing card */}
-            <StreakGoal streak={streak} className="mb-8" />
-
             {/* Tip Box - Only show for very new users */}
             {streak === 0 && (
                 <InfoCard 
