@@ -74,14 +74,6 @@ const RootNavigator = ({ session, isBioLocked, isColdStartWithSession }: { sessi
   const [viewMode, setViewMode] = useState<'loading' | 'onboarding' | 'app' | 'auth'>('loading');
 
   useEffect(() => {
-    console.log('[Nav] State Update:', {
-        hasSession: !!session,
-        profileLoading,
-        hasProfile: !!profile,
-        isColdStartWithSession,
-        currentMode: viewMode
-    });
-
     // Stage 1: Absolute Logout
     if (!session) {
       if (viewMode !== 'auth') setViewMode('auth');
@@ -107,7 +99,7 @@ const RootNavigator = ({ session, isBioLocked, isColdStartWithSession }: { sessi
     if (isColdStartWithSession) {
       setViewMode('loading');
     }
-  }, [session, profileLoading, profile?.onboarding_completed, isColdStartWithSession, viewMode]); // Added viewMode to dependencies for console.log
+  }, [session, profileLoading, profile?.onboarding_completed, isColdStartWithSession]);
 
   // If we are cold starting with a session, show a loader until profile is ready.
   // Otherwise, we keep the current viewMode to prevent jumping.

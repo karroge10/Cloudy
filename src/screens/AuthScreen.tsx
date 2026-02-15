@@ -57,17 +57,18 @@ export const AuthScreen = () => {
         if (data.user) {
             identifyUser(data.user.id, data.user.email ?? undefined);
             trackEvent('user_signed_in', { method: 'email' });
+            
+            // CONVERSION GUARD: Only navigate manually if we are securing a guest journey.
+            const isGuestConversion = route.name === 'SecureAccount';
+            if (isGuestConversion) {
+                navigation.navigate('MainApp');
+            }
         }
-
-
 
         if (error) {
             const { title, message } = getFriendlyAuthErrorMessage(error);
             showAlert(title, message, [{ text: 'Okay' }], 'error');
             setLoading(false);
-        } else {
-            // Navigate to break the sticky screen focus
-            navigation.navigate('MainApp');
         }
     }
 
@@ -148,18 +149,15 @@ export const AuthScreen = () => {
         try {
             haptics.selection();
             setLoading(true);
-            console.log('[Auth] Starting Google Sign-In...');
             await GoogleSignin.hasPlayServices();
             const response = await GoogleSignin.signIn();
             
             if (response.type === 'cancelled') {
-                console.log('[Auth] Google Sign-In was cancelled');
                 setLoading(false);
                 return;
             }
 
             if (response.type === 'success' && response.data.idToken) {
-                console.log('[Auth] Google Sign-In Success, token received');
                 // Capture anonymous ID for merging
                 const { data: { user: currentUser } } = await supabase.auth.getUser();
                 if (currentUser?.is_anonymous) {
@@ -174,15 +172,15 @@ export const AuthScreen = () => {
                 if (data.user) {
                     identifyUser(data.user.id, data.user.email ?? undefined);
                     trackEvent('user_signed_in', { method: 'google', is_conversion: !!currentUser?.is_anonymous });
-                    console.log('[Auth] Supabase Sign-In Success for user:', data.user.id);
+
+                    // CONVERSION GUARD: Only navigate manually if we are securing a guest journey.
+                    const isGuestConversion = route.name === 'SecureAccount';
+                    if (isGuestConversion) {
+                        navigation.navigate('MainApp');
+                    }
                 }
 
-
-                
                 if (error) throw error;
-
-                // Navigate to break the sticky screen focus
-                navigation.navigate('MainApp');
 
             } else if (response.type === 'success' && !response.data.idToken) {
                 throw new Error('No ID Token found');

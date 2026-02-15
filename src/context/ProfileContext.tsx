@@ -36,10 +36,8 @@ export const ProfileProvider = ({ children }: { children: React.ReactNode }) => 
 
     const fetchProfile = async () => {
         setLoading(true);
-        console.log('[Profile] set loading: true');
         try {
             const { data: { user } } = await supabase.auth.getUser();
-            console.log('[Profile] Fetching for user:', user?.id);
             if (!user) {
                 setProfile(null);
                 setIsAnonymous(false);
@@ -69,7 +67,6 @@ export const ProfileProvider = ({ children }: { children: React.ReactNode }) => 
                     goals: data.goals || [],
                     struggles: data.struggles || [],
                 };
-                console.log('[Profile] Fetch complete, setting profile');
                 setProfile(mappedProfile);
             
             // Sync current settings to services
@@ -86,7 +83,6 @@ export const ProfileProvider = ({ children }: { children: React.ReactNode }) => 
             console.error('[Profile] Error fetching profile:', error);
             setProfile(null);
         } else {
-            console.log('[Profile] No profile found for user, setting null');
             setProfile(null);
         }
         setLoading(false);
@@ -135,7 +131,7 @@ export const ProfileProvider = ({ children }: { children: React.ReactNode }) => 
         } else {
             // SUCCESS: Re-fetch to ensure the local state is 100% accurate 
             // and contains the newly created record if it's the first time.
-            fetchProfile();
+            await fetchProfile();
         }
     };
 
