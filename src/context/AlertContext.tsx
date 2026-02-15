@@ -11,7 +11,7 @@ interface AlertState {
     visible: boolean;
     title: string;
     message: string;
-    type: 'error' | 'success' | 'info';
+    type: 'error' | 'success' | 'info' | 'warning';
     buttons: AlertButton[];
 }
 
@@ -20,7 +20,7 @@ interface AlertContextData {
         title: string,
         message: string,
         buttons?: AlertButton[],
-        type?: 'error' | 'success' | 'info'
+        type?: 'error' | 'success' | 'info' | 'warning'
     ) => void;
     hideAlert: () => void;
 }
@@ -40,7 +40,7 @@ export const AlertProvider = ({ children }: { children: ReactNode }) => {
         title: string,
         message: string,
         buttons: AlertButton[] = [],
-        type: 'error' | 'success' | 'info' = 'info'
+        type: 'error' | 'success' | 'info' | 'warning' = 'info'
     ) => {
         setState({
             visible: true,

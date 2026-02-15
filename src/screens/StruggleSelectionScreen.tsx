@@ -10,10 +10,14 @@ import { MascotImage } from '../components/MascotImage';
 import { Layout } from '../components/Layout';
 
 import { STRUGGLES } from '../constants/Struggles';
+import { useAnalytics } from '../hooks/useAnalytics';
+
 
 export const StruggleSelectionScreen = () => {
     const navigation = useNavigation();
+    const { trackEvent } = useAnalytics();
     const [selected, setSelected] = useState<string[]>([]);
+
 
     const toggleSelection = (item: string) => {
         if (selected.includes(item)) {
@@ -71,9 +75,13 @@ export const StruggleSelectionScreen = () => {
 
                     <Button
                         label="Continue"
-                        onPress={() => (navigation.navigate as any)('GoalSelection', { struggles: selected })}
+                        onPress={() => {
+                            trackEvent('onboarding_struggles_selected', { struggles: selected });
+                            (navigation.navigate as any)('GoalSelection', { struggles: selected });
+                        }}
                         disabled={!canContinue}
                     />
+
                 </View>
             </View>
         </Layout>

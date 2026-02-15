@@ -116,15 +116,13 @@ export const MemoryScreen = () => {
             className="px-0 py-0"
         >
             <View className="px-6 pt-4">
-                <Animated.View style={animatedContentStyle}>
-                    <TopNav 
-                        subtitle={isInspectorMode ? "Memory Inspector" : "Sunrays"}
-                        title={formattedDate}
-                        rightElement={ShareButton}
-                        onBack={() => navigation.goBack()}
-                        roundButtons={true}
-                    />
-                </Animated.View>
+                <TopNav 
+                    subtitle={isInspectorMode ? "Memory Inspector" : "Sunrays"}
+                    title={formattedDate}
+                    rightElement={ShareButton}
+                    onBack={() => navigation.goBack()}
+                    roundButtons={true}
+                />
             </View>
 
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'space-evenly', paddingHorizontal: 24, paddingVertical: 10 }}>

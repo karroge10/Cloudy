@@ -27,10 +27,14 @@ import { Image } from 'react-native';
 import { useJournal, JournalEntry } from '../context/JournalContext';
 import { ProfileNudge } from '../components/ProfileNudge';
 import { useAlert } from '../context/AlertContext';
+import { Button } from '../components/Button';
+
+import { useProfile } from '../context/ProfileContext';
+import { RefreshControl } from 'react-native';
 
 const ITEM_HEIGHT = 180;
 
-const TimelineItem = ({ 
+const TimelineItem = React.memo(({ 
     item, 
     index, 
     scrollY, 
@@ -71,7 +75,7 @@ const TimelineItem = ({
 
     const handleTrashPress = () => {
         if (isDeletingProp) return;
-        haptics.selection();
+        haptics.success();
         
         // Immediate trigger for bottom sheet
         onDelete(item.id);
@@ -240,7 +244,16 @@ const TimelineItem = ({
             </View>
         </Animated.View>
     );
-};
+}, (prev, next) => {
+    return (
+        prev.item.id === next.item.id &&
+        prev.item.text === next.item.text &&
+        prev.item.is_favorite === next.item.is_favorite &&
+        prev.isDeletingProp === next.isDeletingProp &&
+        prev.isLast === next.isLast &&
+        prev.isFirst === next.isFirst
+    );
+});
 
 
 
@@ -248,12 +261,19 @@ export const JourneyScreen = () => {
     const { showAlert } = useAlert();
     const navigation = useNavigation();
     const { height: viewportHeight } = useWindowDimensions();
-    const { entries, loading, toggleFavorite, deleteEntry } = useJournal();
+    const { profile, loading: profileLoading } = useProfile();
+    const { 
+        entries, 
+        loading, 
+        loadingMore,
+        hasMore,
+        toggleFavorite, 
+        deleteEntry, 
+        refreshEntries,
+        loadMore 
+    } = useJournal();
     const [filter, setFilter] = useState<'all' | 'favorites'>('all');
-    const [isAnonymous, setIsAnonymous] = useState(false);
-    const [displayName, setDisplayName] = useState<string | null>(null);
-    const [profileLoading, setProfileLoading] = useState(true);
-    const [isProfileIncomplete, setIsProfileIncomplete] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     
     // Deletion states
     const [deletingId, setDeletingId] = useState<string | null>(null); // ID of item pending confirmation
@@ -264,38 +284,22 @@ export const JourneyScreen = () => {
         scrollY.value = event.contentOffset.y;
     });
 
-    useFocusEffect(
-        React.useCallback(() => {
-            checkProfileStatus();
-            // We rely on Context for data fetching, effectively caching it.
-        }, [])
-    );
-
-    const checkProfileStatus = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            setProfileLoading(false);
-            return;
-        }
-
-        setIsAnonymous(user.is_anonymous || false);
-
-        const { data } = await supabase
-            .from('profiles')
-            .select('display_name, onboarding_completed')
-            .eq('id', user.id)
-            .single();
-
-        if (data) {
-            setDisplayName(data.display_name);
-            if (!data.display_name || !data.onboarding_completed) {
-                setIsProfileIncomplete(true);
-            } else {
-                setIsProfileIncomplete(false);
-            }
-        }
-        setProfileLoading(false);
+    const onRefresh = async () => {
+        setIsRefreshing(true);
+        haptics.light();
+        await refreshEntries();
+        setIsRefreshing(false);
     };
+
+    const isAnonymous = useMemo(() => {
+        // We'll need to check the session for actual anonymity, 
+        // but for UI logic, we check if they have a display name.
+        return !profile?.display_name;
+    }, [profile]);
+
+    const isProfileIncomplete = useMemo(() => {
+        return !profile?.display_name || !profile?.onboarding_completed;
+    }, [profile]);
 
     const filteredEntries = useMemo(() => {
         if (filter === 'favorites') return entries.filter(e => e.is_favorite);
@@ -385,14 +389,12 @@ export const JourneyScreen = () => {
             <View className="flex-row mb-8 bg-inactive/10 p-1.5 rounded-2xl self-start">
                 <TouchableOpacity 
                     onPress={() => { haptics.selection(); setFilter('all'); }}
-                    delayPressIn={0}
                     className={`px-6 py-2 rounded-[14px] active:scale-95 transition-transform ${filter === 'all' ? 'bg-white shadow-sm' : ''}`}
                 >
                     <Text className={`font-q-bold ${filter === 'all' ? 'text-text' : 'text-muted'}`}>All</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
                     onPress={() => { haptics.selection(); setFilter('favorites'); }}
-                    delayPressIn={0}
                     className={`px-6 py-2 rounded-[14px] active:scale-95 transition-transform ${filter === 'favorites' ? 'bg-white shadow-sm' : ''}`}
                 >
                     <View className="flex-row items-center">
@@ -438,6 +440,44 @@ export const JourneyScreen = () => {
                 showsVerticalScrollIndicator={false}
                 onScroll={scrollHandler}
                 scrollEventThrottle={16}
+                
+                // PERFORMANCE OPTIMIZATIONS
+                getItemLayout={(_, index) => ({
+                    length: ITEM_HEIGHT,
+                    offset: ITEM_HEIGHT * index,
+                    index,
+                })}
+                windowSize={5}
+                removeClippedSubviews={true}
+                
+                // LAZY LOADING
+                onEndReached={() => {
+                    if (filter === 'all' && hasMore) {
+                        loadMore();
+                    }
+                }}
+                onEndReachedThreshold={1.0}
+                ListFooterComponent={
+                    loadingMore ? (
+                        <View className="py-20 items-center">
+                            <ActivityIndicator color="#FF9E7D" size="large" />
+                            <Text className="text-muted font-q-bold mt-4">Discovering more memories...</Text>
+                        </View>
+                    ) : (
+                        <View className="h-40" /> // Extra padding if not loading
+                    )
+                }
+
+                // REFRESH
+                refreshControl={
+                    <RefreshControl 
+                        refreshing={isRefreshing} 
+                        onRefresh={onRefresh}
+                        colors={['#FF9E7D']}
+                        tintColor="#FF9E7D"
+                    />
+                }
+
                 ListEmptyComponent={
                     <View className="items-center justify-center py-20">
                         {loading ? (
@@ -460,24 +500,22 @@ export const JourneyScreen = () => {
             visible={!!deletingId} 
             onClose={() => setDeletingId(null)}
         >
-            <View className="items-center">
+            <View className="items-center w-full">
                 <Image source={MASCOTS.SAD} className="w-32 h-32 mb-4" resizeMode="contain" />
-                <Text className="text-2xl font-q-bold text-text text-center mb-2">Wait, are you sure?</Text>
-                <Text className="text-lg font-q-medium text-muted text-center mb-8 px-4">
+                <Text className="text-2xl font-q-bold text-text text-center mb-4 px-6">Wait, are you sure?</Text>
+                <Text className="text-lg font-q-medium text-muted text-center mb-8 px-4 leading-6">
                     Mistakes happen! Are you sure you want to let this memory go?
                 </Text>
 
-                <TouchableOpacity 
+                <Button 
+                    label="Yes, Delete It"
                     onPress={confirmDelete}
-                    delayPressIn={0}
-                    className="w-full bg-[#FF7D7D] py-4 rounded-full items-center shadow-md active:scale-95 transition-transform mb-4"
-                >
-                    <Text className="text-white font-q-bold text-lg">Yes, Delete It</Text>
-                </TouchableOpacity>
+                    haptic="heavy"
+                />
 
                 <TouchableOpacity 
                     onPress={() => { haptics.selection(); setDeletingId(null); }}
-                    className="py-2 active:scale-95 transition-transform"
+                    className="mt-4 py-2 active:scale-95 transition-transform"
                 >
                     <Text className="text-muted font-q-bold text-base">No, Keep It</Text>
                 </TouchableOpacity>

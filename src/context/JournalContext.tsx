@@ -6,6 +6,8 @@ import { calculateStreak } from '../utils/streakUtils';
 import { haptics } from '../utils/haptics';
 import { notifications } from '../utils/notifications';
 import { useAlert } from './AlertContext';
+import { posthog } from '../lib/posthog';
+
 
 export interface JournalEntry {
     id: string;
@@ -20,21 +22,30 @@ export interface JournalEntry {
 interface JournalContextType {
     entries: JournalEntry[];
     loading: boolean;
+    loadingMore: boolean;
+    hasMore: boolean;
     streak: number;
-    rawStreakData: { created_at: string }[];
+    rawStreakData: { id: string, created_at: string }[];
     addEntry: (text: string) => Promise<void>;
     toggleFavorite: (id: string, isFavorite: boolean) => Promise<void>;
     deleteEntry: (id: string, soft?: boolean) => Promise<void>;
     refreshEntries: () => Promise<void>;
+    loadMore: () => Promise<void>;
 }
+
+const PAGE_SIZE = 20;
 
 const JournalContext = createContext<JournalContextType | undefined>(undefined);
 
 export const JournalProvider: React.FC<{ children: React.ReactNode, session: Session | null }> = ({ children, session }) => {
     const { showAlert } = useAlert();
     const [entries, setEntries] = useState<JournalEntry[]>([]);
+    const [metadata, setMetadata] = useState<{ id: string, created_at: string }[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [streak, setStreak] = useState(0);
+    const [page, setPage] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
 
     // Initial load from cache
     useEffect(() => {
@@ -45,23 +56,51 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
         loadCache();
     }, []);
 
-    const fetchEntries = useCallback(async () => {
-        if (!session?.user?.id) {
-            setLoading(false);
-            return;
-        }
+    const fetchMetadata = useCallback(async () => {
+        if (!session?.user?.id) return;
 
         const { data, error } = await supabase
             .from('posts')
-            .select('*')
+            .select('id, created_at')
             .eq('user_id', session.user.id)
+            .is('deleted_at', null)
             .order('created_at', { ascending: false });
 
         if (!error && data) {
-            setEntries(data);
+            setMetadata(data);
         }
-        setLoading(false);
     }, [session]);
+
+    const fetchPage = useCallback(async (pageNum: number, clearExisting = false) => {
+        if (!session?.user?.id) return;
+
+        if (pageNum === 0) setLoading(true);
+        else setLoadingMore(true);
+
+        const { data, error } = await supabase
+            .from('posts')
+            .select('id, user_id, text, is_favorite, created_at, type')
+            .eq('user_id', session.user.id)
+            .is('deleted_at', null)
+            .order('created_at', { ascending: false })
+            .range(pageNum * PAGE_SIZE, (pageNum + 1) * PAGE_SIZE - 1);
+
+        if (!error && data) {
+            setEntries(prev => clearExisting ? data : [...prev, ...data]);
+            setHasMore(data.length === PAGE_SIZE);
+        }
+        
+        setLoading(false);
+        setLoadingMore(false);
+    }, [session]);
+
+    const refreshEntries = useCallback(async () => {
+        setPage(0);
+        await Promise.all([
+            fetchMetadata(),
+            fetchPage(0, true)
+        ]);
+    }, [fetchMetadata, fetchPage]);
 
     // Handle anonymous account merging
     useEffect(() => {
@@ -71,6 +110,7 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
             try {
                 const anonId = await AsyncStorage.getItem('pending_merge_anonymous_id');
                 if (anonId && anonId !== session.user.id) {
+                    setLoading(true);
                     const { data: name, error } = await supabase.rpc('merge_anonymous_data', { 
                         old_uid: anonId, 
                         new_uid: session.user.id 
@@ -78,50 +118,52 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
                     
                     if (error) {
                         console.warn('Merge failed:', error.message);
+                        setLoading(false);
                     } else {
                         await AsyncStorage.removeItem('pending_merge_anonymous_id');
                         
-                        // Success Toast (The "Pro" Way)
+                        // Re-fetch now that data has moved
+                        await refreshEntries();
+
                         showAlert(
                             'Success', 
                             `Welcome back, ${name}! We've added your recent memories to your journal.`,
                             [{ text: 'Great!' }],
                             'success'
                         );
-
-                        // Re-fetch now that data has moved
-                        fetchEntries();
                     }
                 }
             } catch (err) {
                 console.error('Merge check error:', err);
+                setLoading(false);
             }
         };
 
         handleMerge();
-    }, [session, fetchEntries]);
+    }, [session, refreshEntries, showAlert]);
 
     useEffect(() => {
-        fetchEntries();
-    }, [fetchEntries]);
-
-    // Derived raw dates for streak calculation - includes soft-deleted entries to maintain streak
-    const rawStreakData = useMemo(() => {
-        return entries.map(e => ({ created_at: e.created_at }));
-    }, [entries]);
+        refreshEntries();
+    }, [refreshEntries]);
 
     useEffect(() => {
-        if (rawStreakData.length > 0) {
-            const newStreak = calculateStreak(rawStreakData);
+        if (metadata.length > 0) {
+            const newStreak = calculateStreak(metadata);
             setStreak(newStreak);
             
-            // Background update cache
             AsyncStorage.setItem('user_streak_cache', newStreak.toString()).catch(console.warn);
-        } else {
+        } else if (!loading) {
             setStreak(0);
             AsyncStorage.setItem('user_streak_cache', '0').catch(console.warn);
         }
-    }, [rawStreakData]);
+    }, [metadata, loading]);
+
+    const loadMore = async () => {
+        if (loadingMore || !hasMore) return;
+        const nextPage = page + 1;
+        setPage(nextPage);
+        await fetchPage(nextPage);
+    };
 
     const addEntry = async (text: string) => {
         if (!session?.user?.id) return;
@@ -139,7 +181,14 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
 
         if (error) throw error;
         if (data) {
+            posthog.capture('journal_entry_saved', { 
+                length: text.length,
+                current_streak: streak + 1 // +1 because the streak recalculation happens in useEffect after this
+            });
             setEntries(prev => [data, ...prev]);
+
+
+            setMetadata(prev => [{ id: data.id, created_at: data.created_at }, ...prev]);
         }
     };
 
@@ -149,15 +198,18 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
         
         if (isFavorite) {
             haptics.success();
+            posthog.capture('journal_entry_favorited', { entry_id: id });
+        } else {
+            posthog.capture('journal_entry_unfavorited', { entry_id: id });
         }
 
         const { error } = await supabase
+
             .from('posts')
             .update({ is_favorite: isFavorite })
             .eq('id', id);
 
         if (error) {
-            // Revert on error
             setEntries(prev => prev.map(e => e.id === id ? { ...e, is_favorite: !isFavorite } : e));
             throw error;
         }
@@ -165,53 +217,58 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
 
     const deleteEntry = async (id: string, soft: boolean = true) => {
         // Optimistic UI update
+        const now = new Date().toISOString();
+        setEntries(prev => prev.filter(e => e.id !== id));
+        setMetadata(prev => prev.filter(e => e.id !== id));
+        
+        posthog.capture('journal_entry_deleted', { entry_id: id, is_soft: soft });
+
         if (soft) {
-            const now = new Date().toISOString();
-            setEntries(prev => prev.map(e => e.id === id ? { ...e, deleted_at: now } : e));
-            
+
             const { error } = await supabase
                 .from('posts')
                 .update({ deleted_at: now })
                 .eq('id', id);
 
             if (error) {
-                setEntries(prev => prev.map(e => e.id === id ? { ...e, deleted_at: null } : e));
+                refreshEntries();
                 throw error;
             }
         } else {
-            setEntries(prev => prev.filter(e => e.id !== id));
-
             const { error } = await supabase
                 .from('posts')
                 .delete()
                 .eq('id', id);
 
             if (error) {
-                fetchEntries();
+                refreshEntries();
                 throw error;
             }
         }
     };
 
-    const activeEntries = useMemo(() => entries.filter(e => !e.deleted_at), [entries]);
-
     // Notification algorithm trigger
     useEffect(() => {
-        if (!loading && activeEntries.length > 0) {
-            notifications.performBackgroundCheck(activeEntries);
+        if (!loading && metadata.length > 0) {
+            // Background check using metadata is enough for notifications algorithm 
+            // as it typically checks for inactivity or patterns.
+            notifications.performBackgroundCheck(metadata.map(m => ({ created_at: m.created_at })));
         }
-    }, [loading, activeEntries.length]);
+    }, [loading, metadata.length]);
 
     const value = useMemo(() => ({
-        entries: activeEntries,
+        entries,
         loading,
+        loadingMore,
+        hasMore,
         streak,
-        rawStreakData,
+        rawStreakData: metadata,
         addEntry,
         toggleFavorite,
         deleteEntry,
-        refreshEntries: fetchEntries
-    }), [activeEntries, loading, streak, rawStreakData, fetchEntries]);
+        refreshEntries,
+        loadMore
+    }), [entries, loading, loadingMore, hasMore, streak, refreshEntries, loadMore]);
 
     return (
         <JournalContext.Provider value={value}>

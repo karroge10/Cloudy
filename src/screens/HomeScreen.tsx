@@ -14,12 +14,17 @@ import { InfoCard } from '../components/InfoCard';
 import { useAlert } from '../context/AlertContext';
 import { TimePicker } from '../components/TimePicker';
 import { MascotImage } from '../components/MascotImage';
+import { StreakGoal } from '../components/StreakGoal';
+import { useAnalytics } from '../hooks/useAnalytics';
+import { Button } from '../components/Button';
 
 export const HomeScreen = () => {
     const { showAlert } = useAlert();
     const navigation = useNavigation<any>();
     const { addEntry, streak } = useJournal();
     const { profile, updateProfile } = useProfile();
+    const { trackEvent } = useAnalytics();
+
     
     const [text, setText] = useState('');
     const [loading, setLoading] = useState(false);
@@ -66,6 +71,8 @@ export const HomeScreen = () => {
             haptics.heavy();
             await addEntry(text.trim());
             haptics.success();
+
+
             
             Keyboard.dismiss();
             
@@ -78,9 +85,11 @@ export const HomeScreen = () => {
 
             if (!hasSeenFirstEntry && !profile?.display_name) {
                 // First time entry and no name set yet
+                trackEvent('setup_sheet_shown');
                 setShowSetupSheet(true);
             } else if (isAnon && likelyStreak === 3) {  
                 // Suggest linking account on 3rd entry
+                trackEvent('conversion_nudge_shown', { streak: likelyStreak });
                 setShowStreakNudge(true);
             } else {
                  setText('');
@@ -106,9 +115,11 @@ export const HomeScreen = () => {
                 display_name: tempDisplayName.trim(),
             });
 
+            trackEvent('onboarding_name_saved');
             // Move to notification step instead of closing
             setSetupStep(1);
             haptics.success();
+
         } catch (error: any) {
             showAlert('Error', error.message, [{ text: 'Okay' }], 'error');
         } finally {
@@ -129,8 +140,13 @@ export const HomeScreen = () => {
                 onboarding_completed: true,
             });
             
+            trackEvent('onboarding_notifications_enabled', { time: formattedTime });
+            trackEvent('onboarding_completed');
+
             await AsyncStorage.setItem('has_seen_first_entry', 'true');
+
             setShowSetupSheet(false);
+            trackEvent('setup_sheet_completed');
             setText('');
         } catch (error: any) {
             showAlert('Error', error.message, [{ text: 'Okay' }], 'error');
@@ -144,6 +160,7 @@ export const HomeScreen = () => {
             onboarding_completed: true,
         });
         await AsyncStorage.setItem('has_seen_first_entry', 'true');
+        trackEvent('setup_sheet_dismissed');
         setShowSetupSheet(false);
         setText('');
         setSetupStep(0); // Reset for next time if needed
@@ -192,6 +209,9 @@ export const HomeScreen = () => {
                     <Text className="text-xl font-q-bold text-text mr-2">{formattedDate}</Text>
                 </View>
             </View>
+
+            {/* Streak Goal Milestone */}
+            <StreakGoal streak={streak} className="mb-6" />
 
             {/* Main Writing Card */}
             <View className="bg-card rounded-[32px] p-6 shadow-[#0000000D] shadow-xl mb-8 flex-1" style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 20, elevation: 5 }}>
@@ -249,15 +269,15 @@ export const HomeScreen = () => {
                 onClose={handleMaybeLater}
             >
                 {setupStep === 0 ? (
-                    <View className="items-center">
+                    <View className="items-center w-full">
                         <MascotImage source={MASCOTS.THINK} className="w-40 h-40 mb-4" resizeMode="contain" />
-                        <Text className="text-2xl font-q-bold text-text text-center mb-2">Beautifully said!</Text>
-                        <Text className="text-lg font-q-medium text-muted text-center mb-8 px-4">
+                        <Text className="text-xl font-q-bold text-primary text-center mb-1">Beautifully said!</Text>
+                        <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">
                             What should Cloudy call you?
                         </Text>
                         
                         <TextInput
-                            className="w-full bg-white px-6 py-4 rounded-2xl font-q-bold text-lg text-text border border-gray-100 shadow-sm mb-8"
+                            className="w-full bg-white px-6 py-5 rounded-[24px] font-q-bold text-lg text-text border-2 border-inactive/10 mb-8"
                             placeholder="Your Name"
                             placeholderTextColor="#CBD5E1"
                             onChangeText={setTempDisplayName}
@@ -266,64 +286,40 @@ export const HomeScreen = () => {
                             autoFocus={true}
                         />
 
-                        <TouchableOpacity 
+                        <Button 
+                            label="Save Profile"
                             onPress={handleSaveProfile}
-                            disabled={isSavingName}
-                            delayPressIn={0}
-                            className="w-full bg-primary py-4 rounded-full items-center shadow-md active:scale-95 transition-transform mb-4 min-h-[56px] justify-center"
-                        >
-                            <View className="items-center justify-center">
-                                <Text className={`text-white font-q-bold text-lg ${isSavingName ? "opacity-0" : "opacity-100"}`}>
-                                    Save Profile
-                                </Text>
-                                {isSavingName && (
-                                    <View className="absolute inset-0 items-center justify-center">
-                                        <ActivityIndicator color="white" />
-                                    </View>
-                                )}
-                            </View>
-                        </TouchableOpacity>
+                            loading={isSavingName}
+                        />
 
                         <TouchableOpacity 
-                        onPress={() => { haptics.selection(); handleMaybeLater(); }}
-                        className="py-2 active:scale-95 transition-transform"
+                            onPress={() => { haptics.selection(); handleMaybeLater(); }}
+                            className="mt-4 py-2 active:scale-95 transition-transform"
                         >
                             <Text className="text-muted font-q-bold text-base">Maybe later</Text>
                         </TouchableOpacity>
                     </View>
                 ) : (
-                    <View className="items-center">
+                    <View className="items-center w-full">
                         <MascotImage source={MASCOTS.WATCH} className="w-40 h-40 mb-4" resizeMode="contain" />
-                        <Text className="text-2xl font-q-bold text-text text-center mb-2">Nice to meet you, {tempDisplayName}!</Text>
-                        <Text className="text-lg font-q-medium text-muted text-center mb-6 px-4">
+                        <Text className="text-xl font-q-bold text-primary text-center mb-1 px-4">Nice to meet you, {tempDisplayName}!</Text>
+                        <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">
                             When should I remind you to reflect?
                         </Text>
 
-                        <View className="w-full items-center mb-8">
+                        <View className="w-full mb-8">
                             <TimePicker value={tempReminderTime} onChange={setTempReminderTime} />
                         </View>
 
-                        <TouchableOpacity 
+                        <Button 
+                            label="Set Reminder"
                             onPress={handleEnableNotifications}
-                            disabled={isSavingName}
-                            delayPressIn={0}
-                            className="w-full bg-primary py-4 rounded-full items-center shadow-md active:scale-95 transition-transform mb-4 min-h-[56px] justify-center"
-                        >
-                            <View className="items-center justify-center">
-                                <Text className={`text-white font-q-bold text-lg ${isSavingName ? "opacity-0" : "opacity-100"}`}>
-                                    Set Reminder
-                                </Text>
-                                {isSavingName && (
-                                    <View className="absolute inset-0 items-center justify-center">
-                                        <ActivityIndicator color="white" />
-                                    </View>
-                                )}
-                            </View>
-                        </TouchableOpacity>
+                            loading={isSavingName}
+                        />
 
                         <TouchableOpacity 
                             onPress={() => { haptics.selection(); handleMaybeLater(); }}
-                            className="py-2 active:scale-95 transition-transform"
+                            className="mt-4 py-2 active:scale-95 transition-transform"
                         >
                             <Text className="text-muted font-q-bold text-base">No thanks, I'll remember</Text>
                         </TouchableOpacity>
@@ -337,33 +333,32 @@ export const HomeScreen = () => {
                     handleMaybeLater(); // Also treat closing this as maybe later
                 }}
             >
-                <View className="items-center">
+                <View className="items-center w-full">
                     <MascotImage source={MASCOTS.STREAK} className="w-40 h-40 mb-4" resizeMode="contain" />
-                    <Text className="text-2xl font-q-bold text-text text-center mb-2">You're doing great!</Text>
-                    <Text className="text-lg font-q-medium text-muted text-center mb-8 px-4">
-                        You've reached a 3-day streak! Want to link an account so you never lose these memories?
+                    <Text className="text-xl font-q-bold text-primary text-center mb-1">You're doing great!</Text>
+                    <Text className="text-2xl font-q-bold text-text text-center mb-8 px-6">
+                        Want to link an account so you never lose these memories?
                     </Text>
 
-                    <TouchableOpacity 
+                    <Button 
+                        label="Link Account"
                         onPress={() => {
                             haptics.medium();
+                            trackEvent('conversion_nudge_clicked');
                             setShowStreakNudge(false);
                             setText('');
                             navigation.navigate('Auth', { initialMode: 'signup' });
                         }}
-                        delayPressIn={0}
-                        className="w-full bg-primary py-4 rounded-full items-center shadow-md active:scale-95 transition-transform mb-4"
-                    >
-                        <Text className="text-white font-q-bold text-lg">Link Account</Text>
-                    </TouchableOpacity>
+                    />
 
                     <TouchableOpacity 
                        onPress={() => {
                            haptics.selection();
+                           trackEvent('conversion_nudge_dismissed');
                            setShowStreakNudge(false);
                            setText('');
                        }}
-                       className="py-2 active:scale-95 transition-transform"
+                       className="mt-4 py-2 active:scale-95 transition-transform"
                     >
                         <Text className="text-muted font-q-bold text-base">Maybe later</Text>
                     </TouchableOpacity>

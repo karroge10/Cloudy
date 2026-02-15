@@ -11,11 +11,17 @@ import { MascotImage } from '../components/MascotImage';
 import { Layout } from '../components/Layout';
 import { useAlert } from '../context/AlertContext';
 import { getFriendlyAuthErrorMessage } from '../utils/authErrors';
+import { useAnalytics } from '../hooks/useAnalytics';
+import { identifyUser } from '../lib/posthog';
+
+
 
 export const SummaryScreen = () => {
     const { showAlert } = useAlert();
     const navigation = useNavigation();
     const route = useRoute();
+    const { trackEvent } = useAnalytics();
+
     const [loading, setLoading] = useState(false);
     const { struggles, goals } = route.params as { struggles: string[], goals: string[] } || { struggles: [], goals: [] };
 
@@ -37,15 +43,22 @@ export const SummaryScreen = () => {
             const { data: { user }, error: authError } = await supabase.auth.signInAnonymously();
             
             if (authError) throw authError;
-
+            
             if (user) {
+                identifyUser(user.id, undefined, {
+                    onboarding_struggles: struggles,
+                    onboarding_goals: goals,
+                    primary_struggle: struggles[0] || 'none'
+                });
+
                 // Initialize profile with onboarding data
                 const { error: profileError } = await supabase
                     .from('profiles')
                     .upsert({
                         id: user.id,
-                        goals: goals, // Save the array of goals selected
-                        struggles: struggles, // Save the struggles selected
+                        goals: goals,
+                        struggles: struggles,
+                        onboarding_completed: true,
                         updated_at: new Date(),
                     });
                 
@@ -53,6 +66,8 @@ export const SummaryScreen = () => {
                     console.warn('Profile init error:', profileError.message);
                 }
             }
+
+            trackEvent('onboarding_finished', { struggles, goals });
         } catch (error: any) {
             const { title, message } = getFriendlyAuthErrorMessage(error);
             showAlert(title, message, [{ text: 'Okay' }], 'error');
@@ -68,20 +83,23 @@ export const SummaryScreen = () => {
             </View>
 
             <View className="flex-1 px-6 justify-between pb-10">
-                <View className="items-center">
-                    <Text className="text-4xl font-q-bold text-text mb-8 text-center">
-                        We can get there, together.
-                    </Text>
+                <View>
+                    {/* Main Content Area */}
+                    <View className="items-center mb-6">
+                        <Text className="text-4xl font-q-bold text-text text-center mb-6 pt-4 leading-tight">
+                            We can get there, together.
+                        </Text>
 
-                    <MascotImage
-                        source={MASCOTS.SHINE}
-                        className="w-96 h-96 mb-4"
-                        resizeMode="contain"
-                    />
+                        <MascotImage
+                            source={MASCOTS.SHINE}
+                            className="w-72 h-72 mb-6"
+                            resizeMode="contain"
+                        />
 
-                    <Text className="text-2xl text-text text-center font-q-regular leading-9 mb-12 px-2">
-                        Research shows that writing down just <Text className="font-q-bold text-primary">one gratitude</Text> a day can reduce <Text className="font-q-bold text-primary">{struggleText}</Text> and help you find <Text className="font-q-bold text-primary">{goalText}</Text>.
-                    </Text>
+                         <Text className="text-2xl text-text text-center font-q-regular leading-relaxed px-4">
+                            Research shows that writing down just <Text className="font-q-bold text-primary">one gratitude</Text> a day can reduce <Text className="font-q-bold text-primary">{struggleText}</Text> and help you find <Text className="font-q-bold text-primary">{goalText}</Text>.
+                        </Text>
+                    </View>
                 </View>
 
                 <View className="w-full">

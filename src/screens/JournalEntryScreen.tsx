@@ -7,25 +7,36 @@ import { TopNav } from '../components/TopNav';
 import { useAlert } from '../context/AlertContext';
 import { Button } from '../components/Button';
 import { MascotImage } from '../components/MascotImage';
+import { useAnalytics } from '../hooks/useAnalytics';
+import { useJournal } from '../context/JournalContext';
+
+
 
 export const JournalEntryScreen = () => {
     const { showAlert } = useAlert();
     const [gratitude, setGratitude] = useState('');
     const navigation = useNavigation();
+    const { addEntry } = useJournal();
+    const { trackEvent } = useAnalytics();
 
-    const handleSave = () => {
+
+
+    const handleSave = async () => {
         if (gratitude.trim().length === 0) return;
-        // Haptics now handled by the Button component
-        // In a real app, save to storage here
-        console.log("Saved gratitude:", gratitude);
-        setGratitude('');
         
-        showAlert(
-            "Gratitude Saved!", 
-            "See you tomorrow!", 
-            [{ text: "Okay", onPress: () => navigation.goBack() }],
-            'success'
-        );
+        try {
+            await addEntry(gratitude.trim());
+            setGratitude('');
+            
+            showAlert(
+                "Gratitude Saved!", 
+                "See you tomorrow!", 
+                [{ text: "Okay", onPress: () => navigation.goBack() }],
+                'success'
+            );
+        } catch (error: any) {
+            showAlert('Error', 'Could not save your entry.', [{ text: 'Okay' }], 'error');
+        }
     };
 
     return (

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Constants from 'expo-constants';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { supabase } from '../lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -13,14 +14,20 @@ import { Button } from '../components/Button';
 import { getFriendlyAuthErrorMessage } from '../utils/authErrors';
 
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+import { identifyUser } from '../lib/posthog';
+import { useAnalytics } from '../hooks/useAnalytics';
+
+
 
 GoogleSignin.configure({
-    webClientId: '110002315879-19osagf9f4s3spnpns5jckcdc5dq0g5r.apps.googleusercontent.com',
+    webClientId: Constants.expoConfig?.extra?.googleWebClientId,
 });
 
 export const AuthScreen = () => {
     const { showAlert } = useAlert();
+    const { trackEvent } = useAnalytics();
     const [email, setEmail] = useState('');
+
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const route = useRoute<any>();
@@ -42,10 +49,17 @@ export const AuthScreen = () => {
             await AsyncStorage.setItem('pending_merge_anonymous_id', currentUser.id);
         }
 
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
             email,
             password,
         });
+
+        if (data.user) {
+            identifyUser(data.user.id, data.user.email ?? undefined);
+            trackEvent('user_signed_in', { method: 'email' });
+        }
+
+
 
         if (error) {
             const { title, message } = getFriendlyAuthErrorMessage(error);
@@ -65,10 +79,17 @@ export const AuthScreen = () => {
             const { data: { user: currentUser } } = await supabase.auth.getUser();
             
             if (currentUser?.is_anonymous) {
-                const { error } = await supabase.auth.updateUser({
+                const { data, error } = await supabase.auth.updateUser({
                     email,
                     password,
                 });
+
+                if (data.user) {
+                    identifyUser(data.user.id, data.user.email ?? undefined);
+                    trackEvent('user_converted_from_anonymous', { method: 'email' });
+                }
+
+
 
                 if (error) {
                     if (error.message.includes('already registered') || error.status === 422) {
@@ -109,7 +130,9 @@ export const AuthScreen = () => {
                     showAlert('Success', 'Please check your email to confirm your account.', [
                         { text: 'Okay', onPress: () => navigation.goBack() }
                     ], 'success');
+                    trackEvent('user_signed_up', { method: 'email' });
                 }
+
             }
         } catch (error: any) {
             const { title, message } = getFriendlyAuthErrorMessage(error);
@@ -141,6 +164,13 @@ export const AuthScreen = () => {
                     provider: 'google',
                     token: response.data.idToken,
                 });
+                
+                if (data.user) {
+                    identifyUser(data.user.id, data.user.email ?? undefined);
+                    trackEvent('user_signed_in', { method: 'google', is_conversion: !!currentUser?.is_anonymous });
+                }
+
+
                 
                 if (error) throw error;
                 

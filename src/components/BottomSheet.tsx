@@ -38,7 +38,13 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         PanResponder.create({
             onStartShouldSetPanResponder: () => false,
             onMoveShouldSetPanResponder: (_, gestureState) => {
-                return Math.abs(gestureState.dy) > 5;
+                const isVerticalSwipe = Math.abs(gestureState.dy) > Math.abs(gestureState.dx) * 2;
+                const isSwipeDown = gestureState.dy > 5;
+                
+                if (isVerticalSwipe && isSwipeDown) {
+                    return true;
+                }
+                return false;
             },
             onPanResponderMove: (_, gestureState) => {
                 if (gestureState.dy > 0) {
@@ -46,32 +52,38 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
                 }
             },
             onPanResponderRelease: (_, gestureState) => {
-                if (gestureState.dy > 120 || gestureState.vy > 0.5) {
+                if (gestureState.dy > 100 || gestureState.vy > 0.3) {
                     haptics.selection();
                     closeModal();
                 } else {
                     Animated.spring(translateY, {
                         toValue: 0,
                         useNativeDriver: true,
-                        bounciness: 4,
-                        speed: 14,
+                        damping: 20,
+                        stiffness: 150,
                     }).start();
                 }
+            },
+            onPanResponderTerminate: () => {
+                Animated.spring(translateY, {
+                    toValue: 0,
+                    useNativeDriver: true,
+                    damping: 20,
+                    stiffness: 150,
+                }).start();
             },
         })
     ).current;
 
     useEffect(() => {
         if (visible) {
-            // Use timing for more predictable arrival and faster settling
-            // than spring, which can have "tails" that keep the UI thread busy
-            Animated.timing(translateY, {
+            Animated.spring(translateY, {
                 toValue: 0,
-                duration: 300,
                 useNativeDriver: true,
+                damping: 20,
+                stiffness: 150,
             }).start();
         } else {
-            // Ensure it's reset when not visible
             translateY.setValue(SCREEN_HEIGHT);
         }
     }, [visible]);
@@ -79,13 +91,13 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
     const closeModal = () => {
         Animated.timing(translateY, {
             toValue: SCREEN_HEIGHT,
-            duration: 250,
+            duration: 200,
             useNativeDriver: true,
         }).start(() => {
             onClose();
         });
     };
- 
+
      return (
         <Modal
             visible={visible}
@@ -94,7 +106,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
             animationType="none"
             onRequestClose={closeModal}
         >
-            <View className="flex-1 justify-end" pointerEvents="box-none">
+            <View className="flex-1 justify-end">
                 <TouchableWithoutFeedback onPress={() => { haptics.selection(); closeModal(); }}>
                     <Animated.View 
                         style={{ opacity: backdropOpacity }} 
@@ -103,28 +115,28 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
                 </TouchableWithoutFeedback>
                 
                 <Animated.View 
+                    {...panResponder.panHandlers}
                     style={{ 
                         transform: [{ translateY }],
-                        maxHeight: SCREEN_HEIGHT * 0.85
+                        maxHeight: SCREEN_HEIGHT * 0.9
                     }}
-                    className="bg-background rounded-t-[40px] shadow-2xl overflow-hidden"
-                    collapsable={false} // Ensure it's not collapsed on Android for better touch reliability
+                    className="bg-background rounded-t-[44px] shadow-2xl overflow-hidden"
                 >
                     {/* Handle Bar Area */}
-                    <View 
-                        {...panResponder.panHandlers}
-                        className="items-center pt-3 pb-6 w-full"
-                    >
-                        <View className="w-12 h-1.5 bg-inactive rounded-full mb-4" />
-                        {title && (
-                            <Text className="text-2xl font-q-bold text-text px-8 self-start">
-                                {title}
-                            </Text>
-                        )}
+                    <View className="items-center pt-4 pb-2 w-full">
+                        <View className="w-16 h-1.5 bg-text/10 rounded-full" />
                     </View>
 
-                    {/* Content */}
-                    <View className="px-8 pb-12">
+                    {title && (
+                        <View className="px-8 pt-4 pb-2">
+                            <Text className="text-2xl font-q-bold text-text">
+                                {title}
+                            </Text>
+                        </View>
+                    )}
+
+                    {/* Content - wrapped in a View that stops propagation if needed, but currently allowing swipes from empty space */}
+                    <View className="px-8 pb-12 pt-4">
                         {children}
                     </View>
                 </Animated.View>
@@ -132,3 +144,6 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         </Modal>
     );
 };
+
+
+

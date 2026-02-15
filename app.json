@@ -33,7 +33,13 @@
       "expo-font",
       "@react-native-google-signin/google-signin",
       "expo-notifications",
-      "expo-asset"
-    ]
+      "expo-asset",
+      "expo-localization"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "76e57197-421f-4273-8947-00b1655fa31a"
+      }
+    }
   }
 }

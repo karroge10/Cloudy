@@ -8,10 +8,14 @@ import { TopNav } from '../components/TopNav';
 import { Layout } from '../components/Layout';
 import { GOALS } from '../constants/Goals';
 import { MascotImage } from '../components/MascotImage';
+import { useAnalytics } from '../hooks/useAnalytics';
+
 
 export const GoalSelectionScreen = () => {
     const navigation = useNavigation();
     const route = useRoute();
+    const { trackEvent } = useAnalytics();
+
     const { struggles } = route.params as { struggles: string[] } || { struggles: [] };
 
     const [selected, setSelected] = useState<string[]>([]);
@@ -71,9 +75,13 @@ export const GoalSelectionScreen = () => {
 
                     <Button
                         label="Continue"
-                        onPress={() => (navigation.navigate as any)('Summary', { struggles, goals: selected })}
+                        onPress={() => {
+                            trackEvent('onboarding_goals_selected', { goals: selected });
+                            (navigation.navigate as any)('Summary', { struggles, goals: selected });
+                        }}
                         disabled={!canContinue}
                     />
+
                 </View>
             </View>
         </Layout>

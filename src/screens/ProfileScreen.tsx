@@ -26,11 +26,19 @@ import { useAlert } from '../context/AlertContext';
 import { MascotImage } from '../components/MascotImage';
 import { security } from '../utils/security';
 import { getFriendlyAuthErrorMessage } from '../utils/authErrors';
+import { resetUser } from '../lib/posthog';
+import { useAnalytics } from '../hooks/useAnalytics';
+import { AppFooter } from '../components/AppFooter';
+
+import { ActivityIndicator } from 'react-native';
+
 
 export const ProfileScreen = () => {
     const { showAlert } = useAlert();
     const { streak, rawStreakData } = useJournal();
     const { profile, loading: profileLoading, updateProfile } = useProfile();
+    const { trackEvent } = useAnalytics();
+
     
     // UI Local States (for sheets/modals)
     const [isNameSheetVisible, setIsNameSheetVisible] = useState(false);
@@ -41,6 +49,7 @@ export const ProfileScreen = () => {
     const [isAgeSheetVisible, setIsAgeSheetVisible] = useState(false);
     const [isGenderSheetVisible, setIsGenderSheetVisible] = useState(false);
     const [isCountrySheetVisible, setIsCountrySheetVisible] = useState(false);
+    const [isDeleteSheetVisible, setIsDeleteSheetVisible] = useState(false);
     
     const [tempAge, setTempAge] = useState('');
     const [tempName, setTempName] = useState('');
@@ -50,7 +59,10 @@ export const ProfileScreen = () => {
     
     const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
     const [selectedStruggles, setSelectedStruggles] = useState<string[]>([]);
+    const [tempGender, setTempGender] = useState('');
+    const [tempMascotName, setTempMascotName] = useState('');
     const [bioSupported, setBioSupported] = useState(false);
+
 
     const navigation = useNavigation<any>();
 
@@ -61,6 +73,8 @@ export const ProfileScreen = () => {
             setTempCountry(profile.country || '');
             setSelectedGoals(profile.goals || []);
             setSelectedStruggles(profile.struggles || []);
+            setTempGender(profile.gender || '');
+            setTempMascotName(profile.mascot_name || '');
             
             if (profile.reminder_time) {
                 const [hours, minutes] = profile.reminder_time.split(':');
@@ -101,11 +115,46 @@ export const ProfileScreen = () => {
 
             const { error } = await supabase.auth.signOut();
             if (error) throw error;
+            trackEvent('user_logged_out');
+            resetUser();
+
         } catch (error: any) {
             const { title, message } = getFriendlyAuthErrorMessage(error);
             showAlert(title, message, [{ text: 'Okay' }], 'error');
         }
     };
+
+    const handleDeleteAccount = async () => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            // 1. Delete the profile (posts will cascade delete)
+            const { error: profileError } = await supabase
+                .from('profiles')
+                .delete()
+                .eq('id', user.id);
+
+            if (profileError) throw profileError;
+
+            // 2. Log out and clear local data
+            trackEvent('user_deleted_account');
+            await handleLogout();
+            
+            setIsDeleteSheetVisible(false);
+            
+            showAlert(
+                'Account Deleted',
+                'Your data has been removed. We hope to see you again someday.',
+                [{ text: 'Goodbye' }],
+                'success'
+            );
+        } catch (error: any) {
+            showAlert('Error', 'Could not delete account. Please try logging out instead.', [{ text: 'Okay' }], 'error');
+        }
+    };
+
+
 
     const GENDERS = ['Male', 'Female', 'Non-binary', 'Prefer not to say'];
     
@@ -123,7 +172,7 @@ export const ProfileScreen = () => {
 
             <ScrollView 
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 130 }}
+                contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 160 }}
             >
                 {/* Profile Nudge Banner */}
                 <ProfileNudge 
@@ -302,34 +351,43 @@ export const ProfileScreen = () => {
 
                     <View className="h-[1px] bg-inactive opacity-10" />
 
-                    {/* Export Data */}
-                    <TouchableOpacity className="flex-row items-center justify-between py-4">
-                        <Text className="text-lg font-q-bold text-text">Export Journal (.pdf)</Text>
-                        <Ionicons name="download-outline" size={22} color="#FF9E7D" />
+
+
+                    {/* Privacy Policy */}
+                    <TouchableOpacity 
+                        onPress={() => { haptics.selection(); navigation.navigate('Legal', { type: 'privacy' }); }}
+                        className="flex-row items-center justify-between py-4"
+                    >
+                        <Text className="text-lg font-q-bold text-text">Privacy & Security</Text>
+                        <Ionicons name="lock-closed-outline" size={22} color="#FF9E7D" />
                     </TouchableOpacity>
 
                     <View className="h-[1px] bg-inactive opacity-10" />
 
-                    {/* Privacy Policy */}
-                    <TouchableOpacity className="flex-row items-center justify-between py-4">
-                        <Text className="text-lg font-q-bold text-text">Privacy & Security</Text>
-                        <Ionicons name="lock-closed-outline" size={22} color="#FF9E7D" />
+                    {/* Delete Account */}
+                    <TouchableOpacity 
+                        onPress={() => { haptics.selection(); setIsDeleteSheetVisible(true); }}
+                        className="flex-row items-center justify-between py-4"
+                    >
+                        <Text className="text-lg font-q-bold text-text">Delete Account & Data</Text>
+                        <Ionicons name="trash-outline" size={22} color="#FF9E7D" />
                     </TouchableOpacity>
                 </View>
 
                 {/* Log Out */}
-                <TouchableOpacity onPress={() => { haptics.heavy(); handleLogout(); }} className="mb-20 items-center py-4 active:scale-95 transition-transform">
-                    <Text className="text-lg font-q-bold text-red-400 opacity-60">Log Out</Text>
-                    <Text className="text-[10px] font-q-medium text-muted mt-2 opacity-30">Cloudy v1.0.42</Text>
+                <TouchableOpacity onPress={() => { haptics.heavy(); handleLogout(); }} className="mt-4 items-center py-4 active:scale-95 transition-transform">
+                    <Text className="text-lg font-q-bold text-red-400/60">Log Out</Text>
                 </TouchableOpacity>
+
+                <AppFooter />
             </ScrollView>
 
              <BottomSheet visible={isNameSheetVisible} onClose={() => setIsNameSheetVisible(false)}>
-                <View className="items-center mt-2">
+                <View className="items-center w-full">
                      <MascotImage source={MASCOTS.THINK} className="w-40 h-40 mb-4" resizeMode="contain" />
-                     <Text className="text-2xl font-q-bold text-text text-center mb-6">What should Cloudy call you?</Text>
+                     <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">What should Cloudy call you?</Text>
                     <TextInput
-                        className="w-full bg-card px-6 py-5 rounded-[24px] font-q-bold text-lg text-text border-2 border-inactive/10 mb-6"
+                        className="w-full bg-card px-6 py-5 rounded-[24px] font-q-bold text-lg text-text border-2 border-inactive/10 mb-8"
                         placeholder="Your Name"
                         placeholderTextColor="#CBD5E1"
                         onChangeText={setTempName}
@@ -337,29 +395,26 @@ export const ProfileScreen = () => {
                         autoCapitalize="words"
                         autoFocus={true}
                     />
-                    <TouchableOpacity 
+                    <Button 
+                        label="Save Name"
                         onPress={() => {
                             updateProfile({ display_name: tempName });
                             setIsNameSheetVisible(false);
                             haptics.success();
                         }}
-                        delayPressIn={0}
-                        className="w-full bg-primary py-4 rounded-full items-center shadow-md active:scale-95 transition-transform mb-4"
-                    >
-                        <Text className="text-white font-q-bold text-lg">Save Name</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => { haptics.selection(); setIsNameSheetVisible(false); }} className="py-2 active:scale-95 transition-transform">
+                    />
+                    <TouchableOpacity onPress={() => { haptics.selection(); setIsNameSheetVisible(false); }} className="mt-4 py-2 active:scale-95 transition-transform">
                          <Text className="text-muted font-q-bold text-base">Cancel</Text>
                     </TouchableOpacity>
                 </View>
             </BottomSheet>
 
              <BottomSheet visible={isAgeSheetVisible} onClose={() => setIsAgeSheetVisible(false)}>
-                <View className="items-center mt-2">
+                <View className="items-center w-full">
                      <MascotImage source={MASCOTS.CAKE} className="w-40 h-40 mb-4" resizeMode="contain" />
-                     <Text className="text-2xl font-q-bold text-text text-center mb-6">How old are you?</Text>
+                     <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">How old are you?</Text>
                     <TextInput
-                        className="w-full bg-card px-6 py-5 rounded-[24px] font-q-bold text-lg text-text border-2 border-inactive/10 mb-6"
+                        className="w-full bg-card px-6 py-5 rounded-[24px] font-q-bold text-lg text-text border-2 border-inactive/10 mb-8"
                         placeholder="Age"
                         placeholderTextColor="#CBD5E1"
                         onChangeText={setTempAge}
@@ -367,7 +422,8 @@ export const ProfileScreen = () => {
                         keyboardType="numeric"
                         autoFocus={true}
                     />
-                    <TouchableOpacity 
+                    <Button 
+                        label="Save Age"
                         onPress={() => {
                             const val = parseInt(tempAge);
                             if (!isNaN(val)) {
@@ -376,65 +432,65 @@ export const ProfileScreen = () => {
                             }
                             setIsAgeSheetVisible(false);
                         }}
-                        delayPressIn={0}
-                        className="w-full bg-primary py-4 rounded-full items-center shadow-md active:scale-95 transition-transform mb-4"
-                    >
-                        <Text className="text-white font-q-bold text-lg">Save Age</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => { haptics.selection(); setIsAgeSheetVisible(false); }} className="py-2 active:scale-95 transition-transform">
+                    />
+                    <TouchableOpacity onPress={() => { haptics.selection(); setIsAgeSheetVisible(false); }} className="mt-4 py-2 active:scale-95 transition-transform">
                          <Text className="text-muted font-q-bold text-base">Cancel</Text>
                     </TouchableOpacity>
                 </View>
             </BottomSheet>
 
              <BottomSheet visible={isGenderSheetVisible} onClose={() => setIsGenderSheetVisible(false)}>
-                <View className="items-center mt-2">
+                <View className="items-center w-full">
                     <MascotImage source={MASCOTS.MIRROR} className="w-40 h-40 mb-4" resizeMode="contain" />
-                    <Text className="text-2xl font-q-bold text-text text-center mb-6">How do you identify?</Text>
-                    <View className="flex-row flex-wrap gap-3 justify-center w-full mb-6">
+                    <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">How do you identify?</Text>
+                    <View className="flex-row flex-wrap gap-3 justify-center w-full mb-8">
                         {GENDERS.map((g) => (
                             <SelectionPill
                                 key={g}
                                 label={g}
-                                selected={profile?.gender === g}
+                                selected={tempGender === g}
                                 onPress={() => {
-                                    updateProfile({ gender: g });
-                                    setIsGenderSheetVisible(false);
+                                    setTempGender(g);
                                     haptics.selection();
                                 }}
                             />
                         ))}
                     </View>
-                    <TouchableOpacity onPress={() => setIsGenderSheetVisible(false)} className="py-2">
+                    <Button 
+                        label="Save Gender"
+                        onPress={() => {
+                            updateProfile({ gender: tempGender });
+                            setIsGenderSheetVisible(false);
+                            haptics.success();
+                        }}
+                    />
+                    <TouchableOpacity onPress={() => setIsGenderSheetVisible(false)} className="mt-4 py-2">
                          <Text className="text-muted font-q-bold text-base">Cancel</Text>
                     </TouchableOpacity>
                 </View>
             </BottomSheet>
 
              <BottomSheet visible={isCountrySheetVisible} onClose={() => setIsCountrySheetVisible(false)}>
-                <View className="items-center mt-2">
+                <View className="items-center w-full">
                      <MascotImage source={MASCOTS.GLOBE} className="w-40 h-40 mb-4" resizeMode="contain" />
-                     <Text className="text-2xl font-q-bold text-text text-center mb-6">Where are you from?</Text>
+                     <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">Where are you from?</Text>
                     <TextInput
-                        className="w-full bg-card px-6 py-5 rounded-[24px] font-q-bold text-lg text-text border-2 border-inactive/10 mb-6"
+                        className="w-full bg-card px-6 py-5 rounded-[24px] font-q-bold text-lg text-text border-2 border-inactive/10 mb-8"
                         placeholder="Country"
                         placeholderTextColor="#CBD5E1"
                         onChangeText={setTempCountry}
                         value={tempCountry}
                         autoFocus={true}
                     />
-                    <TouchableOpacity 
+                    <Button 
+                        label="Save Location"
                         onPress={() => {
                             updateProfile({ country: tempCountry });
                             setIsCountrySheetVisible(false);
                             haptics.success();
                         }}
-                        delayPressIn={0}
-                        className="w-full bg-primary py-4 rounded-full items-center shadow-md active:scale-95 transition-transform mb-4"
-                    >
-                        <Text className="text-white font-q-bold text-lg">Save Location</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => { haptics.selection(); setIsCountrySheetVisible(false); }} className="py-2 active:scale-95 transition-transform">
+                    />
+                    <TouchableOpacity onPress={() => { haptics.selection(); setIsCountrySheetVisible(false); }} className="mt-4 py-2 active:scale-95 transition-transform">
                          <Text className="text-muted font-q-bold text-base">Cancel</Text>
                     </TouchableOpacity>
                 </View>
@@ -443,11 +499,10 @@ export const ProfileScreen = () => {
              <BottomSheet 
                 visible={isGoalSheetVisible} 
                 onClose={() => setIsGoalSheetVisible(false)}
-                title="My Goals"
             >
-                <View className="items-center mt-2">
+                <View className="items-center w-full">
                     <MascotImage source={MASCOTS.ZEN} className="w-40 h-40 mb-4" resizeMode="contain" />
-                    <Text className="text-lg font-q-medium text-muted text-center mb-6 px-4">
+                    <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">
                         What are your main goals for using Cloudy?
                     </Text>
                     
@@ -470,18 +525,15 @@ export const ProfileScreen = () => {
                             />
                         ))}
                     </View>
-                    <TouchableOpacity 
+                    <Button 
+                        label="Save Goals"
                         onPress={() => {
                             updateProfile({ goals: selectedGoals });
                             setIsGoalSheetVisible(false);
                             haptics.success();
                         }}
-                        delayPressIn={0}
-                        className="w-full bg-primary py-4 rounded-full items-center shadow-md active:scale-95 transition-transform mb-4"
-                    >
-                        <Text className="text-white font-q-bold text-lg">Save Goals</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => { haptics.selection(); setIsGoalSheetVisible(false); }} className="py-2 active:scale-95 transition-transform">
+                    />
+                    <TouchableOpacity onPress={() => { haptics.selection(); setIsGoalSheetVisible(false); }} className="mt-4 py-2 active:scale-95 transition-transform">
                          <Text className="text-muted font-q-bold text-base">Cancel</Text>
                     </TouchableOpacity>
                 </View>
@@ -490,11 +542,10 @@ export const ProfileScreen = () => {
              <BottomSheet 
                 visible={isStruggleSheetVisible} 
                 onClose={() => setIsStruggleSheetVisible(false)}
-                title="My Struggles"
             >
-                <View className="items-center mt-2">
+                <View className="items-center w-full">
                     <MascotImage source={MASCOTS.SAD} className="w-40 h-40 mb-4" resizeMode="contain" />
-                    <Text className="text-lg font-q-medium text-muted text-center mb-6 px-4">
+                    <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">
                         What's been weighing on you lately?
                     </Text>
                     
@@ -515,18 +566,15 @@ export const ProfileScreen = () => {
                             />
                         ))}
                     </View>
-                    <TouchableOpacity 
+                    <Button 
+                        label="Save Struggles"
                         onPress={() => {
                             updateProfile({ struggles: selectedStruggles });
                             setIsStruggleSheetVisible(false);
                             haptics.success();
                         }}
-                        delayPressIn={0}
-                        className="w-full bg-primary py-4 rounded-full items-center shadow-md active:scale-95 transition-transform mb-4"
-                    >
-                        <Text className="text-white font-q-bold text-lg">Save Struggles</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => { haptics.selection(); setIsStruggleSheetVisible(false); }} className="py-2 active:scale-95 transition-transform">
+                    />
+                    <TouchableOpacity onPress={() => { haptics.selection(); setIsStruggleSheetVisible(false); }} className="mt-4 py-2 active:scale-95 transition-transform">
                          <Text className="text-muted font-q-bold text-base">Cancel</Text>
                     </TouchableOpacity>
                 </View>
@@ -559,27 +607,54 @@ export const ProfileScreen = () => {
                 </View>
             </BottomSheet>
 
-            <BottomSheet visible={isMascotSheetVisible} onClose={() => setIsMascotSheetVisible(false)}>
-                <View className="items-center mt-2 w-full">
+             <BottomSheet visible={isMascotSheetVisible} onClose={() => setIsMascotSheetVisible(false)}>
+                <View className="items-center w-full">
                     <MascotImage source={MASCOTS.HUG} className="w-40 h-40 mb-4" resizeMode="contain" />
-                    <Text className="text-2xl font-q-bold text-text text-center mb-6">Choose your companion</Text>
-                    <View className="flex-row flex-wrap justify-between w-full">
+                    <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">Choose your companion</Text>
+                    <View className="flex-row flex-wrap justify-between w-full mb-8">
                         {COMPANIONS.map((companion) => (
                             <MascotCard 
                                 key={companion.id}
                                 name={companion.name}
                                 asset={companion.asset}
-                                isSelected={profile?.mascot_name === companion.name}
+                                isSelected={tempMascotName === companion.name}
                                 onPress={() => {
-                                    updateProfile({ mascot_name: companion.name });
-                                    setIsMascotSheetVisible(false);
+                                    setTempMascotName(companion.name);
                                     haptics.selection();
                                 }}
                             />
                         ))}
                     </View>
-                    <TouchableOpacity onPress={() => { haptics.selection(); setIsMascotSheetVisible(false); }} className="mt-6 py-2 active:scale-95 transition-transform">
+                    <Button 
+                        label="Save Companion"
+                        onPress={() => {
+                            updateProfile({ mascot_name: tempMascotName });
+                            setIsMascotSheetVisible(false);
+                            haptics.success();
+                        }}
+                    />
+                    <TouchableOpacity onPress={() => { haptics.selection(); setIsMascotSheetVisible(false); }} className="mt-4 py-2 active:scale-95 transition-transform">
                          <Text className="text-muted font-q-bold text-base">Cancel</Text>
+                    </TouchableOpacity>
+                </View>
+            </BottomSheet>
+
+            <BottomSheet visible={isDeleteSheetVisible} onClose={() => setIsDeleteSheetVisible(false)}>
+                <View className="items-center w-full">
+                    <MascotImage source={MASCOTS.SAD} className="w-32 h-32 mb-4" resizeMode="contain" />
+                    <Text className="text-2xl font-q-bold text-text text-center mb-4 px-6">Are you sure you want to leave?</Text>
+                    <Text className="text-lg font-q-medium text-muted text-center mb-8 px-4 leading-6">
+                        This will permanently erase all your memories and your profile. This action cannot be undone.
+                    </Text>
+                    
+                    <Button 
+                        label="Yes, Delete Everything"
+                        onPress={() => { haptics.heavy(); handleDeleteAccount(); }}
+                        haptic="heavy"
+                    />
+
+                    <TouchableOpacity onPress={() => { haptics.selection(); setIsDeleteSheetVisible(false); }} className="mt-4 py-2 active:scale-95 transition-transform">
+                         <Text className="text-muted font-q-bold text-base">Wait, I'll stay!</Text>
                     </TouchableOpacity>
                 </View>
             </BottomSheet>

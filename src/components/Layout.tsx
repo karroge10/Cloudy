@@ -11,6 +11,7 @@ interface LayoutProps {
     noScroll?: boolean;
     backgroundColors?: string[];
     useSafePadding?: boolean;
+    edges?: ('top' | 'bottom' | 'left' | 'right')[];
 }
 
 export const Layout = ({ 
@@ -19,6 +20,7 @@ export const Layout = ({
     className = "", 
     noScroll = false, 
     useSafePadding = true,
+    edges,
     backgroundColors = ['#FFF9F0', '#fff1db'] 
 }: LayoutProps) => {
     const content = (
@@ -45,7 +47,7 @@ export const Layout = ({
     const renderLayout = () => (
         <SafeAreaView 
             className="flex-1" 
-            edges={isTabScreen ? ['top', 'left', 'right'] : ['top', 'left', 'right', 'bottom']}
+            edges={edges || (isTabScreen ? ['top', 'left', 'right'] : ['top', 'left', 'right', 'bottom'])}
         >
             <StatusBar style="dark" translucent />
             {renderContent()}

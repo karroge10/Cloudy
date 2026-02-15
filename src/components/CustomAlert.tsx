@@ -18,7 +18,7 @@ interface CustomAlertProps {
     message: string;
     buttons?: AlertButton[];
     onClose: () => void;
-    type?: 'error' | 'success' | 'info';
+    type?: 'error' | 'success' | 'info' | 'warning';
 }
 
 export const CustomAlert: React.FC<CustomAlertProps> = ({ 
@@ -41,6 +41,7 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
     const getIconName = () => {
         switch (type) {
             case 'error': return 'warning';
+            case 'warning': return 'alert-circle';
             case 'success': return 'checkmark-circle';
             default: return 'information-circle';
         }
@@ -49,6 +50,7 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
     const getIconColor = () => {
         switch (type) {
             case 'error': return '#EF4444'; // red-500
+            case 'warning': return '#F59E0B'; // amber-500
             case 'success': return '#22C55E'; // green-500
             default: return '#3B82F6'; // blue-500
         }

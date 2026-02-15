@@ -1,12 +1,12 @@
 import { MASCOTS } from './Assets';
 
 export const COMPANIONS = [
-    { id: 'HERO', name: 'Hero', asset: MASCOTS.HERO },
-    { id: 'WIZARD', name: 'Wizard', asset: MASCOTS.WIZARD },
-    { id: 'CHEF', name: 'Chef', asset: MASCOTS.CHEF },
-    { id: 'DOCTOR', name: 'Doc', asset: MASCOTS.DOCTOR },
-    { id: 'FARMER', name: 'Farmer', asset: MASCOTS.FARMER },
-    { id: 'ROCK', name: 'Rocky', asset: MASCOTS.ROCK },
+    { id: 'SPARKY', name: 'Sparky', asset: MASCOTS.HERO },
+    { id: 'DREAMY', name: 'Dreamy', asset: MASCOTS.WIZARD },
+    { id: 'COOKIE', name: 'Cookie', asset: MASCOTS.CHEF },
+    { id: 'BRAINY', name: 'Brainy', asset: MASCOTS.DOCTOR },
+    { id: 'SUNNY', name: 'Sunny', asset: MASCOTS.FARMER },
+    { id: 'GROOVY', name: 'Groovy', asset: MASCOTS.ROCK },
 ] as const;
 
 export type CompanionId = typeof COMPANIONS[number]['id'];

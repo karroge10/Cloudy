@@ -15,6 +15,7 @@ This is a living document for all the things we want to polish or add later that
 *   **Local-First Persistence**: Ensure `JournalContext` handles offline saves gracefully so memories aren't lost during poor connectivity.
 
 ### 🛡️ Security Hardening (Security Audit Findings)
+*   **[Technical Debt]** Patch encryption and session persistence gaps. See [SECURITY.md](./SECURITY.md) for the full audit.
 *   **[Snapshot Protection]** Obscure the app immediately when it becomes `inactive` or `background`. Prevents the journal from being visible in the OS App Switcher.
 *   **[Accessibility Guard]** Unmount app content when locked. Currently, the content renders *behind* the overlay, meaning screen readers (TalkBack/VoiceOver) can still "read" the obscured text.
 *   **[App Lifecycle Logic]** Fix the `LockScreen` session logic to ensure it doesn't bypass biometrics if the Supabase session is briefly nullified during a background transition.

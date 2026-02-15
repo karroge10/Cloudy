@@ -26,7 +26,7 @@ export const Button: React.FC<ButtonProps> = ({
     const primaryClasses = (disabled || loading) ? "bg-inactive" : "bg-primary active:opacity-90";
     const outlineClasses = "bg-transparent border-2 border-primary"; 
 
-    const textClasses = "text-2xl font-q-bold";
+    const textClasses = "text-xl font-q-bold";
     const primaryText = "text-white";
     const outlineText = "text-primary";
 
@@ -49,7 +49,7 @@ export const Button: React.FC<ButtonProps> = ({
             disabled={disabled || loading}
             className={`${baseClasses} ${variant === 'primary' ? primaryClasses : outlineClasses}`}
         >
-            <View className="flex-row items-center justify-center">
+            <View className="w-full h-full flex-row items-center justify-center">
                 <Text 
                     className={`${textClasses} ${variant === 'primary' ? primaryText : outlineText} ${loading ? "opacity-0" : "opacity-100"}`}
                 >
@@ -67,7 +67,7 @@ export const Button: React.FC<ButtonProps> = ({
                 )}
 
                 {!loading && showArrow && (
-                    <View className="ml-2 absolute right-8">
+                    <View className="absolute right-6">
                         <Ionicons name="arrow-forward" size={28} color={variant === 'primary' ? 'white' : '#FF9E7D'} />
                     </View>
                 )}

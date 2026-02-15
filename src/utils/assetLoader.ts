@@ -12,8 +12,6 @@ export const preloadAssets = async () => {
         
         // Use Asset.loadAsync for official Expo preloading
         await Asset.loadAsync(mascotAssets);
-        
-        if (__DEV__) console.log('[AssetLoader] All mascot assets preloaded successfully');
     } catch (error) {
         console.error('[AssetLoader] Error preloading assets:', error);
     }

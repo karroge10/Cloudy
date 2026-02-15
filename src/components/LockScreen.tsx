@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, AppState, AppStateStatus, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, AppState, AppStateStatus, ActivityIndicator, Keyboard, Pressable } from 'react-native';
 import { security } from '../utils/security';
 import { haptics } from '../utils/haptics';
 import { useProfile } from '../context/ProfileContext';
@@ -78,21 +78,31 @@ export const LockScreen = ({
         }
     }, [loading, profile?.security_lock_enabled, isLocked, isAuthenticating]);
 
-    // 3. Re-lock on Background
+    // 3. Re-lock on Background with Grace Period
+    const backgroundTimestamp = useRef<number | null>(null);
+    const GRACE_PERIOD_MS = 60000; // 60 seconds
+
     useEffect(() => {
         const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
             if (nextAppState === 'background') {
-                // IMPORTANT: Only invalidate the session if we were actually authenticated.
-                // If we were logged out (isActive = false), the backgrounding (like Google Auth)
-                // shouldn't count as a reason to lock the app later.
                 if (isActive) {
-                    sessionAuthenticated.current = false;
+                    // Record when we left the app
+                    backgroundTimestamp.current = Date.now();
                 }
             }
             
             if (nextAppState === 'active' && isActive && profile?.security_lock_enabled) {
-                // If we just returned from background and we are logged in, 
-                // check if we need to re-challenge based on the flag we set above.
+                // If we just returned from background
+                const now = Date.now();
+                const timeInBackground = backgroundTimestamp.current ? now - backgroundTimestamp.current : Infinity;
+                
+                if (timeInBackground > GRACE_PERIOD_MS) {
+                    // Only invalidate session if grace period expired
+                    sessionAuthenticated.current = false;
+                }
+                
+                backgroundTimestamp.current = null; // Reset
+
                 if (!sessionAuthenticated.current) {
                     setIsLocked(true);
                     handleAuthentication();
@@ -102,6 +112,13 @@ export const LockScreen = ({
 
         return () => subscription.remove();
     }, [profile?.security_lock_enabled, isActive]);
+    
+    // 4. Keyboard Management
+    useEffect(() => {
+        if (isLocked) {
+            Keyboard.dismiss();
+        }
+    }, [isLocked]);
 
     const handleAuthentication = async () => {
         if (isAuthenticating) return;
@@ -126,7 +143,10 @@ export const LockScreen = ({
     return (
         <View style={styles.container}>
             {/* The app content is rendered but obscured by the gradient overlay */}
-            <View style={StyleSheet.absoluteFill}>
+            <View 
+                style={StyleSheet.absoluteFill}
+                pointerEvents={isLocked ? 'none' : 'auto'}
+            >
                 {children}
             </View>
             
@@ -151,7 +171,7 @@ export const LockScreen = ({
                         disabled={isAuthenticating}
                     >
                         <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-                            <Text style={[styles.buttonText, { opacity: isAuthenticating ? 0 : 1 }]}>Unlock Now</Text>
+                            <Text style={[styles.buttonText, { opacity: isAuthenticating ? 0 : 1 }]}>Unlock</Text>
                             {isAuthenticating && (
                                 <View style={StyleSheet.absoluteFill}>
                                     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>

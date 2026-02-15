@@ -10,8 +10,14 @@ import { Session } from '@supabase/supabase-js';
 import { DeviceEventEmitter, View, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { navigationRef } from './src/utils/navigation';
 import { supabase } from './src/lib/supabase';
+
 import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
+import { PostHogProvider } from 'posthog-react-native';
+import { posthog, identifyUser } from './src/lib/posthog';
+import { useProfile } from './src/context/ProfileContext';
+
 
 // Disable reanimated strict mode to avoid noisy warnings during render transitions
 configureReanimatedLogger({
@@ -27,8 +33,6 @@ import { MainTabNavigator } from './src/navigation/MainTabNavigator';
 import { JournalEntryScreen } from './src/screens/JournalEntryScreen';
 import { MemoryScreen } from './src/screens/MemoryScreen';
 import { AuthScreen } from './src/screens/AuthScreen';
-import { ProfileSetupScreen } from './src/screens/ProfileSetupScreen';
-import { ReminderSetupScreen } from './src/screens/ReminderSetupScreen';
 import { JournalProvider } from './src/context/JournalContext';
 import { ProfileProvider } from './src/context/ProfileContext';
 import { AlertProvider } from './src/context/AlertContext';
@@ -37,11 +41,13 @@ import { LockScreen } from './src/components/LockScreen';
 import { preloadAssets } from './src/utils/assetLoader';
 import { AssetWarmup } from './src/components/AssetWarmup';
 import { CustomSplashScreen } from './src/components/CustomSplashScreen';
+import { LegalScreen } from './src/screens/LegalScreen';
 
 const AppContent = () => {
-  useNotifications();
-  return null; // This component just runs the hook
+  useNotifications(true); // Pass flag to ignore hook errors if needed, but we'll use ref now
+  return null; 
 };
+
 
 const Stack = createNativeStackNavigator();
 
@@ -56,6 +62,60 @@ const CloudyTheme = {
 
 // Prevent auto hide splash screen
 SplashScreen.preventAutoHideAsync();
+
+const RootNavigator = ({ session, isBioLocked }: { session: Session | null, isBioLocked: boolean | null }) => {
+  const { profile, loading: profileLoading } = useProfile();
+  
+  if (profileLoading && session) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator color="#FF9E7D" size="large" />
+      </View>
+    );
+  }
+
+  const showOnboarding = session && profile && !profile.onboarding_completed;
+
+  return (
+    <LockScreen 
+        isActive={!!session} 
+        initialLocked={isBioLocked === true && !!session}
+    >
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: '#FFF9F0' },
+          animation: 'slide_from_right'
+        }}
+      >
+        {session ? (
+          showOnboarding ? (
+            <>
+              <Stack.Screen name="StruggleSelection" component={StruggleSelectionScreen} />
+              <Stack.Screen name="GoalSelection" component={GoalSelectionScreen} />
+              <Stack.Screen name="Summary" component={SummaryScreen} />
+            </>
+          ) : (
+            <>
+              <Stack.Screen name="MainApp" component={MainTabNavigator} />
+              <Stack.Screen name="JournalEntry" component={JournalEntryScreen} />
+              <Stack.Screen name="Memory" component={MemoryScreen} />
+              <Stack.Screen name="Legal" component={LegalScreen} />
+            </>
+          )
+        ) : (
+          <>
+            <Stack.Screen name="Welcome" component={WelcomeScreen} />
+            <Stack.Screen name="StruggleSelection" component={StruggleSelectionScreen} />
+            <Stack.Screen name="GoalSelection" component={GoalSelectionScreen} />
+            <Stack.Screen name="Summary" component={SummaryScreen} />
+            <Stack.Screen name="Auth" component={AuthScreen} />
+          </>
+        )}
+      </Stack.Navigator>
+    </LockScreen>
+  );
+};
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -91,10 +151,22 @@ export default function App() {
     // 3. Preload mascot assets silently in the background
     preloadAssets();
 
+    // 4. Capture a manual start event to ensure reliable funnel sequencing.
+    // Native 'Application Opened' can be delayed in React Native/Expo.
+    posthog.capture('app_session_start');
+
     return () => {
         subscription.unsubscribe();
     };
   }, []);
+
+  // 4. Identify user in PostHog as soon as session is available
+  useEffect(() => {
+    if (session?.user) {
+      identifyUser(session.user.id, session.user.email);
+    }
+  }, [session]);
+
 
   useEffect(() => {
     // Decision: Hide native splash and show app
@@ -128,46 +200,34 @@ export default function App() {
         <ActivityIndicator color="#FF9E7D" size="large" />
       </View>
 
-      <SafeAreaProvider>
+      <PostHogProvider client={posthog} autocapture={false}>
+        <SafeAreaProvider>
+
         <AlertProvider>
           <ProfileProvider>
             <JournalProvider session={session}>
-              <NavigationContainer theme={CloudyTheme}>
-                <AppContent />
-                
+              <NavigationContainer 
+                theme={CloudyTheme} 
+                ref={navigationRef}
+                onReady={() => {
+                  const currentRouteName = navigationRef.getCurrentRoute()?.name;
+                  if (currentRouteName) {
+                    posthog.screen(currentRouteName);
+                  }
+                }}
+                onStateChange={() => {
+                  const currentRouteName = navigationRef.getCurrentRoute()?.name;
+                  if (currentRouteName) {
+                    posthog.screen(currentRouteName);
+                  }
+                }}
+              >
+
                 {fontsLoaded && !isAuthLoading ? (
                   <>
+                    <AppContent />
                     <AssetWarmup />
-                    <LockScreen 
-                        isActive={!!session} 
-                        initialLocked={isBioLocked === true && !!session}
-                    >
-                      <Stack.Navigator
-                        screenOptions={{
-                          headerShown: false,
-                          contentStyle: { backgroundColor: '#FFF9F0' },
-                          animation: 'slide_from_right'
-                        }}
-                      >
-                        {session ? (
-                          <>
-                            <Stack.Screen name="MainApp" component={MainTabNavigator} />
-                            <Stack.Screen name="JournalEntry" component={JournalEntryScreen} />
-                            <Stack.Screen name="Memory" component={MemoryScreen} />
-                            <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
-                            <Stack.Screen name="ReminderSetup" component={ReminderSetupScreen} />
-                          </>
-                        ) : (
-                          <>
-                            <Stack.Screen name="Welcome" component={WelcomeScreen} />
-                            <Stack.Screen name="StruggleSelection" component={StruggleSelectionScreen} />
-                            <Stack.Screen name="GoalSelection" component={GoalSelectionScreen} />
-                            <Stack.Screen name="Summary" component={SummaryScreen} />
-                            <Stack.Screen name="Auth" component={AuthScreen} />
-                          </>
-                        )}
-                      </Stack.Navigator>
-                    </LockScreen>
+                    <RootNavigator session={session} isBioLocked={isBioLocked} />
                   </>
                 ) : null}
 
@@ -182,6 +242,8 @@ export default function App() {
           </ProfileProvider>
         </AlertProvider>
       </SafeAreaProvider>
+      </PostHogProvider>
+
     </View>
   );
 }

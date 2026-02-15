@@ -31,7 +31,7 @@ export const WelcomeScreen = () => {
 
     return (
         <Layout useSafePadding={false}>
-            <View className="px-6 pt-4">
+            <View className="px-6 pt-16">
                  <View className="flex-row justify-between items-center w-full min-h-[48px]" />
             </View>
 
