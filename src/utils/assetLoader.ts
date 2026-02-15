@@ -8,9 +8,11 @@ import { MASCOTS } from '../constants/Assets';
  */
 export const preloadAssets = async () => {
     try {
-        const mascotAssets = Object.values(MASCOTS);
+        // Priority 1: Splash screen mascot
+        await Asset.loadAsync([MASCOTS.WRITE]);
         
-        // Use Asset.loadAsync for official Expo preloading
+        // Priority 2: All other mascots
+        const mascotAssets = Object.values(MASCOTS);
         await Asset.loadAsync(mascotAssets);
     } catch (error) {
         console.error('[AssetLoader] Error preloading assets:', error);

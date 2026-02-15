@@ -18,6 +18,7 @@ import { StreakGoal } from '../components/StreakGoal';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { Button } from '../components/Button';
 import { COMPANIONS } from '../constants/Companions';
+import { ReviewNudge } from '../components/ReviewNudge';
 
 export const HomeScreen = () => {
     const { showAlert } = useAlert();
@@ -31,6 +32,7 @@ export const HomeScreen = () => {
     const [loading, setLoading] = useState(false);
     const [showSetupSheet, setShowSetupSheet] = useState(false);
     const [showStreakNudge, setShowStreakNudge] = useState(false);
+    const [showReviewNudge, setShowReviewNudge] = useState(false);
     const [isSavingName, setIsSavingName] = useState(false);
     const [tempDisplayName, setTempDisplayName] = useState('');
     const [tempReminderTime, setTempReminderTime] = useState(new Date(new Date().setHours(20, 0, 0, 0))); // Default 8 PM
@@ -92,6 +94,17 @@ export const HomeScreen = () => {
                 // Suggest linking account on 3rd entry
                 trackEvent('conversion_nudge_shown', { streak: likelyStreak });
                 setShowStreakNudge(true);
+            } else if (likelyStreak === 3) {
+                // Moment of Delight: Show Review Nudge on 3rd day for non-anon users
+                // Or if they just linked their account it might trigger here later
+                const hasShownReview = await AsyncStorage.getItem('has_shown_review_nudge');
+                if (!hasShownReview) {
+                    trackEvent('review_nudge_shown');
+                    setShowReviewNudge(true);
+                    await AsyncStorage.setItem('has_shown_review_nudge', 'true');
+                } else {
+                    setText('');
+                }
             } else {
                  setText('');
             }
@@ -356,7 +369,7 @@ export const HomeScreen = () => {
                             trackEvent('conversion_nudge_clicked');
                             setShowStreakNudge(false);
                             setText('');
-                            navigation.navigate('Auth', { initialMode: 'signup' });
+                            navigation.navigate('SecureAccount', { initialMode: 'signup' });
                         }}
                     />
 
@@ -373,6 +386,14 @@ export const HomeScreen = () => {
                     </TouchableOpacity>
                 </View>
             </BottomSheet>
+
+            <ReviewNudge 
+                visible={showReviewNudge} 
+                onClose={() => {
+                    setShowReviewNudge(false);
+                    setText('');
+                }}
+            />
         </Layout>
     );
 };

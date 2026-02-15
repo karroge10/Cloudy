@@ -47,20 +47,20 @@ export const CustomSplashScreen = ({ onFinish, skipAnimation = false }: { onFini
             // Text fade in
             Animated.timing(textOpacity, {
                 toValue: 1,
-                duration: 800,
-                delay: 400,
+                duration: 600,
+                delay: 200,
                 useNativeDriver: true,
             })
         ]).start();
 
-        // Finish after 2.2 seconds
+        // Finish after 1.6 seconds
         const timer = setTimeout(() => {
             Animated.timing(fadeAnim, {
                 toValue: 0,
-                duration: 500,
+                duration: 400,
                 useNativeDriver: true,
             }).start(onFinish);
-        }, 2200);
+        }, 1600);
 
         return () => clearTimeout(timer);
     }, [skipAnimation]);

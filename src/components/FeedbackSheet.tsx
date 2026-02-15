@@ -15,6 +15,7 @@ interface FeedbackSheetProps {
 
 export const FeedbackSheet = ({ visible, onClose }: FeedbackSheetProps) => {
     const [feedback, setFeedback] = useState('');
+    const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
     const { trackEvent } = useAnalytics();
     const { showAlert } = useAlert();
@@ -31,11 +32,13 @@ export const FeedbackSheet = ({ visible, onClose }: FeedbackSheetProps) => {
             // without adding database complexity for now.
             trackEvent('cloudy_whisper_feedback', {
                 message: feedback.trim(),
+                contact_email: email.trim() || undefined,
                 timestamp: new Date().toISOString()
             });
 
             haptics.success();
             setFeedback('');
+            setEmail('');
             onClose();
             
             showAlert(
@@ -65,13 +68,23 @@ export const FeedbackSheet = ({ visible, onClose }: FeedbackSheetProps) => {
                 <TextInput
                     multiline
                     numberOfLines={4}
-                    className="w-full bg-card px-6 py-5 rounded-[24px] font-q-medium text-lg text-text border-2 border-inactive/10 mb-8 min-h-[120px]"
+                    className="w-full bg-card px-6 py-5 rounded-[24px] font-q-medium text-lg text-text border-2 border-inactive/10 mb-4 min-h-[120px]"
                     placeholder="Tell me everything..."
                     placeholderTextColor="#CBD5E1"
                     onChangeText={setFeedback}
                     value={feedback}
                     textAlignVertical="top"
                     autoFocus={true}
+                />
+
+                <TextInput
+                    className="w-full bg-card px-6 py-4 rounded-[20px] font-q-medium text-base text-text border-2 border-inactive/10 mb-8"
+                    placeholder="Email for reply (optional)"
+                    placeholderTextColor="#CBD5E1"
+                    onChangeText={setEmail}
+                    value={email}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
                 />
 
                 <Button 

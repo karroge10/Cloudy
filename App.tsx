@@ -74,26 +74,40 @@ const RootNavigator = ({ session, isBioLocked, isColdStartWithSession }: { sessi
   const [viewMode, setViewMode] = useState<'loading' | 'onboarding' | 'app' | 'auth'>('loading');
 
   useEffect(() => {
+    console.log('[Nav] State Update:', {
+        hasSession: !!session,
+        profileLoading,
+        hasProfile: !!profile,
+        isColdStartWithSession,
+        currentMode: viewMode
+    });
+
+    // Stage 1: Absolute Logout
     if (!session) {
-        setViewMode('auth');
-    } else {
-        if (profileLoading) {
-            // Only show the full-screen loading spinner if we are starting the app
-            // with an existing session. Otherwise, stay on the current screen.
-            if (isColdStartWithSession) {
-                setViewMode('loading');
-            }
-        } else {
-            // Loading is finished and we have a session.
-            // If no profile exists yet, it's a brand new account -> onboarding.
-            if (!profile || !profile.onboarding_completed) {
-                setViewMode('onboarding');
-            } else {
-                setViewMode('app');
-            }
-        }
+      if (viewMode !== 'auth') setViewMode('auth');
+      return;
     }
-  }, [session, profileLoading, profile?.onboarding_completed, isColdStartWithSession]);
+
+    // Stage 2: Profile is ready
+    if (!profileLoading && profile) {
+      setViewMode(profile.onboarding_completed ? 'app' : 'onboarding');
+      return;
+    }
+
+    // Stage 3: Profile is missing but loading is done (Brand new account)
+    if (!profileLoading && !profile) {
+      setViewMode('onboarding');
+      return;
+    }
+
+    // Stage 4: Profile is loading
+    // We only show the full-screen loader if it's a cold boot with a session.
+    // If we just logged in, we stay in the current viewMode (usually 'auth') 
+    // until Stage 2 or 3 kicks in, preventing the transition flicker.
+    if (isColdStartWithSession) {
+      setViewMode('loading');
+    }
+  }, [session, profileLoading, profile?.onboarding_completed, isColdStartWithSession, viewMode]); // Added viewMode to dependencies for console.log
 
   // If we are cold starting with a session, show a loader until profile is ready.
   // Otherwise, we keep the current viewMode to prevent jumping.
@@ -112,6 +126,8 @@ const RootNavigator = ({ session, isBioLocked, isColdStartWithSession }: { sessi
         isColdStart={isColdStartWithSession}
     >
       <Stack.Navigator
+        key={viewMode}
+        initialRouteName={viewMode === 'app' ? "MainApp" : viewMode === 'onboarding' ? "StruggleSelection" : "Welcome"}
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: '#FFF9F0' },
@@ -125,13 +141,15 @@ const RootNavigator = ({ session, isBioLocked, isColdStartWithSession }: { sessi
               <Stack.Screen name="Memory" component={MemoryScreen} />
               <Stack.Screen name="Legal" component={LegalScreen} />
               <Stack.Screen name="Roadmap" component={RoadmapScreen} />
-              <Stack.Screen name="Auth" component={AuthScreen} />
+              {/* Unique name to prevent navigation focus leakage from the Login screen */}
+              <Stack.Screen name="SecureAccount" component={AuthScreen} />
             </>
         ) : viewMode === 'onboarding' ? (
             <>
               <Stack.Screen name="StruggleSelection" component={StruggleSelectionScreen} />
               <Stack.Screen name="GoalSelection" component={GoalSelectionScreen} />
               <Stack.Screen name="Summary" component={SummaryScreen} />
+              <Stack.Screen name="Auth" component={AuthScreen} />
             </>
         ) : (
           <>
@@ -160,6 +178,7 @@ export default function App() {
   const [showAnimatedSplash, setShowAnimatedSplash] = useState(true);
   const [isBioLocked, setIsBioLocked] = useState<boolean | null>(null);
   const [showPrivacyOverlay, setShowPrivacyOverlay] = useState(false);
+  const [assetsLoaded, setAssetsLoaded] = useState(false);
   const isColdStartWithSession = useRef<boolean | null>(null);
 
   useEffect(() => {
@@ -197,7 +216,17 @@ export default function App() {
     });
 
     // 3. Preload mascot assets silently in the background
-    preloadAssets();
+    // We prioritize the WRITE mascot which is used on the splash screen
+    const loadCriticalAssets = async () => {
+      try {
+        await preloadAssets();
+        setAssetsLoaded(true);
+      } catch (e) {
+        console.warn('Failed to preload assets', e);
+        setAssetsLoaded(true); // Don't block app if this fails
+      }
+    };
+    loadCriticalAssets();
 
     // 4. Capture a manual start event to ensure reliable funnel sequencing.
     // Native 'Application Opened' can be delayed in React Native/Expo.
@@ -233,7 +262,8 @@ export default function App() {
 
   useEffect(() => {
     // Decision: Hide native splash and show app
-    if (fontsLoaded && !isAuthLoading && isBioLocked !== null) {
+    // We now also wait for assetsLoaded to ensure mascot appears immediately
+    if (fontsLoaded && !isAuthLoading && isBioLocked !== null && assetsLoaded) {
       // If we are bio locked AND authenticated, we want to give the stack 
       // a tiny bit of time to layout before we hide the native splash.
       // This prevents the "empty cream screen" flash.
@@ -247,22 +277,10 @@ export default function App() {
         }
       }, settleTime);
     }
-  }, [fontsLoaded, isAuthLoading, isBioLocked, session]);
+  }, [fontsLoaded, isAuthLoading, isBioLocked, session, assetsLoaded]);
 
   return (
     <View style={{ flex: 1, backgroundColor: '#FFF9F0' }}>
-      {/* Universal Fallback Loader: Visible during heavy navigation mount or asset gaps */}
-      <View 
-        style={{ 
-            position: 'absolute', 
-            top: 0, left: 0, right: 0, bottom: 0, 
-            justifyContent: 'center', 
-            alignItems: 'center' 
-        }}
-      >
-        <ActivityIndicator color="#FF9E7D" size="large" />
-      </View>
-
       <PostHogProvider client={posthog} autocapture={false}>
         <SafeAreaProvider>
 

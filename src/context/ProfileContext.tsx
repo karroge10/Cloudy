@@ -36,37 +36,41 @@ export const ProfileProvider = ({ children }: { children: React.ReactNode }) => 
 
     const fetchProfile = async () => {
         setLoading(true);
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            setProfile(null);
-            setIsAnonymous(false);
-            setLoading(false);
-            return;
-        }
+        console.log('[Profile] set loading: true');
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            console.log('[Profile] Fetching for user:', user?.id);
+            if (!user) {
+                setProfile(null);
+                setIsAnonymous(false);
+                setLoading(false); // Ensure loading is set to false if no user
+                return;
+            }
 
-        setIsAnonymous(user.is_anonymous || false);
+            setIsAnonymous(user.is_anonymous || false);
 
-        const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single();
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
 
-        if (data && !error) {
-            const mappedProfile: Profile = {
-                display_name: data.display_name,
-                haptics_enabled: data.haptics_enabled ?? true,
-                security_lock_enabled: data.security_lock_enabled ?? false,
-                onboarding_completed: data.onboarding_completed ?? false,
-                reminder_time: data.reminder_time,
-                age: data.age,
-                gender: data.gender,
-                country: data.country,
-                mascot_name: data.mascot_name,
-                goals: data.goals || [],
-                struggles: data.struggles || [],
-            };
-            setProfile(mappedProfile);
+            if (data && !error) {
+                const mappedProfile: Profile = {
+                    display_name: data.display_name,
+                    haptics_enabled: data.haptics_enabled ?? true,
+                    security_lock_enabled: data.security_lock_enabled ?? false,
+                    onboarding_completed: data.onboarding_completed ?? false,
+                    reminder_time: data.reminder_time,
+                    age: data.age,
+                    gender: data.gender,
+                    country: data.country,
+                    mascot_name: data.mascot_name,
+                    goals: data.goals || [],
+                    struggles: data.struggles || [],
+                };
+                console.log('[Profile] Fetch complete, setting profile');
+                setProfile(mappedProfile);
             
             // Sync current settings to services
             haptics.setEnabled(mappedProfile.haptics_enabled);
@@ -78,8 +82,19 @@ export const ProfileProvider = ({ children }: { children: React.ReactNode }) => 
             } else {
                 await AsyncStorage.removeItem('security_lock_enabled');
             }
+        } else if (error) {
+            console.error('[Profile] Error fetching profile:', error);
+            setProfile(null);
+        } else {
+            console.log('[Profile] No profile found for user, setting null');
+            setProfile(null);
         }
         setLoading(false);
+    } catch (error) {
+        console.error('[Profile] Unexpected error during profile fetch:', error);
+        setProfile(null);
+        setLoading(false);
+    }
     };
 
     const updateProfile = async (updates: Partial<Profile>) => {

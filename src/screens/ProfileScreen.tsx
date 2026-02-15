@@ -29,7 +29,7 @@ import { getFriendlyAuthErrorMessage } from '../utils/authErrors';
 import { resetUser } from '../lib/posthog';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { AppFooter } from '../components/AppFooter';
-
+import { FeedbackSheet } from '../components/FeedbackSheet';
 import { ActivityIndicator } from 'react-native';
 
 
@@ -50,6 +50,7 @@ export const ProfileScreen = () => {
     const [isGenderSheetVisible, setIsGenderSheetVisible] = useState(false);
     const [isCountrySheetVisible, setIsCountrySheetVisible] = useState(false);
     const [isDeleteSheetVisible, setIsDeleteSheetVisible] = useState(false);
+    const [isFeedbackSheetVisible, setIsFeedbackSheetVisible] = useState(false);
     
     const [tempAge, setTempAge] = useState('');
     const [tempName, setTempName] = useState('');
@@ -72,7 +73,7 @@ export const ProfileScreen = () => {
             setSelectedGoals(profile.goals || []);
             setSelectedStruggles(profile.struggles || []);
             setTempGender(profile.gender || '');
-            setTempMascotName(profile.mascot_name || '');
+            setTempMascotName(profile.mascot_name || COMPANIONS[0].name);
             
             if (profile.reminder_time) {
                 const [hours, minutes] = profile.reminder_time.split(':');
@@ -353,6 +354,20 @@ export const ProfileScreen = () => {
                     >
                         <Text className="text-lg font-q-bold text-text">Privacy & Security</Text>
                         <Ionicons name="lock-closed-outline" size={22} color="#FF9E7D" />
+                    </TouchableOpacity>
+
+                    <View className="h-[1px] bg-inactive opacity-10" />
+
+                    {/* Feedback */}
+                    <TouchableOpacity 
+                        onPress={() => { haptics.selection(); setIsFeedbackSheetVisible(true); }}
+                        className="flex-row items-center justify-between py-4"
+                    >
+                        <View>
+                            <Text className="text-lg font-q-bold text-text">Cloudy Whisper</Text>
+                            <Text className="text-muted font-q-medium text-xs">Send feedback or report bugs</Text>
+                        </View>
+                        <Ionicons name="chatbubble-ellipses-outline" size={22} color="#FF9E7D" />
                     </TouchableOpacity>
 
                     <View className="h-[1px] bg-inactive opacity-10" />
@@ -657,6 +672,11 @@ export const ProfileScreen = () => {
                     </TouchableOpacity>
                 </View>
             </BottomSheet>
+
+            <FeedbackSheet 
+                visible={isFeedbackSheetVisible} 
+                onClose={() => setIsFeedbackSheetVisible(false)} 
+            />
         </Layout>
     );
 };

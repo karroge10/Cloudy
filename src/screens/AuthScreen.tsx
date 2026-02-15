@@ -65,6 +65,9 @@ export const AuthScreen = () => {
             const { title, message } = getFriendlyAuthErrorMessage(error);
             showAlert(title, message, [{ text: 'Okay' }], 'error');
             setLoading(false);
+        } else {
+            // Navigate to break the sticky screen focus
+            navigation.navigate('MainApp');
         }
     }
 
@@ -145,14 +148,18 @@ export const AuthScreen = () => {
         try {
             haptics.selection();
             setLoading(true);
+            console.log('[Auth] Starting Google Sign-In...');
             await GoogleSignin.hasPlayServices();
             const response = await GoogleSignin.signIn();
             
             if (response.type === 'cancelled') {
+                console.log('[Auth] Google Sign-In was cancelled');
+                setLoading(false);
                 return;
             }
 
             if (response.type === 'success' && response.data.idToken) {
+                console.log('[Auth] Google Sign-In Success, token received');
                 // Capture anonymous ID for merging
                 const { data: { user: currentUser } } = await supabase.auth.getUser();
                 if (currentUser?.is_anonymous) {
@@ -167,20 +174,21 @@ export const AuthScreen = () => {
                 if (data.user) {
                     identifyUser(data.user.id, data.user.email ?? undefined);
                     trackEvent('user_signed_in', { method: 'google', is_conversion: !!currentUser?.is_anonymous });
+                    console.log('[Auth] Supabase Sign-In Success for user:', data.user.id);
                 }
 
 
                 
                 if (error) throw error;
-                
-                if (data.session) {
-                    // The stack switch in App.tsx will take care of navigation.
-                    // We don't need to manually reset or check profile here for navigation purposes.
-                }
+
+                // Navigate to break the sticky screen focus
+                navigation.navigate('MainApp');
+
             } else if (response.type === 'success' && !response.data.idToken) {
                 throw new Error('No ID Token found');
             }
         } catch (error: any) {
+            console.error('[Auth] Google Sign-In Error:', error);
             // Only show alert if it's not a cancellation or operation in progress
             if (error.code !== statusCodes.IN_PROGRESS && error.code !== statusCodes.SIGN_IN_CANCELLED) {
                 const { title, message } = getFriendlyAuthErrorMessage(error);
