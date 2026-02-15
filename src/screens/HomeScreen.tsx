@@ -210,11 +210,8 @@ export const HomeScreen = () => {
                 </View>
             </View>
 
-            {/* Streak Goal Milestone */}
-            <StreakGoal streak={streak} className="mb-6" />
-
             {/* Main Writing Card */}
-            <View className="bg-card rounded-[32px] p-6 shadow-[#0000000D] shadow-xl mb-8 flex-1" style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 20, elevation: 5 }}>
+            <View className="bg-card rounded-[32px] p-6 shadow-[#0000000D] shadow-xl mb-6 flex-1" style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 20, elevation: 5 }}>
                 <Text className="text-xl font-q-bold text-text mb-4 text-center">
                     Daily Gratitude
                 </Text>
@@ -255,13 +252,18 @@ export const HomeScreen = () => {
                 </View>
             </View>
 
-            {/* Tip Box */}
-            <InfoCard 
-                title="Writing Tip"
-                subtitle="Focus on one small thing that went well today, no matter how tiny it seems."
-                icon="bulb"
-                className="mb-8"
-            />
+            {/* Streak Goal Milestone - Now more prominent below the writing card */}
+            <StreakGoal streak={streak} className="mb-8" />
+
+            {/* Tip Box - Only show for very new users */}
+            {streak === 0 && (
+                <InfoCard 
+                    title="Writing Tip"
+                    subtitle="Focus on one small thing that went well today, no matter how tiny it seems."
+                    icon="bulb"
+                    className="mb-8"
+                />
+            )}
 
             {/* Post-Save Setup Sheet */}
             <BottomSheet 

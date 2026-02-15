@@ -1,17 +1,22 @@
-import React from 'react';
-import { TouchableOpacity, Text, ImageSourcePropType } from 'react-native';
+import { TouchableOpacity, Text, ImageSourcePropType, View } from 'react-native';
 import { haptics } from '../utils/haptics';
 import { MascotImage } from './MascotImage';
+import { Ionicons } from '@expo/vector-icons';
 
 interface MascotCardProps {
     name: string;
     asset: ImageSourcePropType;
     isSelected: boolean;
+    isLocked: boolean;
     onPress: () => void;
 }
 
-export const MascotCard = ({ name, asset, isSelected, onPress }: MascotCardProps) => {
+export const MascotCard = ({ name, asset, isSelected, isLocked, onPress }: MascotCardProps) => {
     const handlePress = () => {
+        if (isLocked) {
+            haptics.error();
+            return;
+        }
         haptics.selection();
         onPress();
     };
@@ -20,22 +25,32 @@ export const MascotCard = ({ name, asset, isSelected, onPress }: MascotCardProps
         <TouchableOpacity
             onPress={handlePress}
             delayPressIn={0}
-            className={`w-[30%] aspect-square mb-4 rounded-[32px] items-center justify-center border-2 active:scale-95 transition-transform ${
-                isSelected 
-                    ? 'bg-secondary border-primary shadow-sm' 
-                    : 'bg-white border-primary/10 shadow-sm'
+            activeOpacity={isLocked ? 1 : 0.7}
+            className={`w-[30%] aspect-square mb-4 rounded-[32px] items-center justify-center border-2 transition-transform ${
+                isLocked 
+                    ? 'bg-inactive/5 border-transparent opacity-60'
+                    : isSelected 
+                        ? 'bg-secondary border-primary shadow-sm active:scale-95' 
+                        : 'bg-white border-primary/10 shadow-sm active:scale-95'
             }`}
-            style={isSelected ? { elevation: 2 } : { elevation: 1 }}
+            style={!isLocked && isSelected ? { elevation: 2 } : { elevation: 1 }}
         >
-            <MascotImage 
-                source={asset} 
-                className="w-14 h-14" 
-                resizeMode="contain" 
-            />
+            <View className="items-center justify-center">
+                <MascotImage 
+                    source={asset} 
+                    className={`w-14 h-14 ${isLocked ? 'grayscale opacity-50' : ''}`}
+                    resizeMode="contain" 
+                />
+                {isLocked && (
+                    <View className="absolute bg-background/80 rounded-full p-1 border border-inactive/20">
+                        <Ionicons name="lock-closed" size={14} color="#94A3B8" />
+                    </View>
+                )}
+            </View>
             <Text className={`font-q-bold text-[10px] mt-2 uppercase ${
-                isSelected ? 'text-primary' : 'text-muted'
+                isLocked ? 'text-muted/50' : isSelected ? 'text-primary' : 'text-muted'
             }`}>
-                {name}
+                {isLocked ? 'Locked' : name}
             </Text>
         </TouchableOpacity>
     );

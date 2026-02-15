@@ -612,18 +612,24 @@ export const ProfileScreen = () => {
                     <MascotImage source={MASCOTS.HUG} className="w-40 h-40 mb-4" resizeMode="contain" />
                     <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">Choose your companion</Text>
                     <View className="flex-row flex-wrap justify-between w-full mb-8">
-                        {COMPANIONS.map((companion) => (
-                            <MascotCard 
-                                key={companion.id}
-                                name={companion.name}
-                                asset={companion.asset}
-                                isSelected={tempMascotName === companion.name}
-                                onPress={() => {
-                                    setTempMascotName(companion.name);
-                                    haptics.selection();
-                                }}
-                            />
-                        ))}
+                        {COMPANIONS.map((companion) => {
+                            const isLocked = streak < companion.requiredStreak;
+                            return (
+                                <MascotCard 
+                                    key={companion.id}
+                                    name={companion.name}
+                                    asset={companion.asset}
+                                    isSelected={tempMascotName === companion.name}
+                                    isLocked={isLocked}
+                                    onPress={() => {
+                                        if (!isLocked) {
+                                            setTempMascotName(companion.name);
+                                            haptics.selection();
+                                        }
+                                    }}
+                                />
+                            );
+                        })}
                     </View>
                     <Button 
                         label="Save Companion"
