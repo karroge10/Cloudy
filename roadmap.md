@@ -11,30 +11,22 @@ This is a living document for all the things we want to polish or add later that
 *   **Multi-Question Prompts**: Allow users to cycle through different gratitude prompts if they're feeling stuck on "What's on your mind?".
 
 ## 🔒 Trust & Security
-*   **Privacy & Security Center**: Build out the dedicated screen for managing data, learning about our encryption, and controlling account settings.
 *   **Local-First Persistence**: Ensure `JournalContext` handles offline saves gracefully so memories aren't lost during poor connectivity.
 
-### 🛡️ Security Hardening (Security Audit Findings)
-*   **[Technical Debt]** Patch encryption and session persistence gaps. See [SECURITY.md](./SECURITY.md) for the full audit.
-*   **[Snapshot Protection]** Obscure the app immediately when it becomes `inactive` or `background`. Prevents the journal from being visible in the OS App Switcher.
-*   **[Accessibility Guard]** Unmount app content when locked. Currently, the content renders *behind* the overlay, meaning screen readers (TalkBack/VoiceOver) can still "read" the obscured text.
-*   **[App Lifecycle Logic]** Fix the `LockScreen` session logic to ensure it doesn't bypass biometrics if the Supabase session is briefly nullified during a background transition.
-*   **[Android Back Button]** Implement a `BackHandler` override to prevent users from "backing out" of the lock screen into the previous app state.
-*   **[Cold Start Race Condition]** Optimize `isBioLocked` initialization in `App.tsx` to ensure zero-frame leakage of content before the lock overlay mounts.
-
 ## ✨ Experience & Polish
-*   **Export as PDF**: The button is in the Profile, but it needs an engine. Use `expo-print` to generate beautiful, themed layouts of the user's journal for printing or backup.
-*   **Dynamic Versioning**: Automate the version footer in the Profile screen to pull directly from `app.json` instead of being hardcoded.
+*   **Dynamic Versioning**: Automate the version footer in the Profile screen to pull directly from `app.json` instead of being hardcoded. *(Already implemented in AppFooter.tsx)*
 *   **"Shake to Reminisce"**: If the user shakes their phone while on the main screen, a random memory from the past floats down. It turns the phone into a "Snow Globe" of memories. Requires `expo-sensors`.
 
 ## 🎨 Creative Expression
 *   **Custom Mascots**: Allow users to unlock or design their own companion varieties. Expand the gallery beyond the core set.
 *   **Beautiful Share Cards - "Share to Instagram"**: Generate a beautiful square image with the gratitude text, the date, and a tiny Cloudy mascot in the corner. Don't just screenshot—create. This turns users into marketers. Requires `react-native-view-shot` and `expo-sharing`.
 
-## ⚡ Performance & Refactoring
-*   **Request Lifecycle Audit**: Clean up redundant `getUser()` and `profiles` table fetches. See [PERFORMANCE.md](./PERFORMANCE.md) for the full checklist.
-*   **Pagination Implementation**: Move from "Fetch All" to a windowed loading approach for better scalability.
-
+## 🌍 Internationalization
+*   **i18n Framework Setup**: Integrate `i18next` and `react-i18next` for multi-language support.
+*   **Translation Files**: Create JSON-based translation files for core languages (Spanish, French, German, Portuguese, Japanese, etc.).
+*   **RTL Support**: Ensure layout supports right-to-left languages (Arabic, Hebrew).
+*   **Locale Detection**: Auto-detect device language and apply appropriate translations.
+*   **Date/Time Localization**: Format dates and times according to user's locale settings.
 
 ---
 
@@ -43,3 +35,18 @@ This is a living document for all the things we want to polish or add later that
 *   **Flashback Notifications**: Instead of just generic reminders, send nostalgic nudges: *"Remember what made you smile 3 months ago?"*. Tapping opens the Memory screen directly to that entry.
 *   **Smarter Reminders**: Implement `expo-notifications`. Move beyond just database values—actually schedule local push notifications that respect the user's `reminder_time`.
 *   **Standardized Haptic Language**: Implemented a consistent tactile experience across the entire app. Selection ticks for navigation/tabs, success pulses for alerts, and heavy impacts for "Commit" actions (Save/Logout/Delete). Combined with scale micro-animations for a premium feel. Respects the "Haptic Feedback" toggle.
+*   **Privacy & Security Center**: Dedicated `LegalScreen` accessible from Profile, displaying privacy policy and terms.
+*   **Security Hardening (Full Suite)**:
+    *   End-to-End Encryption (AES-256-CBC) for all journal entries
+    *   SecureStore for session persistence
+    *   Snapshot Protection (Privacy overlay in App Switcher)
+    *   Accessibility Guard (Content unmounted when locked)
+    *   Android BackHandler Guard (Prevent lock screen bypass)
+    *   Cold Start Zero-Frame Leakage Protection
+    *   Grace Period Re-lock Logic (60s)
+*   **Performance Optimization (Full Suite)**:
+    *   Pagination with lazy loading
+    *   FlatList optimizations (`getItemLayout`, `React.memo`, `windowSize`)
+    *   Server-side `deleted_at` filtering
+    *   Explicit column selection (no `SELECT *`)
+    *   Pull-to-refresh with haptics

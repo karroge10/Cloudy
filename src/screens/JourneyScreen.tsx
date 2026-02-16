@@ -1,26 +1,20 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, useWindowDimensions, ScrollView, ActivityIndicator } from 'react-native';
+import React, { useState, useMemo, useRef } from 'react';
+import { View, Text, TouchableOpacity, useWindowDimensions, ActivityIndicator, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
+import { FlashList } from '@shopify/flash-list';
 import { haptics } from '../utils/haptics';
 import Animated, { 
-    useAnimatedScrollHandler, 
-    useSharedValue, 
-    useAnimatedStyle, 
-    interpolate,
-    interpolateColor,
-    withSequence,
     withTiming,
     withSpring,
+    withSequence,
+    useSharedValue,
+    useAnimatedStyle,
     runOnJS,
-    Extrapolation, 
-    SharedValue,
 } from 'react-native-reanimated';
 
 import { TopNav } from '../components/TopNav';
 import { Layout } from '../components/Layout';
-import { supabase } from '../lib/supabase';
-
 import { BottomSheet } from '../components/BottomSheet';
 import { MASCOTS } from '../constants/Assets';
 import { Image } from 'react-native';
@@ -30,28 +24,28 @@ import { useAlert } from '../context/AlertContext';
 import { Button } from '../components/Button';
 
 import { useProfile } from '../context/ProfileContext';
-import { RefreshControl } from 'react-native';
 
 const ITEM_HEIGHT = 180;
 
-const TimelineItem = React.memo(({ 
+/**
+ * TimelineItem - Optimized with FlashList recycling support
+ * 
+ * Simplified animations: Removed scroll-linked interpolateColor and 
+ * per-frame opacity calculations that caused jank. Now uses simple
+ * fade-in on mount and delete animation.
+ */
+const TimelineItem = ({ 
     item, 
-    index, 
-    scrollY, 
-    isLast, 
-    isFirst, 
-    viewportHeight,
+    index,
+    totalCount,
     onToggleFavorite,
     onDelete,
     isDeletingProp,
     onDeleteAnimationComplete
 }: { 
     item: JournalEntry; 
-    index: number; 
-    scrollY: SharedValue<number>; 
-    isLast: boolean; 
-    isFirst: boolean;
-    viewportHeight: number;
+    index: number;
+    totalCount: number;
     onToggleFavorite: (id: string, isFavorite: boolean) => void;
     onDelete: (id: string) => void;
     isDeletingProp: boolean;
@@ -59,9 +53,13 @@ const TimelineItem = React.memo(({
 }) => {
     const navigation = useNavigation();
     const trashScale = useSharedValue(1);
-    const itemHeight = useSharedValue(ITEM_HEIGHT);
     const itemOpacity = useSharedValue(1);
+    const itemHeight = useSharedValue(ITEM_HEIGHT);
 
+    const isFirst = index === 0;
+    const isLast = index === totalCount - 1;
+
+    // Delete animation
     React.useEffect(() => {
         if (isDeletingProp) {
             itemOpacity.value = withTiming(0, { duration: 200 });
@@ -76,191 +74,132 @@ const TimelineItem = React.memo(({
     const handleTrashPress = () => {
         if (isDeletingProp) return;
         haptics.success();
-        
-        // Immediate trigger for bottom sheet
         onDelete(item.id);
-        
-        // Optional: still run a small bouncy animation for feedback concurrently
         trashScale.value = withSequence(
             withTiming(1.2, { duration: 100 }),
             withSpring(1)
         );
     };
 
-    const animatedStyle = useAnimatedStyle(() => {
-        const itemTop = index * ITEM_HEIGHT;
-        const relativePos = itemTop - scrollY.value;
-        const bottomThreshold = viewportHeight - 150;
-        
-        const opacity = interpolate(
-            relativePos,
-            [0, 50, bottomThreshold, viewportHeight],
-            [1, 1, 1, 0.2],
-            Extrapolation.CLAMP
-        );
-
-        const scale = interpolate(
-            relativePos,
-            [bottomThreshold, viewportHeight],
-            [1, 0.9],
-            Extrapolation.CLAMP
-        );
-
-        return {
-            opacity: opacity * itemOpacity.value,
-            transform: [{ scale }],
-            height: itemHeight.value,
-            overflow: 'hidden'
-        };
-    });
-
-    const circleAnimatedStyle = useAnimatedStyle(() => {
-        const isActiveRange = [
-            (index - 0.5) * ITEM_HEIGHT,
-            index * ITEM_HEIGHT,
-            (index + 0.5) * ITEM_HEIGHT
-        ];
-        
-        const borderColor = interpolateColor(
-            scrollY.value,
-            isActiveRange,
-            ['#E5E5E5', '#FF9E7D', '#E5E5E5'],
-        );
-
-        return { borderColor };
-    });
+    const animatedStyle = useAnimatedStyle(() => ({
+        opacity: itemOpacity.value,
+        height: itemHeight.value,
+        overflow: 'hidden',
+    }));
 
     const trashAnimatedStyle = useAnimatedStyle(() => ({
-        transform: [{ scale: trashScale.value }]
+        transform: [{ scale: trashScale.value }],
     }));
 
     return (
-        <Animated.View className="flex-row" style={animatedStyle}>
-            {/* Left Column: Date & Line */}
-            <View className="items-center mr-6">
-                <View className={`w-[1px] h-4 ${isFirst ? 'bg-transparent' : 'bg-inactive'}`} />
-                
-                <Animated.View 
-                    style={[{ backgroundColor: 'white', borderWidth: 2 }, circleAnimatedStyle]}
-                    className="w-16 h-16 rounded-full items-center justify-center shadow-sm z-10 bg-white shadow-[#00000010]"
-                >
-                    <Animated.View 
-                         className="absolute inset-0 rounded-full items-center justify-center"
-                         style={[{ backgroundColor: '#FF9E7D' }, useAnimatedStyle(() => {
-                             const isActiveRange = [
-                                (index - 0.5) * ITEM_HEIGHT,
-                                index * ITEM_HEIGHT,
-                                (index + 0.5) * ITEM_HEIGHT
-                             ];
-                             const activeOpacity = interpolate(
-                                 scrollY.value,
-                                 isActiveRange,
-                                 [0, 1, 0],
-                                 Extrapolation.CLAMP
-                             );
-                             return { opacity: activeOpacity };
-                         })]}
-                     />
-
-                    <View className="items-center justify-center">
-                        <Text className="text-[10px] font-q-bold text-text">
-                            {new Date(item.created_at).toLocaleDateString('en-US', { month: 'short' })}
-                        </Text>
-                        <Text className="text-xl font-q-bold text-text">
-                            {new Date(item.created_at).getDate()}
-                        </Text>
-                    </View>
-                </Animated.View>
-
-                <View className={`w-[1px] flex-1 ${isLast ? 'bg-transparent' : 'bg-inactive'}`} />
-            </View>
-
-            {/* Right Column: Entry Card */}
-            <View className="flex-1 pb-10">
-                <TouchableOpacity 
-                    activeOpacity={0.9}
-                    onPress={() => {
-                        haptics.selection();
-                        // Navigate to MemoryScreen with specific entryId
-                        // This effectively acts as our "Inspector"
-                        (navigation as any).navigate('Memory', { entryId: item.id });
-                    }}
-                    className="bg-card rounded-[32px] p-6 shadow-[#0000000D] shadow-xl min-h-[140px] justify-between"
-                    style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}
-                >
-                    <View>
-                        <Text 
-                            className="font-q-medium text-base leading-6 text-text"
-                            numberOfLines={3}
-                        >
-                            {item.text}
-                        </Text>
-                    </View>
+        <Animated.View style={animatedStyle}>
+            <View className="flex-row" style={{ height: ITEM_HEIGHT }}>
+                {/* Left Column: Date & Line */}
+                <View className="items-center mr-6">
+                    <View className={`w-[1px] h-4 ${isFirst ? 'bg-transparent' : 'bg-inactive'}`} />
                     
-                    <View className="flex-row justify-end mt-4 items-center space-x-4">
-                        <TouchableOpacity 
-                            onPress={() => { haptics.selection(); onToggleFavorite(item.id, !item.is_favorite); }}
-                            className="p-2"
-                        >
-                            <Ionicons 
-                                name={item.is_favorite ? "heart" : "heart-outline"} 
-                                size={22} 
-                                color={item.is_favorite ? "#FF9E7D" : "#333"} 
-                                style={{ opacity: item.is_favorite ? 1 : 0.2 }}
-                            />
-                        </TouchableOpacity>
-                        
-                        {(() => {
-                            const now = new Date();
-                            const entryDate = new Date(item.created_at);
-                            const diffInHours = (now.getTime() - entryDate.getTime()) / (1000 * 60 * 60);
-                            const canDelete = diffInHours <= 24;
-                            
-                            if (!canDelete) return null;
-
-                            return (
-                                <TouchableOpacity 
-                                    onPress={(e) => {
-                                        e.stopPropagation(); // Don't trigger card navigation
-                                        handleTrashPress();
-                                    }}
-                                    className="p-2"
-                                    disabled={isDeletingProp}
-                                >
-                                    <Animated.View style={trashAnimatedStyle}>
-                                        {isDeletingProp ? (
-                                            <View className="w-[22px] h-[22px] items-center justify-center">
-                                                <ActivityIndicator size="small" color="#FF9E7D" />
-                                            </View>
-                                        ) : (
-                                            <Ionicons name="trash-outline" size={22} color="#333" style={{ opacity: 0.2 }} />
-                                        )}
-                                    </Animated.View>
-                                </TouchableOpacity>
-                            );
-                        })()}
+                    <View 
+                        className="w-16 h-16 rounded-full items-center justify-center shadow-sm z-10 bg-white"
+                        style={{ shadowColor: '#00000010', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 2 }}
+                    >
+                        <View className="items-center justify-center">
+                            <Text className="text-[10px] font-q-bold text-text">
+                                {new Date(item.created_at).toLocaleDateString('en-US', { month: 'short' })}
+                            </Text>
+                            <Text className="text-xl font-q-bold text-text">
+                                {new Date(item.created_at).getDate()}
+                            </Text>
+                        </View>
                     </View>
-                </TouchableOpacity>
+
+                    <View className={`w-[1px] flex-1 ${isLast ? 'bg-transparent' : 'bg-inactive'}`} />
+                </View>
+
+                {/* Right Column: Entry Card */}
+                <View className="flex-1 pb-6">
+                    <TouchableOpacity 
+                        activeOpacity={0.9}
+                        onPress={() => {
+                            haptics.selection();
+                            (navigation as any).navigate('Memory', { entryId: item.id });
+                        }}
+                        className="bg-card rounded-[32px] p-6 shadow-[#0000000D] shadow-xl flex-1 justify-between"
+                        style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}
+                    >
+                        <View>
+                            <Text 
+                                className="font-q-medium text-base leading-6 text-text"
+                                numberOfLines={3}
+                            >
+                                {item.text}
+                            </Text>
+                        </View>
+                        
+                        <View className="flex-row justify-end mt-4 items-center space-x-4">
+                            <TouchableOpacity 
+                                onPress={() => { haptics.selection(); onToggleFavorite(item.id, !item.is_favorite); }}
+                                className="p-2"
+                            >
+                                <Ionicons 
+                                    name={item.is_favorite ? "heart" : "heart-outline"} 
+                                    size={22} 
+                                    color={item.is_favorite ? "#FF9E7D" : "#333"} 
+                                    style={{ opacity: item.is_favorite ? 1 : 0.2 }}
+                                />
+                            </TouchableOpacity>
+                            
+                            {(() => {
+                                const now = new Date();
+                                const entryDate = new Date(item.created_at);
+                                const diffInHours = (now.getTime() - entryDate.getTime()) / (1000 * 60 * 60);
+                                const canDelete = diffInHours <= 24;
+                                
+                                if (!canDelete) return null;
+
+                                return (
+                                    <TouchableOpacity 
+                                        onPress={(e) => {
+                                            e.stopPropagation();
+                                            handleTrashPress();
+                                        }}
+                                        className="p-2"
+                                        disabled={isDeletingProp}
+                                    >
+                                        <Animated.View style={trashAnimatedStyle}>
+                                            {isDeletingProp ? (
+                                                <View className="w-[22px] h-[22px] items-center justify-center">
+                                                    <ActivityIndicator size="small" color="#FF9E7D" />
+                                                </View>
+                                            ) : (
+                                                <Ionicons name="trash-outline" size={22} color="#333" style={{ opacity: 0.2 }} />
+                                            )}
+                                        </Animated.View>
+                                    </TouchableOpacity>
+                                );
+                            })()}
+                        </View>
+                    </TouchableOpacity>
+                </View>
             </View>
         </Animated.View>
     );
-}, (prev, next) => {
+};
+
+// Memoized item for FlashList recycling
+const MemoizedTimelineItem = React.memo(TimelineItem, (prev, next) => {
     return (
         prev.item.id === next.item.id &&
         prev.item.text === next.item.text &&
         prev.item.is_favorite === next.item.is_favorite &&
         prev.isDeletingProp === next.isDeletingProp &&
-        prev.isLast === next.isLast &&
-        prev.isFirst === next.isFirst
+        prev.index === next.index &&
+        prev.totalCount === next.totalCount
     );
 });
-
-
 
 export const JourneyScreen = () => {
     const { showAlert } = useAlert();
     const navigation = useNavigation();
-    const { height: viewportHeight } = useWindowDimensions();
     const { profile, isAnonymous, loading: profileLoading } = useProfile();
     const { 
         entries, 
@@ -276,13 +215,11 @@ export const JourneyScreen = () => {
     const [isRefreshing, setIsRefreshing] = useState(false);
     
     // Deletion states
-    const [deletingId, setDeletingId] = useState<string | null>(null); // ID of item pending confirmation
-    const [animatingIds, setAnimatingIds] = useState<Set<string>>(new Set()); // IDs currently animating out
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [animatingIds, setAnimatingIds] = useState<Set<string>>(new Set());
 
-    const scrollY = useSharedValue(0);
-    const scrollHandler = useAnimatedScrollHandler(event => {
-        scrollY.value = event.contentOffset.y;
-    });
+    // FlashList ref for layout animations
+    const listRef = useRef<FlashList<JournalEntry>>(null);
 
     const onRefresh = async () => {
         setIsRefreshing(true);
@@ -290,7 +227,6 @@ export const JourneyScreen = () => {
         await refreshEntries();
         setIsRefreshing(false);
     };
-
 
     const isProfileIncomplete = useMemo(() => {
         return !profile?.display_name || !profile?.onboarding_completed;
@@ -329,23 +265,36 @@ export const JourneyScreen = () => {
         const id = deletingId;
         setDeletingId(null);
         
+        // Prepare FlashList for layout animation
+        listRef.current?.prepareForLayoutAnimationRender();
+        
         // Start animation
         setAnimatingIds(prev => new Set(prev).add(id));
     };
 
     const handleAnimationComplete = async (id: string) => {
-        // Remove from animating set
         setAnimatingIds(prev => {
             const next = new Set(prev);
             next.delete(id);
             return next;
         });
 
-        // Call context to delete (update state and DB)
         await deleteEntry(id);
     };
 
-    const renderHeader = () => (
+    const renderItem = ({ item, index }: { item: JournalEntry; index: number }) => (
+        <MemoizedTimelineItem 
+            item={item} 
+            index={index}
+            totalCount={filteredEntries.length}
+            onToggleFavorite={toggleFavorite}
+            onDelete={handleTrashPress} 
+            isDeletingProp={animatingIds.has(item.id)}
+            onDeleteAnimationComplete={handleAnimationComplete}
+        />
+    );
+
+    const ListHeader = useMemo(() => (
         <View>
             {/* Profile Nudge */}
             <ProfileNudge 
@@ -404,7 +353,33 @@ export const JourneyScreen = () => {
                 </TouchableOpacity>
             </View>
         </View>
-    );
+    ), [isAnonymous, isProfileIncomplete, profileLoading, entries.length, filter, navigation]);
+
+    const ListEmpty = useMemo(() => (
+        <View className="items-center justify-center py-20">
+            {loading ? (
+                <ActivityIndicator size="large" color="#FF9E7D" />
+            ) : (
+                <>
+                    <Ionicons name="journal-outline" size={48} color="#E0E0E0" />
+                    <Text className="text-lg font-q-medium text-muted mt-4 text-center">
+                        {filter === 'favorites' ? "No favorite entries yet." : "Your journey is just beginning."}
+                    </Text>
+                </>
+            )}
+        </View>
+    ), [loading, filter]);
+
+    const ListFooter = useMemo(() => (
+        loadingMore ? (
+            <View className="py-8 items-center">
+                <ActivityIndicator color="#FF9E7D" size="large" />
+                <Text className="text-muted font-q-bold mt-4">Discovering more memories...</Text>
+            </View>
+        ) : (
+            <View className="h-24" />
+        )
+    ), [loadingMore]);
 
     return (
         <>
@@ -413,80 +388,29 @@ export const JourneyScreen = () => {
                 <TopNav title="Your Journey" />
             </View>
 
-            <Animated.FlatList
+            <FlashList
+                ref={listRef}
                 data={filteredEntries}
-                renderItem={({ item, index }) => (
-                    <TimelineItem 
-                        item={item} 
-                        index={index}
-                        scrollY={scrollY}
-                        viewportHeight={viewportHeight}
-                        isFirst={index === 0}
-                        isLast={index === filteredEntries.length - 1} 
-                        onToggleFavorite={toggleFavorite}
-                        onDelete={handleTrashPress} 
-                        isDeletingProp={animatingIds.has(item.id)}
-                        onDeleteAnimationComplete={handleAnimationComplete}
-                    />
-                )}
+                renderItem={renderItem}
                 keyExtractor={item => item.id}
-                ListHeaderComponent={renderHeader}
-                contentContainerStyle={{ paddingBottom: 120, paddingHorizontal: 24, paddingTop: 0 }}
+                estimatedItemSize={ITEM_HEIGHT}
+                ListHeaderComponent={ListHeader}
+                ListEmptyComponent={ListEmpty}
+                ListFooterComponent={ListFooter}
+                contentContainerStyle={{ paddingBottom: 120, paddingHorizontal: 24 }}
                 showsVerticalScrollIndicator={false}
-                onScroll={scrollHandler}
-                scrollEventThrottle={16}
                 
-                // PERFORMANCE OPTIMIZATIONS
-                getItemLayout={(_, index) => ({
-                    length: ITEM_HEIGHT,
-                    offset: ITEM_HEIGHT * index,
-                    index,
-                })}
-                windowSize={5}
-                removeClippedSubviews={true}
+                // Pull to refresh
+                onRefresh={onRefresh}
+                refreshing={isRefreshing}
                 
-                // LAZY LOADING
+                // Infinite scroll
                 onEndReached={() => {
                     if (filter === 'all' && hasMore) {
                         loadMore();
                     }
                 }}
-                onEndReachedThreshold={1.0}
-                ListFooterComponent={
-                    loadingMore ? (
-                        <View className="py-20 items-center">
-                            <ActivityIndicator color="#FF9E7D" size="large" />
-                            <Text className="text-muted font-q-bold mt-4">Discovering more memories...</Text>
-                        </View>
-                    ) : (
-                        <View className="h-40" /> // Extra padding if not loading
-                    )
-                }
-
-                // REFRESH
-                refreshControl={
-                    <RefreshControl 
-                        refreshing={isRefreshing} 
-                        onRefresh={onRefresh}
-                        colors={['#FF9E7D']}
-                        tintColor="#FF9E7D"
-                    />
-                }
-
-                ListEmptyComponent={
-                    <View className="items-center justify-center py-20">
-                        {loading ? (
-                            <ActivityIndicator size="large" color="#FF9E7D" />
-                        ) : (
-                            <>
-                                <Ionicons name="journal-outline" size={48} color="#E0E0E0" />
-                                <Text className="text-lg font-q-medium text-muted mt-4 text-center">
-                                    {filter === 'favorites' ? "No favorite entries yet." : "Your journey is just beginning."}
-                                </Text>
-                            </>
-                        )}
-                    </View>
-                }
+                onEndReachedThreshold={0.5}
             />
         </Layout>
         
