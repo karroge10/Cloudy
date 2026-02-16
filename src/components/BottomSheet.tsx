@@ -8,7 +8,7 @@ import {
     PanResponder, 
     Dimensions,
     TouchableWithoutFeedback,
-    KeyboardAvoidingView,
+    Keyboard,
     Platform
 } from 'react-native';
 import { haptics } from '../utils/haptics';
@@ -29,6 +29,37 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
     children 
 }) => {
     const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+    const keyboardOffset = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+        const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+        const showSub = Keyboard.addListener(showEvent, (e) => {
+            Animated.spring(keyboardOffset, {
+                toValue: -e.endCoordinates.height,
+                useNativeDriver: true,
+                damping: 25,
+                stiffness: 200,
+            }).start();
+        });
+
+        const hideSub = Keyboard.addListener(hideEvent, () => {
+            Animated.spring(keyboardOffset, {
+                toValue: 0,
+                useNativeDriver: true,
+                damping: 25,
+                stiffness: 200,
+            }).start();
+        });
+
+        return () => {
+            showSub.remove();
+            hideSub.remove();
+        };
+    }, []);
+
+    const combinedTranslateY = Animated.add(translateY, keyboardOffset);
     
     const backdropOpacity = translateY.interpolate({
         inputRange: [0, SCREEN_HEIGHT],
@@ -115,48 +146,51 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
             animationType="none"
             onRequestClose={closeModal}
         >
-                <KeyboardAvoidingView 
-                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                    className="flex-1 justify-end"
-                >
-                    <TouchableWithoutFeedback onPress={() => { haptics.selection(); closeModal(); }}>
-                        <Animated.View 
-                            style={{ opacity: backdropOpacity }} 
-                            className="absolute inset-0 bg-black/40" 
-                        />
-                    </TouchableWithoutFeedback>
-                    
+            <View className="flex-1 justify-end">
+                <TouchableWithoutFeedback onPress={() => { haptics.selection(); closeModal(); }}>
                     <Animated.View 
-                        {...panResponder.panHandlers}
-                        collapsable={false}
-                        style={{ 
-                            transform: [{ translateY }],
-                            maxHeight: SCREEN_HEIGHT * 0.9
-                        }}
-                        className="bg-background rounded-t-[44px] shadow-2xl overflow-hidden"
-                    >
-                        {/* Entire container is now the swipe area */}
-                        <View pointerEvents="box-none">
-                            {/* Visual Handle Bar */}
-                            <View className="items-center pt-4 pb-2 w-full">
-                                <View className="w-16 h-1.5 bg-text/10 rounded-full" />
-                            </View>
-
-                            {title && (
-                                <View className="px-8 pt-4 pb-2">
-                                    <Text className="text-2xl font-q-bold text-text">
-                                        {title}
-                                    </Text>
-                                </View>
-                            )}
-
-                            {/* Content area */}
-                            <View className="px-8 pb-12 pt-4" pointerEvents="box-none">
-                                {children}
-                            </View>
+                        style={{ opacity: backdropOpacity }} 
+                        className="absolute inset-0 bg-black/40" 
+                    />
+                </TouchableWithoutFeedback>
+                
+                <Animated.View 
+                    {...panResponder.panHandlers}
+                    collapsable={false}
+                    style={{ 
+                        transform: [{ translateY: combinedTranslateY }],
+                        maxHeight: SCREEN_HEIGHT * 0.9
+                    }}
+                    className="bg-background rounded-t-[44px] shadow-2xl"
+                >
+                    {/* Entire container is now the swipe area */}
+                    <View pointerEvents="box-none">
+                        {/* Visual Handle Bar */}
+                        <View className="items-center pt-4 pb-2 w-full">
+                            <View className="w-16 h-1.5 bg-text/10 rounded-full" />
                         </View>
-                    </Animated.View>
-                </KeyboardAvoidingView>
+
+                        {title && (
+                            <View className="px-8 pt-4 pb-2">
+                                <Text className="text-2xl font-q-bold text-text">
+                                    {title}
+                                </Text>
+                            </View>
+                        )}
+
+                        {/* Content area */}
+                        <View className="px-8 pb-12 pt-4" pointerEvents="box-none">
+                            {children}
+                        </View>
+                    </View>
+
+                    {/* Bottom Filler: covers the gap when the sheet slides up for the keyboard */}
+                    <View 
+                        className="absolute top-[98%] left-0 right-0 height-[1000px] bg-background" 
+                        style={{ height: SCREEN_HEIGHT }}
+                    />
+                </Animated.View>
+            </View>
         </Modal>
     );
 };
