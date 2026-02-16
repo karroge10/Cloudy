@@ -277,7 +277,7 @@ export default function App() {
         <SafeAreaProvider>
 
         <AlertProvider>
-          <ProfileProvider>
+          <ProfileProvider session={session}>
             <JournalProvider session={session}>
               <NavigationContainer 
                 theme={CloudyTheme} 
@@ -296,7 +296,7 @@ export default function App() {
                 }}
               >
 
-                {fontsLoaded && !isAuthLoading ? (
+                {fontsLoaded && !isAuthLoading && isBioLocked !== null ? (
                     <>
                       <AppContent />
                       <AssetWarmup />

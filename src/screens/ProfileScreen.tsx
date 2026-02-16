@@ -36,7 +36,7 @@ import { ActivityIndicator } from 'react-native';
 export const ProfileScreen = () => {
     const { showAlert } = useAlert();
     const { streak, rawStreakData } = useJournal();
-    const { profile, isAnonymous, loading: profileLoading, updateProfile } = useProfile();
+    const { profile, isAnonymous, userId, loading: profileLoading, updateProfile } = useProfile();
     const { trackEvent } = useAnalytics();
 
     
@@ -120,14 +120,13 @@ export const ProfileScreen = () => {
 
     const handleDeleteAccount = async () => {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
+            if (!userId) return;
 
             // 1. Delete the profile (posts will cascade delete)
             const { error: profileError } = await supabase
                 .from('profiles')
                 .delete()
-                .eq('id', user.id);
+                .eq('id', userId);
 
             if (profileError) throw profileError;
 

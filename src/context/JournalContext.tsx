@@ -7,6 +7,7 @@ import { haptics } from '../utils/haptics';
 import { notifications } from '../utils/notifications';
 import { useAlert } from './AlertContext';
 import { posthog } from '../lib/posthog';
+import { encryption } from '../utils/encryption';
 
 
 export interface JournalEntry {
@@ -86,7 +87,12 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
             .range(pageNum * PAGE_SIZE, (pageNum + 1) * PAGE_SIZE - 1);
 
         if (!error && data) {
-            setEntries(prev => clearExisting ? data : [...prev, ...data]);
+            // Decrypt entries
+            const decryptedData = await Promise.all(data.map(async (entry: JournalEntry) => ({
+                ...entry,
+                text: await encryption.decrypt(entry.text)
+            })));
+            setEntries(prev => clearExisting ? decryptedData : [...prev, ...decryptedData]);
             setHasMore(data.length === PAGE_SIZE);
         }
         
@@ -168,11 +174,13 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
     const addEntry = async (text: string) => {
         if (!session?.user?.id) return;
 
+        const encryptedText = await encryption.encrypt(text);
+
         const { data, error } = await supabase
             .from('posts')
             .insert([{
                 user_id: session.user.id,
-                text: text,
+                text: encryptedText,
                 is_favorite: false,
                 created_at: new Date().toISOString()
             }])
@@ -185,8 +193,10 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
                 length: text.length,
                 current_streak: streak + 1 // +1 because the streak recalculation happens in useEffect after this
             });
-            setEntries(prev => [data, ...prev]);
-
+            
+            // For local state, keep the unencrypted text
+            const localEntry = { ...data, text: text };
+            setEntries(prev => [localEntry, ...prev]);
 
             setMetadata(prev => [{ id: data.id, created_at: data.created_at }, ...prev]);
         }

@@ -13,10 +13,6 @@ interface MascotCardProps {
 
 export const MascotCard = ({ name, asset, isSelected, isLocked, onPress }: MascotCardProps) => {
     const handlePress = () => {
-        if (isLocked) {
-            haptics.error();
-            return;
-        }
         haptics.selection();
         onPress();
     };
@@ -24,6 +20,7 @@ export const MascotCard = ({ name, asset, isSelected, isLocked, onPress }: Masco
     return (
         <TouchableOpacity
             onPress={handlePress}
+            disabled={isLocked}
             delayPressIn={0}
             activeOpacity={isLocked ? 1 : 0.7}
             className={`w-[30%] aspect-square mb-4 rounded-[32px] items-center justify-center border-2 transition-transform ${

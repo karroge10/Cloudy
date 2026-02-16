@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { DeviceEventEmitter } from 'react-native';
+import { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { haptics } from '../utils/haptics';
 import { notifications } from '../utils/notifications';
@@ -22,6 +23,7 @@ interface Profile {
 interface ProfileContextType {
     profile: Profile | null;
     isAnonymous: boolean;
+    userId: string | null;
     loading: boolean;
     refreshProfile: () => Promise<void>;
     updateProfile: (updates: Partial<Profile>) => Promise<void>;
@@ -29,28 +31,29 @@ interface ProfileContextType {
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 
-export const ProfileProvider = ({ children }: { children: React.ReactNode }) => {
+export const ProfileProvider = ({ children, session }: { children: React.ReactNode, session: Session | null }) => {
     const [profile, setProfile] = useState<Profile | null>(null);
     const [isAnonymous, setIsAnonymous] = useState(false);
     const [loading, setLoading] = useState(true);
 
+    const userId = session?.user?.id || null;
+
     const fetchProfile = async () => {
+        if (!userId) {
+            setProfile(null);
+            setIsAnonymous(false);
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
-                setProfile(null);
-                setIsAnonymous(false);
-                setLoading(false); // Ensure loading is set to false if no user
-                return;
-            }
-
-            setIsAnonymous(user.is_anonymous || false);
+            setIsAnonymous(session?.user?.is_anonymous || false);
 
             const { data, error } = await supabase
                 .from('profiles')
-                .select('*')
-                .eq('id', user.id)
+                .select('display_name, haptics_enabled, security_lock_enabled, onboarding_completed, reminder_time, age, gender, country, mascot_name, goals, struggles')
+                .eq('id', userId)
                 .single();
 
             if (data && !error) {
@@ -69,39 +72,36 @@ export const ProfileProvider = ({ children }: { children: React.ReactNode }) => 
                 };
                 setProfile(mappedProfile);
             
-            // Sync current settings to services
-            haptics.setEnabled(mappedProfile.haptics_enabled);
-            notifications.scheduleDailyReminder(mappedProfile.reminder_time, false);
-            
-            // Cache lock state
-            if (mappedProfile.security_lock_enabled) {
-                await AsyncStorage.setItem('security_lock_enabled', 'true');
+                // Sync current settings to services
+                haptics.setEnabled(mappedProfile.haptics_enabled);
+                notifications.scheduleDailyReminder(mappedProfile.reminder_time, false);
+                
+                // Cache lock state
+                if (mappedProfile.security_lock_enabled) {
+                    await AsyncStorage.setItem('security_lock_enabled', 'true');
+                } else {
+                    await AsyncStorage.removeItem('security_lock_enabled');
+                }
+            } else if (error) {
+                console.error('[Profile] Error fetching profile:', error);
+                setProfile(null);
             } else {
-                await AsyncStorage.removeItem('security_lock_enabled');
+                setProfile(null);
             }
-        } else if (error) {
-            console.error('[Profile] Error fetching profile:', error);
+            setLoading(false);
+        } catch (error) {
+            console.error('[Profile] Unexpected error during profile fetch:', error);
             setProfile(null);
-        } else {
-            setProfile(null);
+            setLoading(false);
         }
-        setLoading(false);
-    } catch (error) {
-        console.error('[Profile] Unexpected error during profile fetch:', error);
-        setProfile(null);
-        setLoading(false);
-    }
     };
 
     const updateProfile = async (updates: Partial<Profile>) => {
+        if (!userId) return;
+
         // 1. Optimistic UI Update
         if (profile) {
             setProfile({ ...profile, ...updates });
-        } else if (updates.onboarding_completed) {
-            // If we are creating the profile for the first time during onboarding
-            // we can't do a full optimistic update easily (missing other fields), 
-            // but we MUST ensure we don't block the UI.
-            // We'll trigger a fetch after the upsert.
         }
         
         // Fire immediate side effects
@@ -118,12 +118,9 @@ export const ProfileProvider = ({ children }: { children: React.ReactNode }) => 
         }
 
         // 2. Database Sync
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
         const { error } = await supabase
             .from('profiles')
-            .upsert({ ...updates, id: user.id, updated_at: new Date() });
+            .upsert({ ...updates, id: userId, updated_at: new Date() });
 
         if (error) {
             console.error('Error updating profile:', error);
@@ -140,23 +137,13 @@ export const ProfileProvider = ({ children }: { children: React.ReactNode }) => 
 
         const refreshListener = DeviceEventEmitter.addListener('refresh_profile', fetchProfile);
 
-        // Optional: Listen for auth state changes to re-fetch
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            if (session) {
-                fetchProfile();
-            } else {
-                setProfile(null);
-            }
-        });
-
         return () => {
-            subscription.unsubscribe();
             refreshListener.remove();
         };
-    }, []);
+    }, [userId]);
 
     return (
-        <ProfileContext.Provider value={{ profile, isAnonymous, loading, refreshProfile: fetchProfile, updateProfile }}>
+        <ProfileContext.Provider value={{ profile, isAnonymous, userId, loading, refreshProfile: fetchProfile, updateProfile }}>
             {children}
         </ProfileContext.Provider>
     );

@@ -24,7 +24,7 @@ export const HomeScreen = () => {
     const { showAlert } = useAlert();
     const navigation = useNavigation<any>();
     const { addEntry, streak } = useJournal();
-    const { profile, updateProfile } = useProfile();
+    const { profile, updateProfile, isAnonymous, userId } = useProfile();
     const { trackEvent } = useAnalytics();
 
     
@@ -79,9 +79,8 @@ export const HomeScreen = () => {
             
             Keyboard.dismiss();
             
-            // Get user for anon check
-            const { data: { user } } = await supabase.auth.getUser();
-            const isAnon = user?.is_anonymous;
+            // Use isAnonymous from profile context instead of fetching from Supabase
+            const isAnon = isAnonymous;
 
             const likelyStreak = streak + 1; 
             const hasSeenFirstEntry = await AsyncStorage.getItem('has_seen_first_entry');

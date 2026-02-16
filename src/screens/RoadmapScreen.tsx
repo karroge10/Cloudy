@@ -35,7 +35,7 @@ export const RoadmapScreen = () => {
 
             <ScrollView 
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 120 }}
+                contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}
             >
                 {/* Header Section */}
                 <View className="items-center mt-4 mb-10">

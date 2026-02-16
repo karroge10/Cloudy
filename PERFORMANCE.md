@@ -45,11 +45,11 @@ This document tracks identified performance bottlenecks and unnecessary request 
     *   **Windowing**: Set `windowSize={5}` and `removeClippedSubviews={true}` to keep memory usage low.
 
 ## 🛠️ Performance Checklist
-- [ ] Centralize `getUser()` / `userId` access.
-- [ ] Migrate `JourneyScreen` to use `ProfileContext`.
-- [ ] Move `deleted_at` filtering to server-side query.
-- [ ] Implement pagination in `JournalContext`.
-- [ ] Audit all `.select('*')` calls.
-- [ ] Implement `getItemLayout` for `JourneyScreen` (ITEM_HEIGHT = 180).
-- [ ] Wrap `TimelineItem` in `React.memo` for render optimization.
-- [ ] Add `RefreshControl` (Pull-to-Refresh) with `haptics.impactLight()`.
+- [x] Centralize `getUser()` / `userId` access.
+- [x] Migrate `JourneyScreen` to use `ProfileContext`.
+- [x] Move `deleted_at` filtering to server-side query.
+- [x] Implement pagination in `JournalContext`.
+- [x] Audit all `.select('*')` calls.
+- [x] Implement `getItemLayout` for `JourneyScreen` (ITEM_HEIGHT = 180).
+- [x] Wrap `TimelineItem` in `React.memo` for render optimization.
+- [x] Add `RefreshControl` (Pull-to-Refresh) with `haptics.impactLight()`.
