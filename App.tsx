@@ -89,14 +89,12 @@ const RootNavigator = ({ session, isBioLocked, isColdStartWithSession, isAuthLoa
     // If we have a profile that is done with onboarding, GO to app stack.
     if (profile?.onboarding_completed) {
       if (viewMode !== 'app') {
-        console.log('[Navigator] Onboarding complete, switching to app stack');
         setViewMode('app');
       }
       return;
     }
 
     // STICKY APP: If we are already in the app, don't leave it unless session is gone.
-    // This prevents flickering during background profile refreshes.
     if (viewMode === 'app') return;
 
     // Stage 3: Onboarding or Auth Stack
@@ -106,26 +104,13 @@ const RootNavigator = ({ session, isBioLocked, isColdStartWithSession, isAuthLoa
         if (viewMode !== 'onboarding') setViewMode('onboarding');
       } else {
         // Missing profile entirely (Fresh Anonymous User/New Account)
-        // Only jump to onboarding if we are currently in 'loading' or 'auth'
-        if (viewMode !== 'auth' && viewMode !== 'onboarding') {
-          setViewMode('onboarding');
-        }
+        if (viewMode !== 'onboarding') setViewMode('onboarding');
       }
-    } else if (isColdStartWithSession && viewMode !== 'loading') {
-       // Stage 4: Still loading on cold start
-       setViewMode('loading');
     }
-  }, [session, profileLoading, profile?.onboarding_completed, viewMode, isColdStartWithSession, isAuthLoading, fontsLoaded, isBioLocked]);
+  }, [session, profileLoading, profile?.onboarding_completed, isAuthLoading, fontsLoaded, isBioLocked]);
 
-  // CRITICAL: Prevent ANY frame of private content leakage.
-  // If we should be locked or are still determining the state, show the absolute minimum.
-  if (viewMode === 'loading' || (profileLoading && session && isColdStartWithSession)) {
-    return (
-      <View style={{ flex: 1, backgroundColor: '#FFF9F0' }}>
-        {/* Total empty screen keeps navigation stacks from mounting/rendering hidden data */}
-      </View>
-    );
-  }
+  // We rely on the button loaders and screen transitions for UI feedback.
+  // Full-screen empty blocks are disruptive to navigation states.
 
   return (
     <LockScreen 
@@ -300,8 +285,8 @@ export default function App() {
         <SafeAreaProvider>
 
         <AlertProvider>
-          <ProfileProvider session={session} key={session?.user?.id || 'guest'}>
-            <JournalProvider session={session} key={session?.user?.id || 'guest'}>
+          <ProfileProvider session={session}>
+            <JournalProvider session={session}>
               <NavigationContainer 
                 theme={CloudyTheme} 
                 ref={navigationRef}

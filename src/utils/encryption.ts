@@ -10,22 +10,34 @@ const ENCRYPTION_PREFIX = 'v1:aes:';
  */
 class EncryptionService {
     private masterKey: string | null = null;
+    private initPromise: Promise<void> | null = null;
 
     /**
      * Initializes the encryption service by fetching or generating the master key.
      */
     async initialize(): Promise<void> {
         if (this.masterKey) return;
+        if (this.initPromise) return this.initPromise;
 
-        let key = await SecureStore.getItemAsync(MASTER_KEY_ALIAS);
-        
-        if (!key) {
-            // Generate a random 256-bit key
-            key = CryptoJS.lib.WordArray.random(32).toString();
-            await SecureStore.setItemAsync(MASTER_KEY_ALIAS, key);
-        }
-        
-        this.masterKey = key;
+        this.initPromise = (async () => {
+            try {
+                let key = await SecureStore.getItemAsync(MASTER_KEY_ALIAS);
+                
+                if (!key) {
+                    // Generate a random 256-bit key
+                    key = CryptoJS.lib.WordArray.random(32).toString();
+                    await SecureStore.setItemAsync(MASTER_KEY_ALIAS, key);
+                }
+                
+                this.masterKey = key;
+            } catch (error) {
+                console.error('[Encryption] Initialization failed:', error);
+            } finally {
+                this.initPromise = null;
+            }
+        })();
+
+        return this.initPromise;
     }
 
     /**

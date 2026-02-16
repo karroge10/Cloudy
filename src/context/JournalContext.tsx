@@ -7,7 +7,7 @@ import { calculateStreak } from '../utils/streakUtils';
 import { haptics } from '../utils/haptics';
 import { notifications } from '../utils/notifications';
 import { useAlert } from './AlertContext';
-import { posthog } from '../lib/posthog';
+import { posthog, identifyUser } from '../lib/posthog';
 import { encryption } from '../utils/encryption';
 
 
@@ -129,6 +129,7 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
     useEffect(() => {
         const handleMerge = async () => {
             const currentUserId = session?.user?.id;
+            const currentUserEmail = session?.user?.email;
             if (!currentUserId || session.user.is_anonymous) return;
 
             try {
@@ -143,9 +144,14 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
                     if (error) {
                         console.warn('Merge failed:', error.message);
                         if (activeUserIdRef.current === currentUserId) setLoading(false);
+                        // Identify anyway so analytics continues
+                        identifyUser(currentUserId, currentUserEmail || undefined);
                     } else {
                         await SecureStore.deleteItemAsync('pending_merge_anonymous_id');
                         
+                        // Analytics identity sync
+                        identifyUser(currentUserId, currentUserEmail || undefined);
+
                         // Re-fetch now that data has moved
                         if (activeUserIdRef.current === currentUserId) {
                             await refreshEntries();
@@ -157,10 +163,14 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
                             );
                         }
                     }
+                } else {
+                    // Standard login (no merge pending)
+                    identifyUser(currentUserId, currentUserEmail || undefined);
                 }
             } catch (err) {
                 console.error('Merge check error:', err);
                 if (activeUserIdRef.current === currentUserId) setLoading(false);
+                identifyUser(currentUserId, currentUserEmail || undefined);
             }
         };
 

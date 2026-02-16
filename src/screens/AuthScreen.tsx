@@ -56,7 +56,6 @@ export const AuthScreen = () => {
         });
 
         if (data.user) {
-            identifyUser(data.user.id, data.user.email ?? undefined);
             trackEvent('user_signed_in', { method: 'email' });
             
             // CONVERSION GUARD: Only navigate manually if we are securing a guest journey.
@@ -90,7 +89,6 @@ export const AuthScreen = () => {
                 });
 
                 if (data.user) {
-                    identifyUser(data.user.id, data.user.email ?? undefined);
                     trackEvent('user_converted_from_anonymous', { method: 'email' });
                 }
 
@@ -171,7 +169,6 @@ export const AuthScreen = () => {
                 });
                 
                 if (data.user) {
-                    identifyUser(data.user.id, data.user.email ?? undefined);
                     trackEvent('user_signed_in', { method: 'google', is_conversion: !!currentUser?.is_anonymous });
 
                     // CONVERSION GUARD: Only navigate manually if we are securing a guest journey.
