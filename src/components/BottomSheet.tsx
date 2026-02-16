@@ -69,21 +69,22 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
 
     const panResponder = useRef(
         PanResponder.create({
-            // Claim the touch if it hits the background area
-            onStartShouldSetPanResponder: () => true,
+            // Don't claim touch immediately - let children (buttons) receive taps first
+            onStartShouldSetPanResponder: () => false,
             onStartShouldSetPanResponderCapture: () => false,
             
-            // Steal the touch if moving down, even from children
-            onMoveShouldSetPanResponderCapture: (_, gestureState) => {
-                return gestureState.dy > 10 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
-            },
-            
+            // Claim touch when movement starts (for dragging)
             onMoveShouldSetPanResponder: (_, gestureState) => {
                 return Math.abs(gestureState.dy) > 5;
             },
+            
+            // Capture from children when clearly swiping down to dismiss
+            onMoveShouldSetPanResponderCapture: (_, gestureState) => {
+                return gestureState.dy > 10 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
+            },
 
-            onPanResponderGrant: (evt) => {
-                console.log('[BottomSheet] Responder Granted at Y:', evt.nativeEvent.locationY);
+            onPanResponderGrant: () => {
+                // Touch started
             },
             onPanResponderMove: (_, gestureState) => {
                 if (gestureState.dy > 0) {
@@ -186,7 +187,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
 
                     {/* Bottom Filler: covers the gap when the sheet slides up for the keyboard */}
                     <View 
-                        className="absolute top-[98%] left-0 right-0 height-[1000px] bg-background" 
+                        className="absolute top-[98%] left-0 right-0" 
                         style={{ height: SCREEN_HEIGHT }}
                     />
                 </Animated.View>
@@ -194,6 +195,3 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         </Modal>
     );
 };
-
-
-

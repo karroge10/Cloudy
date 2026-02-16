@@ -1,204 +1,428 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Share, ScrollView } from 'react-native';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { 
+    View, Text, TouchableOpacity, Share, ScrollView, 
+    ActivityIndicator, FlatList, Dimensions, 
+    NativeSyntheticEvent, NativeScrollEvent, Image,
+    useWindowDimensions
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { MASCOTS } from '../constants/Assets';
 import { Layout } from '../components/Layout';
 import { TopNav } from '../components/TopNav';
 import { haptics } from '../utils/haptics';
-import { useJournal } from '../context/JournalContext';
+import { useJournal, JournalEntry } from '../context/JournalContext';
 import { MascotImage } from '../components/MascotImage';
+import { BottomSheet } from '../components/BottomSheet';
+import { Button } from '../components/Button';
+import { navigationRef } from '../utils/navigation';
 import Animated, { 
     useSharedValue, 
     useAnimatedStyle, 
-    withTiming, 
     withSequence, 
     withSpring,
-    runOnJS
+    useAnimatedScrollHandler,
+    interpolate,
+    Extrapolation,
+    SlideInDown,
+    SlideOutUp
 } from 'react-native-reanimated';
 
-export const MemoryScreen = () => {
-    const navigation = useNavigation<any>();
-    const route = useRoute<any>();
-    const { entries, toggleFavorite } = useJournal();
-    const [currentIndex, setCurrentIndex] = useState(0);
-    
-    // Filter non-deleted entries
-    const journalEntries = entries.filter(e => !e.deleted_at);
+const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
 
-    // Initial effect to jump to a specific entry if entryId is provided in navigation params
-    useEffect(() => {
-        if (route.params?.entryId && journalEntries.length > 0) {
-            const index = journalEntries.findIndex(e => e.id === route.params.entryId);
-            if (index !== -1) {
-                setCurrentIndex(index);
-            }
-        }
-    }, [route.params?.entryId, journalEntries.length]);
-    
-    const contentOpacity = useSharedValue(1);
-    const contentScale = useSharedValue(1);
+const GENERIC_TITLES = [
+    "A moment from your journey",
+    "A thought to remember",
+    "A piece of your story",
+    "Reflecting on the day",
+    "A mindful capture",
+    "Your journey in words",
+    "A thought to keep",
+    "Personal reflection"
+];
+
+// Memoized Item Component moved outside
+const MemoryItem = React.memo(({ 
+    item, 
+    onToggleFavorite, 
+    onDelete, 
+    cardWidth, 
+    screenWidth,
+    getPrompt 
+}: { 
+    item: JournalEntry, 
+    onToggleFavorite: (item: JournalEntry) => void, 
+    onDelete: (id: string) => void,
+    cardWidth: number,
+    screenWidth: number,
+    getPrompt: (item: JournalEntry) => string
+}) => {
+    const now = new Date();
+    const entryDate = new Date(item.created_at);
+    const diffInHours = (now.getTime() - entryDate.getTime()) / (1000 * 60 * 60);
+    const canDelete = diffInHours <= 24;
+
     const heartScale = useSharedValue(1);
+    const animatedHeartStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: heartScale.value }]
+    }));
 
-    if (journalEntries.length === 0) {
-        return (
-            <Layout backgroundColors={['#FFF9F0', '#fff1db']}>
-                <View className="px-6 pt-4">
-                    <TopNav title="No Memories Yet" onBack={() => navigation.goBack()} />
+    const handleFavorite = () => {
+        onToggleFavorite(item);
+        heartScale.value = withSequence(withSpring(1.4), withSpring(1));
+    };
+
+    return (
+        <View style={{ width: screenWidth, alignItems: 'center', justifyContent: 'center' }}>
+            <View 
+                className="bg-card rounded-[48px] p-8 shadow-sm"
+                style={{ height: 380, width: cardWidth }}
+            >
+                <View style={{ flex: 1 }}>
+                    <View className="absolute -top-2 -left-2">
+                        <Text className="text-[#FF9E7D15] text-7xl font-q-bold">"</Text>
+                    </View>
+                    
+                    <Text className="text-xl font-q-bold text-text mb-4 px-2 leading-7">
+                        {getPrompt(item)}
+                    </Text>
+                    
+                    <ScrollView showsVerticalScrollIndicator={false}>
+                        <Text className="text-lg font-q-medium text-text/70 leading-relaxed px-2">
+                            {item.text}
+                        </Text>
+                    </ScrollView>
+
+                    <View className="flex-row justify-between items-center pt-4 border-t border-primary/10 mt-2">
+                        <View className="flex-row items-center bg-[#FF9E7D10] px-4 py-2 rounded-full">
+                            <Ionicons name="time-outline" size={16} color="#FF9E7D" />
+                            <Text className="text-primary font-q-semibold ml-2 text-sm">
+                                {new Date(item.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                            </Text>
+                        </View>
+                        <View className="flex-row items-center space-x-1">
+                            <TouchableOpacity 
+                                onPress={handleFavorite}
+                                className="p-2"
+                            >
+                                <Animated.View style={animatedHeartStyle}>
+                                    <Ionicons 
+                                        name={item.is_favorite ? "heart" : "heart-outline"} 
+                                        size={22} 
+                                        color={item.is_favorite ? "#FF9E7D" : "#333"} 
+                                        style={{ opacity: item.is_favorite ? 1 : 0.2 }}
+                                    />
+                                </Animated.View>
+                            </TouchableOpacity>
+                            
+                            {canDelete && (
+                                <TouchableOpacity 
+                                    onPress={() => onDelete(item.id)}
+                                    className="p-2"
+                                >
+                                    <Ionicons 
+                                        name="trash-outline" 
+                                        size={22} 
+                                        color="#333" 
+                                        style={{ opacity: 0.2 }} 
+                                    />
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    </View>
                 </View>
-                <View className="flex-1 items-center justify-center px-10">
-                    <MascotImage source={MASCOTS.SAD} className="w-64 h-64 mb-6" resizeMode="contain" />
-                    <Text className="text-2xl font-q-bold text-text text-center mb-4">You haven't written anything yet</Text>
-                    <Text className="text-lg font-q-medium text-muted text-center">Start your journey on the home screen!</Text>
+            </View>
+        </View>
+    );
+}, (prev, next) => {
+    return prev.item.id === next.item.id && 
+           prev.item.is_favorite === next.item.is_favorite &&
+           prev.item.text === next.item.text &&
+           prev.cardWidth === next.cardWidth &&
+           prev.screenWidth === next.screenWidth;
+});
+
+export const MemoryScreen = () => {
+    const { width: SCREEN_WIDTH } = useWindowDimensions();
+    const CARD_WIDTH = SCREEN_WIDTH - 48;
+
+    const getNavigation = () => {
+        try {
+            return useNavigation<any>();
+        } catch (e) {
+            return navigationRef as any;
+        }
+    };
+    
+    const navigation = getNavigation();
+    const route = useRoute<any>();
+    const { entries, toggleFavorite, deleteEntry, rawStreakData, hasMore, loadMore } = useJournal();
+    
+    // 2. State
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const listRef = useRef<FlatList>(null);
+    
+    // 3. Data Prep
+    const journalEntries = useMemo(() => 
+        entries.filter(e => !e.deleted_at), 
+    [entries]);
+
+    const totalCount = rawStreakData.length;
+
+    // 4. Initial Scroll Sync
+    const initialIndex = useMemo(() => {
+        const entryId = route.params?.entryId;
+        if (entryId && journalEntries.length > 0) {
+            return journalEntries.findIndex(e => e.id === entryId);
+        }
+        return 0;
+    }, [route.params?.entryId, journalEntries]);
+
+    useEffect(() => {
+        if (initialIndex !== -1 && journalEntries.length > 0) {
+            setCurrentIndex(initialIndex);
+            
+            const timer = setTimeout(() => {
+                listRef.current?.scrollToIndex({ 
+                    index: initialIndex, 
+                    animated: false 
+                });
+            }, 50);
+            return () => clearTimeout(timer);
+        }
+    }, [initialIndex, journalEntries.length]);
+
+    const getPromptForEntry = useCallback((item: JournalEntry) => {
+        let hash = 0;
+        for (let i = 0; i < item.id.length; i++) {
+            hash = ((hash << 5) - hash) + item.id.charCodeAt(i);
+            hash |= 0;
+        }
+        const index = Math.abs(hash) % GENERIC_TITLES.length;
+        return GENERIC_TITLES[index] + '...';
+    }, []);
+
+    const scrollX = useSharedValue(0);
+    const handleScroll = useAnimatedScrollHandler((event) => {
+        scrollX.value = event.contentOffset.x;
+    });
+
+    // Mascot Animation - Subtle Parallax & Rotation
+    const mascotAnimatedStyle = useAnimatedStyle(() => {
+        const inputRange = [
+            (currentIndex - 1) * SCREEN_WIDTH,
+            currentIndex * SCREEN_WIDTH,
+            (currentIndex + 1) * SCREEN_WIDTH
+        ];
+        
+        const rotate = interpolate(
+            scrollX.value,
+            inputRange,
+            [5, 0, -5], // Much subtler rotation
+            Extrapolation.CLAMP
+        );
+
+        const translateY = interpolate(
+            scrollX.value,
+            inputRange,
+            [10, 0, 10], // Bounces down slightly when moving
+            Extrapolation.CLAMP
+        );
+        
+        const scale = interpolate(
+            scrollX.value,
+            inputRange,
+            [0.9, 1, 0.9], // Subtle shrink
+            Extrapolation.CLAMP
+        );
+
+        return {
+            transform: [
+                { translateY },
+                { rotate: `${rotate}deg` },
+                { scale }
+            ]
+        };
+    });
+
+    // 5. Shared Values for Interaction
+
+    // 6. Actions
+    const handleToggleFavorite = useCallback(async (item: JournalEntry) => {
+        haptics.selection();
+        await toggleFavorite(item.id, !item.is_favorite);
+    }, [toggleFavorite]);
+
+    const onDelete = useCallback((id: string) => {
+        setDeletingId(id);
+    }, []);
+
+    const confirmDelete = async () => {
+        if (!deletingId) return;
+        haptics.heavy();
+        setIsDeleting(true);
+        const id = deletingId;
+        setDeletingId(null);
+
+        try {
+            await deleteEntry(id);
+            if (journalEntries.length <= 1) {
+                navigation.goBack();
+            }
+        } catch (error) {
+            console.error('[MemoryScreen] Delete error:', error);
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    const handleShare = async (item: JournalEntry) => {
+        haptics.selection();
+        try {
+            const dateStr = new Date(item.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+            await Share.share({
+                message: `Journal Entry (${dateStr}): "${item.text}"`,
+            });
+        } catch (error) {
+            console.error('[MemoryScreen] Share error:', error);
+        }
+    };
+
+    const renderItem = useCallback(({ item }: { item: JournalEntry }) => (
+        <MemoryItem
+            item={item}
+            onToggleFavorite={handleToggleFavorite}
+            onDelete={onDelete}
+            cardWidth={CARD_WIDTH}
+            screenWidth={SCREEN_WIDTH}
+            getPrompt={getPromptForEntry}
+        />
+    ), [handleToggleFavorite, onDelete, CARD_WIDTH, SCREEN_WIDTH, getPromptForEntry]);
+
+    // 8. Error/Empty View
+    if (!journalEntries || journalEntries.length === 0) {
+        return (
+            <Layout useSafePadding={false} backgroundColors={['#FFF9F0', '#fff1db']}>
+                <View className="px-6 pt-4">
+                    <TopNav title="Journal" onBack={() => navigation.goBack()} />
+                </View>
+                <View className="flex-1 items-center justify-center p-12">
+                     <MascotImage source={MASCOTS.SAD} className="w-48 h-48 mb-6" resizeMode="contain" />
+                     <Text className="text-lg font-q-bold text-muted text-center">No memories found.</Text>
                 </View>
             </Layout>
         );
     }
 
-    const currentMemory = journalEntries[currentIndex];
-    const isLiked = currentMemory.is_favorite;
-
-    const handleNextMemory = () => {
-        haptics.medium();
-        contentOpacity.value = withTiming(0, { duration: 150 }, () => {
-            runOnJS(setCurrentIndex)((currentIndex + 1) % journalEntries.length);
-            contentOpacity.value = withTiming(1, { duration: 250 });
-        });
-    };
-
-    const toggleHeart = () => {
-        toggleFavorite(currentMemory.id, !isLiked);
-        heartScale.value = withSequence(
-            withTiming(1.4, { duration: 100 }),
-            withSpring(1)
-        );
-    };
-
-    const animatedContentStyle = useAnimatedStyle(() => ({
-        opacity: contentOpacity.value,
-        transform: [{ scale: contentScale.value }]
-    }));
-
-    const animatedHeartStyle = useAnimatedStyle(() => ({
-        transform: [{ scale: heartScale.value }]
-    }));
-
-    const handleShare = async () => {
-        haptics.selection();
-        try {
-            const dateStr = new Date(currentMemory.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
-            await Share.share({
-                message: `Check out this memory from Cloudy: "${currentMemory.text}" - ${dateStr}`,
-            });
-        } catch (error) {
-            console.error(error);
-        }
-    };
-
-    const ShareButton = (
-        <TouchableOpacity onPress={handleShare} className="w-12 h-12 items-center justify-center">
-            <Ionicons name="share-outline" size={28} color="#333" />
-        </TouchableOpacity>
-    );
-
-    const formattedDate = new Date(currentMemory.created_at).toLocaleDateString([], { 
-        month: 'short', 
-        day: 'numeric', 
-        year: 'numeric' 
+    const activeEntry = journalEntries[currentIndex] || journalEntries[0];
+    const displayDate = new Date(activeEntry.created_at).toLocaleDateString([], { 
+        month: 'short', day: 'numeric', year: 'numeric' 
     });
 
-    const isInspectorMode = !!route.params?.entryId;
-
     return (
-        <Layout 
-            noScroll={true} 
-            backgroundColors={['#FFF9F0', '#fff1db']}
-            className="px-0 py-0"
-        >
-            <View className="px-6 pt-4">
-                <TopNav 
-                    subtitle={isInspectorMode ? "Memory Inspector" : "Sunrays"}
-                    title={formattedDate}
-                    rightElement={ShareButton}
-                    onBack={() => navigation.goBack()}
-                    roundButtons={true}
-                />
-            </View>
-
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'space-evenly', paddingHorizontal: 24, paddingVertical: 10 }}>
-                <View style={{ height: 180, justifyContent: 'center', alignItems: 'center' }}>
-                    <MascotImage 
-                        source={isInspectorMode ? MASCOTS.INSPECT : MASCOTS.SUN} 
-                        className="w-48 h-48" 
-                        resizeMode="contain" 
+        <>
+            <Layout noScroll useSafePadding={false} backgroundColors={['#FFF9F0', '#fff1db']} className="px-0 py-0">
+                <View className="px-6 pt-4">
+                    <TopNav 
+                        title={displayDate}
+                        subtitle="MEMORY INSPECTOR"
+                        rightElement={
+                            <TouchableOpacity 
+                                onPress={() => handleShare(activeEntry)} 
+                                className="p-2 -mr-2 items-center justify-center w-12 h-12 active:scale-90 transition-transform"
+                            >
+                                <Ionicons name="share-outline" size={28} color="#333333" />
+                            </TouchableOpacity>
+                        }
+                        onBack={() => navigation.goBack()}
+                        roundButtons
                     />
                 </View>
 
-                {/* Fixed Card Container - Optimized height */}
-                <View 
-                    className="bg-card rounded-[48px] p-8 shadow-sm w-full relative"
-                    style={{ height: 380 }} // Reduced from 420 for better universal fit
-                >
-                    <View style={{ flex: 1 }}>
-                        <View className="absolute -top-2 -left-2">
-                            <Text className="text-[#FF9E7D15] text-7xl font-q-bold">“</Text>
-                        </View>
-                        
-                        <Text className="text-2xl font-q-bold text-text mb-3 px-2">I am grateful for...</Text>
-                        
-                        {/* ONLY the text animates during transitions */}
-                        <Animated.View style={[{ flex: 1 }, animatedContentStyle]}>
-                            <ScrollView 
-                                style={{ flex: 1 }} 
-                                showsVerticalScrollIndicator={false}
-                                contentContainerStyle={{ paddingBottom: 10, paddingHorizontal: 8 }}
-                            >
-                                <Text className="text-lg font-q-medium text-text/70 leading-relaxed">
-                                    {currentMemory.text}
-                                </Text>
-                            </ScrollView>
-                        </Animated.View>
+                <View className="flex-1">
+                    <Animated.View style={[{ height: 256, justifyContent: 'center', alignItems: 'center' }, mascotAnimatedStyle]}>
+                        <MascotImage source={MASCOTS.INSPECT} className="w-56 h-56" resizeMode="contain" />
+                    </Animated.View>
 
-                        <View className="flex-row justify-between items-center pt-4 border-t border-primary/10">
-                             <View className="flex-row items-center bg-[#FF9E7D10] px-4 py-2 rounded-full">
-                                <Ionicons name="leaf" size={16} color="#FF9E7D" />
-                                <Text className="text-primary font-q-semibold ml-2 text-sm">Daily Gratitude</Text>
-                            </View>
-                            <TouchableOpacity onPress={toggleHeart} activeOpacity={0.6}>
-                                <Animated.View style={animatedHeartStyle}>
-                                    <Ionicons 
-                                        name={isLiked ? "heart" : "heart-outline"} 
-                                        size={32} 
-                                        color={isLiked ? "#FF9E7D" : "#AAA"} 
-                                    />
-                                </Animated.View>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
+                    <AnimatedFlatList
+                        ref={listRef}
+                        data={journalEntries}
+                        renderItem={renderItem}
+                        keyExtractor={(item: any) => item.id}
+                        horizontal
+                        pagingEnabled
+                        disableIntervalMomentum={true}
+                        showsHorizontalScrollIndicator={false}
+                        snapToInterval={SCREEN_WIDTH}
+                        snapToAlignment="center"
+                        decelerationRate="fast"
+                        onScroll={handleScroll}
+                        scrollEventThrottle={16}
+                        onMomentumScrollEnd={(e) => {
+                            const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+                            if (index !== currentIndex) {
+                                setCurrentIndex(index);
+                                haptics.selection();
+                            }
+                        }}
+                        onEndReached={() => {
+                            if (hasMore) {
+                                loadMore();
+                            }
+                        }}
+                        onEndReachedThreshold={2}
+                        windowSize={3}
+                        initialScrollIndex={initialIndex !== -1 ? initialIndex : 0}
+                        getItemLayout={(_, index) => ({
+                            length: SCREEN_WIDTH,
+                            offset: SCREEN_WIDTH * index,
+                            index,
+                        })}
+                    />
                 </View>
-            </View>
 
-            {/* Bottom Actions - Hidden in Inspector Mode to focus on single entry */}
-            {!isInspectorMode ? (
-                <View className="items-center pb-12">
+                {/* Footer Controls */}
+                <View className="flex-row items-center justify-between px-8 pb-12 w-full">
                     <TouchableOpacity 
-                        onPress={handleNextMemory} 
-                        className="items-center active:scale-95" 
-                        activeOpacity={1}
-                        delayPressIn={0}
+                        onPress={() => listRef.current?.scrollToIndex({ index: currentIndex - 1, animated: true })}
+                        disabled={currentIndex === 0}
+                        className={`bg-white w-14 h-14 items-center justify-center rounded-full shadow-lg ${currentIndex === 0 ? 'opacity-20' : ''}`}
                     >
-                        <View 
-                            className="bg-white w-16 h-16 items-center justify-center rounded-full mb-4 shadow-xl shadow-[#00000015]"
-                            style={{ elevation: 5 }}
-                        >
-                            <Ionicons name="chevron-down" size={32} color="#FF9E7D" />
-                        </View>
-                        <Text className="text-muted font-q-bold text-[10px] tracking-[2px] uppercase">Tap for next memory</Text>
+                        <Ionicons name="chevron-back" size={24} color="#FF9E7D" />
+                    </TouchableOpacity>
+
+                    <View className="items-center">
+                        <Text className="text-text font-q-bold text-base">{currentIndex + 1} / {totalCount}</Text>
+                        <Text className="text-muted font-q-medium text-[10px] uppercase tracking-widest mt-1">Swipe to explore</Text>
+                    </View>
+
+                    <TouchableOpacity 
+                        onPress={() => {
+                            if (currentIndex < journalEntries.length - 1) {
+                                listRef.current?.scrollToIndex({ index: currentIndex + 1, animated: true });
+                            }
+                        }}
+                        disabled={currentIndex === totalCount - 1}
+                        className={`bg-white w-14 h-14 items-center justify-center rounded-full shadow-lg ${currentIndex === totalCount - 1 ? 'opacity-20' : ''}`}
+                    >
+                        <Ionicons name="chevron-forward" size={24} color="#FF9E7D" />
                     </TouchableOpacity>
                 </View>
-            ) : (
-                <View className="pb-20" /> 
-            )}
-        </Layout>
+            </Layout>
+
+            <BottomSheet visible={!!deletingId} onClose={() => setDeletingId(null)}>
+                <View className="items-center w-full">
+                    <Image source={MASCOTS.SAD} className="w-32 h-32 mb-4" />
+                    <Text className="text-2xl font-q-bold text-text text-center mb-4">Delete this memory?</Text>
+                    <Text className="text-base font-q-medium text-muted text-center mb-8 px-4 leading-6">This action cannot be undone. Are you sure?</Text>
+                    <Button label="Yes, Delete It" onPress={confirmDelete} variant="primary" />
+                    <TouchableOpacity onPress={() => setDeletingId(null)} className="mt-4">
+                        <Text className="text-muted font-q-bold">No, Keep It</Text>
+                    </TouchableOpacity>
+                </View>
+            </BottomSheet>
+        </>
     );
 };

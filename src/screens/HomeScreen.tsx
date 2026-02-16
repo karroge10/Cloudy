@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, Keyboard, Animated, Pressable } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, Keyboard, Animated, Pressable, ScrollView, RefreshControl } from 'react-native';
 import { MASCOTS } from '../constants/Assets';
 import { Ionicons } from '@expo/vector-icons';
 import { Layout } from '../components/Layout';
@@ -23,8 +23,8 @@ import { ReviewNudge } from '../components/ReviewNudge';
 export const HomeScreen = () => {
     const { showAlert } = useAlert();
     const navigation = useNavigation<any>();
-    const { addEntry, streak, loading: journalLoading } = useJournal();
-    const { profile, updateProfile, isAnonymous, userId } = useProfile();
+    const { addEntry, streak, loading: journalLoading, refreshEntries } = useJournal();
+    const { profile, updateProfile, isAnonymous, userId, refreshProfile } = useProfile();
     const { trackEvent } = useAnalytics();
 
     
@@ -34,6 +34,7 @@ export const HomeScreen = () => {
     const [showStreakNudge, setShowStreakNudge] = useState(false);
     const [showReviewNudge, setShowReviewNudge] = useState(false);
     const [isSavingName, setIsSavingName] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const [tempDisplayName, setTempDisplayName] = useState('');
     const [tempReminderTime, setTempReminderTime] = useState(new Date(new Date().setHours(20, 0, 0, 0))); // Default 8 PM
     
@@ -116,6 +117,21 @@ export const HomeScreen = () => {
 
     const [setupStep, setSetupStep] = useState(0); // 0: Name, 1: Notifications
 
+    const onRefresh = async () => {
+        setIsRefreshing(true);
+        try {
+            await Promise.all([
+                refreshProfile(),
+                refreshEntries()
+            ]);
+            haptics.selection();
+        } catch (error) {
+            console.error('[HomeScreen] Refresh error:', error);
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
+
     const handleSaveProfile = async () => {
         if (!tempDisplayName.trim()) {
             showAlert('Name Required', 'Please let us know what to call you.', [{ text: 'Okay' }], 'info');
@@ -168,15 +184,20 @@ export const HomeScreen = () => {
         }
     };
 
-    const handleMaybeLater = async () => {
-        await updateProfile({
-            onboarding_completed: true,
-        });
-        await AsyncStorage.setItem('has_seen_first_entry', 'true');
-        trackEvent('setup_sheet_dismissed');
+    const handleMaybeLater = () => {
+        // Close sheet immediately - don't block UI on I/O
         setShowSetupSheet(false);
         setText('');
-        setSetupStep(0); // Reset for next time if needed
+        setSetupStep(0);
+
+        // Fire and forget persistence
+        updateProfile({ onboarding_completed: true }).catch(err => {
+            console.warn('[HomeScreen] Failed to mark onboarding complete:', err);
+        });
+        AsyncStorage.setItem('has_seen_first_entry', 'true').catch(err => {
+            console.warn('[HomeScreen] Failed to set first entry flag:', err);
+        });
+        trackEvent('setup_sheet_dismissed');
     };
 
     const charCount = text.length;
@@ -185,7 +206,19 @@ export const HomeScreen = () => {
     const inputRef = useRef<TextInput>(null);
 
     return (
-        <Layout isTabScreen={true} useSafePadding={false} className="px-6 pt-4">
+        <Layout isTabScreen={true} noScroll={true} useSafePadding={false}>
+            <ScrollView 
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingTop: 16, paddingBottom: 110 }}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={isRefreshing}
+                        onRefresh={onRefresh}
+                        tintColor="#FF9E7D"
+                        colors={["#FF9E7D"]}
+                    />
+                }
+            >
             {/* Header */}
             <View className="flex-row justify-between items-center mb-8">
                 <Pressable onPress={handleMascotPress}>
@@ -206,7 +239,7 @@ export const HomeScreen = () => {
                         >
                             <View className="flex-row items-center bg-white px-2 py-1 rounded-full shadow-sm">
                                 <Ionicons name="flame" size={16} color="#FF9E7D" />
-                                {journalLoading ? (
+                                {journalLoading && streak === 0 ? (
                                     <View className="bg-primary/10 w-4 h-4 rounded-full ml-1" />
                                 ) : (
                                     <Text className="font-q-bold text-primary ml-1 text-base">{streak}</Text>
@@ -221,16 +254,18 @@ export const HomeScreen = () => {
             {/* Streak Goal Milestone - Now at the top */}
             <StreakGoal 
                 streak={streak} 
-                isLoading={journalLoading}
+                isLoading={journalLoading && streak === 0}
                 className="mb-8" 
                 onPress={() => {
-                    trackEvent('roadmap_viewed');
-                    navigation.navigate('Roadmap');
+                    trackEvent('progress_viewed');
+                    navigation.navigate('Progress');
                 }}
             />
+            
+
 
             {/* Main Writing Card */}
-            <View className="bg-card rounded-[32px] p-6 shadow-[#0000000D] shadow-xl mb-6 flex-1" style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 20, elevation: 5 }}>
+            <View className="bg-card rounded-[32px] p-6 shadow-[#0000000D] shadow-xl mb-6 flex-1 min-h-[300px]" style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 20, elevation: 5 }}>
                 <Text className="text-xl font-q-bold text-text mb-4 text-center">
                     Daily Gratitude
                 </Text>
@@ -269,6 +304,7 @@ export const HomeScreen = () => {
                     </TouchableOpacity>
                 </View>
             </View>
+            </ScrollView>
 
             {/* Post-Save Setup Sheet */}
             <BottomSheet 

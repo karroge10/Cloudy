@@ -15,7 +15,12 @@ interface TopNavProps {
 }
 
 export const TopNav = ({ title, subtitle, showBack = true, onBack, rightElement, centerContent, roundButtons = false }: TopNavProps) => {
-    const navigation = useNavigation();
+    let navigation: any;
+    try {
+        navigation = useNavigation();
+    } catch (e) {
+        console.error('[TopNav] Navigation context missing! title:', title);
+    }
 
 
     return (

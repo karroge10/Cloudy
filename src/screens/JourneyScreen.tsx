@@ -1,8 +1,9 @@
-import React, { useState, useMemo, useRef } from 'react';
-import { View, Text, TouchableOpacity, useWindowDimensions, ActivityIndicator, RefreshControl } from 'react-native';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
+import { View, Text, TouchableOpacity, useWindowDimensions, ActivityIndicator, RefreshControl, Platform, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { FlashList } from '@shopify/flash-list';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { FlashList, ViewToken } from '@shopify/flash-list';
+import { StatusBar } from 'expo-status-bar';
 import { haptics } from '../utils/haptics';
 import Animated, { 
     withTiming,
@@ -13,6 +14,7 @@ import Animated, {
     runOnJS,
 } from 'react-native-reanimated';
 
+
 import { TopNav } from '../components/TopNav';
 import { Layout } from '../components/Layout';
 import { BottomSheet } from '../components/BottomSheet';
@@ -22,8 +24,8 @@ import { useJournal, JournalEntry } from '../context/JournalContext';
 import { ProfileNudge } from '../components/ProfileNudge';
 import { useAlert } from '../context/AlertContext';
 import { Button } from '../components/Button';
-
 import { useProfile } from '../context/ProfileContext';
+import { CalendarView } from '../components/CalendarView';
 
 const ITEM_HEIGHT = 180;
 
@@ -41,7 +43,8 @@ const TimelineItem = ({
     onToggleFavorite,
     onDelete,
     isDeletingProp,
-    onDeleteAnimationComplete
+    onDeleteAnimationComplete,
+    onPress
 }: { 
     item: JournalEntry; 
     index: number;
@@ -50,8 +53,8 @@ const TimelineItem = ({
     onDelete: (id: string) => void;
     isDeletingProp: boolean;
     onDeleteAnimationComplete: (id: string) => void;
+    onPress: () => void;
 }) => {
-    const navigation = useNavigation();
     const trashScale = useSharedValue(1);
     const itemOpacity = useSharedValue(1);
     const itemHeight = useSharedValue(ITEM_HEIGHT);
@@ -99,7 +102,7 @@ const TimelineItem = ({
                     <View className={`w-[1px] h-4 ${isFirst ? 'bg-transparent' : 'bg-inactive'}`} />
                     
                     <View 
-                        className="w-16 h-16 rounded-full items-center justify-center shadow-sm z-10 bg-white"
+                        className="w-16 h-16 rounded-full items-center justify-center shadow-sm bg-white"
                         style={{ shadowColor: '#00000010', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 2 }}
                     >
                         <View className="items-center justify-center">
@@ -119,33 +122,41 @@ const TimelineItem = ({
                 <View className="flex-1 pb-6">
                     <TouchableOpacity 
                         activeOpacity={0.9}
-                        onPress={() => {
-                            haptics.selection();
-                            (navigation as any).navigate('Memory', { entryId: item.id });
-                        }}
-                        className="bg-card rounded-[32px] p-6 shadow-[#0000000D] shadow-xl flex-1 justify-between"
+                        onPress={onPress}
+                        className="bg-card rounded-[40px] p-6 shadow-[#0000000D] shadow-xl flex-1 justify-between relative overflow-hidden"
                         style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}
                     >
-                        <View>
+                        <View className="absolute -top-3 -left-3 opacity-30">
+                             <Text className="text-[#FF9E7D] text-8xl font-q-bold opacity-10 leading-none">"</Text>
+                        </View>
+
+                        <View className="mt-2 ml-1">
                             <Text 
-                                className="font-q-medium text-base leading-6 text-text"
+                                className="font-q-medium text-base leading-6 text-text/80"
                                 numberOfLines={3}
                             >
                                 {item.text}
                             </Text>
                         </View>
                         
-                        <View className="flex-row justify-end mt-4 items-center space-x-4">
-                            <TouchableOpacity 
+                        <View className="flex-row justify-between mt-4 md:mt-6 items-center border-t border-primary/10 pt-4">
+                            <View className="flex-row items-center bg-[#FF9E7D10] px-3 py-1 rounded-full">
+                                <Ionicons name="time-outline" size={14} color="#FF9E7D" />
+                                <Text className="text-primary font-q-semibold ml-2 text-xs">
+                                    {new Date(item.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                                </Text>
+                            </View>
+                            <View className="flex-row items-center space-x-2">
+                                <TouchableOpacity 
                                 onPress={() => { haptics.selection(); onToggleFavorite(item.id, !item.is_favorite); }}
                                 className="p-2"
                             >
-                                <Ionicons 
-                                    name={item.is_favorite ? "heart" : "heart-outline"} 
-                                    size={22} 
-                                    color={item.is_favorite ? "#FF9E7D" : "#333"} 
-                                    style={{ opacity: item.is_favorite ? 1 : 0.2 }}
-                                />
+                                    <Ionicons 
+                                        name={item.is_favorite ? "heart" : "heart-outline"} 
+                                        size={22} 
+                                        color={item.is_favorite ? "#FF9E7D" : "#333"} 
+                                        style={{ opacity: item.is_favorite ? 1 : 0.2 }}
+                                    />
                             </TouchableOpacity>
                             
                             {(() => {
@@ -178,6 +189,7 @@ const TimelineItem = ({
                                 );
                             })()}
                         </View>
+                        </View>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -209,17 +221,77 @@ export const JourneyScreen = () => {
         toggleFavorite, 
         deleteEntry, 
         refreshEntries,
-        loadMore 
+        loadMore,
+        rawStreakData,
+        fetchEntriesForDate,
+        filterMode,
+        setFilterMode
     } = useJournal();
-    const [filter, setFilter] = useState<'all' | 'favorites'>('all');
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [showCalendar, setShowCalendar] = useState(false);
+    const [selectedDate, setSelectedDate] = useState<string | null>(null);
+    const skipResetRef = useRef(false);
+
+    useFocusEffect(
+        useCallback(() => {
+            skipResetRef.current = false;
+            return () => {
+                if (skipResetRef.current) {
+                    return;
+                }
+                setFilterMode('all');
+                setSelectedDate(null);
+                setShowCalendar(false);
+                fetchEntriesForDate(null);
+            };
+        }, [fetchEntriesForDate])
+    );
+
+    const handleEntryPress = useCallback((entryId: string) => {
+        haptics.selection();
+        skipResetRef.current = true;
+        (navigation as any).navigate('Memory', { entryId });
+    }, [navigation]);
+
+    const handleDateSelect = (date: string | null) => {
+        haptics.selection();
+        setSelectedDate(date);
+        setShowCalendar(false);
+        fetchEntriesForDate(date);
+        
+        if (!date) {
+            setTimeout(() => {
+                listRef.current?.scrollToOffset({ offset: 0, animated: true });
+            }, 250); // Slightly longer timeout for server fetch to start/finish
+        }
+    };
+
+    const markedDates = useMemo(() => {
+        const dates = new Set<string>();
+        rawStreakData.forEach(item => {
+            const date = new Date(item.created_at);
+            const year = date.getFullYear();
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            dates.add(`${year}-${month}-${day}`);
+        });
+        return dates;
+    }, [rawStreakData]);
     
     // Deletion states
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [animatingIds, setAnimatingIds] = useState<Set<string>>(new Set());
 
+    // Track centered/visible item for subtle highlight
+    const [centeredId, setCenteredId] = useState<string | null>(null);
+
     // FlashList ref for layout animations
-    const listRef = useRef<FlashList<JournalEntry>>(null);
+    const listRef = useRef<any>(null);
+
+    const viewabilityConfig = useMemo(() => ({
+        itemVisiblePercentThreshold: 50,
+        minimumViewTime: 100,
+    }), []);
 
     const onRefresh = async () => {
         setIsRefreshing(true);
@@ -233,9 +305,9 @@ export const JourneyScreen = () => {
     }, [profile]);
 
     const filteredEntries = useMemo(() => {
-        if (filter === 'favorites') return entries.filter(e => e.is_favorite);
+        // Now handled server-side in JournalContext
         return entries;
-    }, [entries, filter]);
+    }, [entries]);
 
     const handleTrashPress = (id: string) => {
         const item = entries.find(e => e.id === id);
@@ -265,9 +337,6 @@ export const JourneyScreen = () => {
         const id = deletingId;
         setDeletingId(null);
         
-        // Prepare FlashList for layout animation
-        listRef.current?.prepareForLayoutAnimationRender();
-        
         // Start animation
         setAnimatingIds(prev => new Set(prev).add(id));
     };
@@ -282,6 +351,17 @@ export const JourneyScreen = () => {
         await deleteEntry(id);
     };
 
+       // Viewability config - track which item is most centered
+    const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken<JournalEntry>[] }) => {
+        if (viewableItems.length > 0) {
+            // Find the item closest to center (first in the middle of visible items)
+            const middleIndex = Math.floor(viewableItems.length / 2);
+            const centeredItem = viewableItems[middleIndex];
+            if (centeredItem?.item?.id) {
+                setCenteredId(centeredItem.item.id);
+            }
+        }
+    }, []);
     const renderItem = ({ item, index }: { item: JournalEntry; index: number }) => (
         <MemoizedTimelineItem 
             item={item} 
@@ -291,11 +371,12 @@ export const JourneyScreen = () => {
             onDelete={handleTrashPress} 
             isDeletingProp={animatingIds.has(item.id)}
             onDeleteAnimationComplete={handleAnimationComplete}
+            onPress={() => handleEntryPress(item.id)}
         />
     );
 
     const ListHeader = useMemo(() => (
-        <View>
+        <View style={{ zIndex: 100, elevation:Platform.OS === 'android' ? 100 : 0 }}>
             {/* Profile Nudge */}
             <ProfileNudge 
                 isAnonymous={isAnonymous}
@@ -304,90 +385,120 @@ export const JourneyScreen = () => {
                 className="mb-8"
             />
 
-            {/* Sunrays Card - Only show after a week of memories */}
-            {entries.length >= 7 && (
-                <TouchableOpacity 
-                    activeOpacity={0.9}
-                    onPress={() => { haptics.selection(); navigation.navigate('Memory' as never); }}
-                    className="bg-secondary rounded-[32px] p-6 mb-8 flex-row items-center justify-between border border-primary/20 shadow-[#FF9E7D20] shadow-lg"
-                    style={{ elevation: 4 }}
-                >
-                    <View className="flex-row items-center flex-1">
-                        <View className="bg-white p-3 rounded-2xl mr-4 shadow-sm border border-secondary">
-                            <Ionicons name="sunny" size={24} color="#FF9E7D" />
-                        </View>
-                        <View className="flex-1">
-                            <Text className="text-xl font-q-bold text-text mb-1">Sunrays</Text>
-                            <Text className="text-muted font-q-medium text-sm leading-5">
-                                Your weekly highlights and brightest moments.
-                            </Text>
-                        </View>
-                    </View>
-                    <View className="bg-white p-2 rounded-full shadow-sm">
-                        <Ionicons name="chevron-forward" size={20} color="#FF9E7D" />
-                    </View>
-                </TouchableOpacity>
-            )}
 
-            {/* Filter Tabs */}
-            <View className="flex-row mb-8 bg-inactive/10 p-1.5 rounded-2xl self-start">
-                <TouchableOpacity 
-                    onPress={() => { haptics.selection(); setFilter('all'); }}
-                    className={`px-6 py-2 rounded-[14px] active:scale-95 transition-transform ${filter === 'all' ? 'bg-white shadow-sm' : ''}`}
-                >
-                    <Text className={`font-q-bold ${filter === 'all' ? 'text-text' : 'text-muted'}`}>All</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                    onPress={() => { haptics.selection(); setFilter('favorites'); }}
-                    className={`px-6 py-2 rounded-[14px] active:scale-95 transition-transform ${filter === 'favorites' ? 'bg-white shadow-sm' : ''}`}
-                >
-                    <View className="flex-row items-center">
-                        <Ionicons 
-                            name="heart" 
-                            size={14} 
-                            color={filter === 'favorites' ? "#FF9E7D" : "#7F7F7F"} 
-                            style={{ marginRight: 4 }}
-                        />
-                        <Text className={`font-q-bold ${filter === 'favorites' ? 'text-text' : 'text-muted'}`}>Favorites</Text>
+            {/* Filter Controls */}
+            <View className="mb-6">
+                <View className="flex-row items-center justify-between">
+                    <View 
+                        className="flex-row items-center bg-card rounded-full p-1 shadow-sm border border-inactive/10"
+                        style={{ shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: Platform.OS === 'android' ? 2 : undefined }}
+                    >
+                        <TouchableOpacity 
+                            onPress={() => { haptics.selection(); setFilterMode('all'); }}
+                            className={`px-5 py-2 rounded-full ${filterMode === 'all' ? 'bg-primary' : 'bg-transparent'}`}
+                            style={{ borderRadius: 20, overflow: 'hidden' }}
+                        >
+                            <Text className={`font-q-bold text-sm ${filterMode === 'all' ? 'text-white' : 'text-muted'}`}>
+                                All
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                            onPress={() => { haptics.selection(); setFilterMode('favorites'); }}
+                            className={`px-5 py-2 rounded-full flex-row items-center ${filterMode === 'favorites' ? 'bg-primary' : 'bg-transparent'}`}
+                            style={{ borderRadius: 20, overflow: 'hidden' }}
+                        >
+                            <Ionicons 
+                                name="heart" 
+                                size={14} 
+                                color={filterMode === 'favorites' ? "#FFFFFF" : "#7F7F7F"} 
+                                style={{ marginRight: 4 }}
+                            />
+                            <Text className={`font-q-bold text-sm ${filterMode === 'favorites' ? 'text-white' : 'text-muted'}`}>
+                                Favorites
+                            </Text>
+                        </TouchableOpacity>
                     </View>
-                </TouchableOpacity>
+
+                    {/* Calendar Button */}
+                    <TouchableOpacity 
+                        onPress={() => { 
+                            haptics.selection();
+                            setShowCalendar(prev => !prev); 
+                        }}
+                        className={`p-3 rounded-2xl shadow-sm ${selectedDate ? 'bg-primary/10 border-2 border-primary' : 'bg-card border border-inactive/10'}`}
+                        style={{ shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: Platform.OS === 'android' ? 2 : undefined }}
+                    >
+                        <Ionicons 
+                            name={selectedDate ? "calendar" : "calendar-outline"} 
+                            size={20} 
+                            color={selectedDate ? "#FF9E7D" : "#333"} 
+                        />
+                        {selectedDate && (
+                            <View className="absolute -top-1 -right-1 bg-primary rounded-full w-5 h-5 items-center justify-center border-2 border-background">
+                                <Text className="text-white text-[9px] font-q-bold">
+                                    {new Date(selectedDate).getDate()}
+                                </Text>
+                            </View>
+                        )}
+                    </TouchableOpacity>
+                </View>
             </View>
         </View>
-    ), [isAnonymous, isProfileIncomplete, profileLoading, entries.length, filter, navigation]);
+    ), [isAnonymous, isProfileIncomplete, profileLoading, entries.length, filterMode, navigation, showCalendar, selectedDate, markedDates]);
 
     const ListEmpty = useMemo(() => (
         <View className="items-center justify-center py-20">
             {loading ? (
-                <ActivityIndicator size="large" color="#FF9E7D" />
+                <View className="items-center">
+                    <ActivityIndicator size="large" color="#FF9E7D" />
+                    <Text className="text-muted font-q-bold mt-4">Loading memories...</Text>
+                </View>
             ) : (
                 <>
                     <Ionicons name="journal-outline" size={48} color="#E0E0E0" />
-                    <Text className="text-lg font-q-medium text-muted mt-4 text-center">
-                        {filter === 'favorites' ? "No favorite entries yet." : "Your journey is just beginning."}
+                    <Text className="text-lg font-q-medium text-muted mt-4 text-center px-6">
+                        {selectedDate 
+                            ? `No memories found for ${new Date(selectedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}.`
+                            : filterMode === 'favorites' 
+                                ? "No favorite entries yet." 
+                                : "Your journey is just beginning."
+                        }
                     </Text>
+                    {selectedDate && (
+                        <TouchableOpacity 
+                            onPress={() => handleDateSelect(null)}
+                            className="mt-4"
+                        >
+                            <Text className="text-primary font-q-bold">View all entries</Text>
+                        </TouchableOpacity>
+                    )}
                 </>
             )}
         </View>
-    ), [loading, filter]);
+    ), [loading, filterMode, selectedDate]);
 
     const ListFooter = useMemo(() => (
-        loadingMore ? (
+        loadingMore && !loading && !selectedDate ? (
             <View className="py-8 items-center">
                 <ActivityIndicator color="#FF9E7D" size="large" />
-                <Text className="text-muted font-q-bold mt-4">Discovering more memories...</Text>
+                <Text className="text-muted font-q-bold mt-4">Loading memories...</Text>
             </View>
         ) : (
             <View className="h-24" />
         )
-    ), [loadingMore]);
+    ), [loadingMore, selectedDate, filterMode]);
 
     return (
         <>
+
+
         <Layout noScroll={true} isTabScreen={true} useSafePadding={false}>
+            <StatusBar style="dark" backgroundColor={showCalendar ? 'rgba(0,0,0,0.4)' : 'transparent'} translucent />
             <View className="px-6 pt-4">
                 <TopNav title="Your Journey" />
             </View>
 
+            {/* @ts-ignore */}
             <FlashList
                 ref={listRef}
                 data={filteredEntries}
@@ -404,14 +515,47 @@ export const JourneyScreen = () => {
                 onRefresh={onRefresh}
                 refreshing={isRefreshing}
                 
+                // Viewability config
+                onViewableItemsChanged={onViewableItemsChanged}
+                viewabilityConfig={viewabilityConfig}
+                
                 // Infinite scroll
                 onEndReached={() => {
-                    if (filter === 'all' && hasMore) {
+                    if (!selectedDate && hasMore) {
                         loadMore();
                     }
                 }}
                 onEndReachedThreshold={0.5}
             />
+
+            {/* Calendar Overlay */}
+            <Modal
+                visible={showCalendar}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowCalendar(false)}
+            >
+                <TouchableOpacity 
+                    activeOpacity={1}
+                    style={{ 
+                        flex: 1, 
+                        backgroundColor: 'rgba(0,0,0,0.4)',
+                        justifyContent: 'flex-start', // Moved to top
+                        alignItems: 'center',
+                        paddingHorizontal: 24,
+                        paddingTop: Platform.OS === 'android' ? 120 : 140, // Closer to filter buttons
+                    }}
+                    onPress={() => setShowCalendar(false)}
+                >
+                    <TouchableOpacity activeOpacity={1} style={{ width: '100%' }}>
+                        <CalendarView 
+                            markedDates={markedDates}
+                            onDateSelect={handleDateSelect}
+                            selectedDate={selectedDate}
+                        />
+                    </TouchableOpacity>
+                </TouchableOpacity>
+            </Modal>
         </Layout>
         
         {/* Delete Confirmation Sheet */}

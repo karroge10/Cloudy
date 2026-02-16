@@ -29,4 +29,5 @@ export const MASCOTS = {
     ROCK: require('../../assets/mascots/companions/mascot_rock.png'),
     HERO: require('../../assets/mascots/companions/mascot_superhero.png'),
     WIZARD: require('../../assets/mascots/companions/mascot_wizard.png'),
+    ANALYTICS: require('../../assets/mascots/mascot_analytics.png'),
 };

@@ -9,6 +9,7 @@ import { notifications } from '../utils/notifications';
 import { useAlert } from './AlertContext';
 import { posthog, identifyUser } from '../lib/posthog';
 import { encryption } from '../utils/encryption';
+import { useProfile } from './ProfileContext';
 
 
 export interface JournalEntry {
@@ -33,6 +34,9 @@ interface JournalContextType {
     deleteEntry: (id: string, soft?: boolean) => Promise<void>;
     refreshEntries: () => Promise<void>;
     loadMore: () => Promise<void>;
+    fetchEntriesForDate: (date: string | null) => Promise<void>;
+    filterMode: 'all' | 'favorites';
+    setFilterMode: (mode: 'all' | 'favorites') => void;
 }
 
 const PAGE_SIZE = 20;
@@ -41,6 +45,7 @@ const JournalContext = createContext<JournalContextType | undefined>(undefined);
 
 export const JournalProvider: React.FC<{ children: React.ReactNode, session: Session | null }> = ({ children, session }) => {
     const { showAlert } = useAlert();
+    const { profile, updateProfile } = useProfile();
     const [entries, setEntries] = useState<JournalEntry[]>([]);
     const [metadata, setMetadata] = useState<{ id: string, created_at: string }[]>([]);
     const [loading, setLoading] = useState(true);
@@ -48,6 +53,7 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
     const [streak, setStreak] = useState(0);
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
+    const [filterMode, setFilterModeState] = useState<'all' | 'favorites'>('all');
 
     // Initial load from cache
     useEffect(() => {
@@ -83,13 +89,13 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
         }
     }, []);
 
-    const fetchPage = useCallback(async (pageNum: number, currentUserId: string, clearExisting = false) => {
+    const fetchPage = useCallback(async (pageNum: number, currentUserId: string, clearExisting = false, mode: 'all' | 'favorites' = 'all') => {
         if (!currentUserId) return;
 
         if (pageNum === 0) setLoading(true);
         else setLoadingMore(true);
 
-        const { data, error } = await supabase
+        let query = supabase
             .from('posts')
             .select('id, user_id, text, is_favorite, created_at, type')
             .eq('user_id', currentUserId)
@@ -97,12 +103,27 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
             .order('created_at', { ascending: false })
             .range(pageNum * PAGE_SIZE, (pageNum + 1) * PAGE_SIZE - 1);
 
+        if (mode === 'favorites') {
+            query = query.eq('is_favorite', true);
+        }
+
+        const { data, error } = await query;
+
         if (!error && data && activeUserIdRef.current === currentUserId) {
+            console.log(`[Journal] Fetching page ${pageNum}, mode: ${mode}, items: ${data.length}`);
             // Decrypt entries
-            const decryptedData = await Promise.all(data.map(async (entry: JournalEntry) => ({
-                ...entry,
-                text: await encryption.decrypt(entry.text)
-            })));
+            const decryptedData = await Promise.all(data.map(async (entry: JournalEntry) => {
+                try {
+                    const decryptedText = await encryption.decrypt(entry.text);
+                    if (decryptedText.startsWith('v1:aes:')) {
+                        console.warn(`[Journal] Decryption FAILED for entry ${entry.id}`);
+                    }
+                    return { ...entry, text: decryptedText };
+                } catch (e) {
+                    console.error(`[Journal] Decryption error for entry ${entry.id}:`, e);
+                    return entry;
+                }
+            }));
             
             setEntries(prev => clearExisting ? decryptedData : [...prev, ...decryptedData]);
             setHasMore(data.length === PAGE_SIZE);
@@ -114,16 +135,28 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
         }
     }, []);
 
+    const setFilterMode = useCallback((mode: 'all' | 'favorites') => {
+        setFilterModeState(mode);
+        const currentUserId = activeUserIdRef.current;
+        if (currentUserId) {
+            setPage(0);
+            setEntries([]);
+            setHasMore(true);
+            fetchPage(0, currentUserId, true, mode);
+        }
+    }, [fetchPage]);
+
     const refreshEntries = useCallback(async () => {
         const currentUserId = activeUserIdRef.current;
         if (!currentUserId) return;
 
         setPage(0);
+        // On refresh, we respect the current filter mode
         await Promise.all([
             fetchMetadata(currentUserId),
-            fetchPage(0, currentUserId, true)
+            fetchPage(0, currentUserId, true, filterMode)
         ]);
-    }, [fetchMetadata, fetchPage]);
+    }, [fetchMetadata, fetchPage, filterMode]);
 
     // Handle anonymous account merging
     useEffect(() => {
@@ -136,6 +169,14 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
                 const anonId = await SecureStore.getItemAsync('pending_merge_anonymous_id');
                 if (anonId && anonId !== currentUserId) {
                     setLoading(true);
+                    
+                    // 1. Fetch Anon Entries for Re-Encryption
+                    const { data: anonPosts } = await supabase
+                         .from('posts')
+                         .select('id, text')
+                         .eq('user_id', anonId);
+
+                    // 2. Perform the database merge
                     const { data: name, error } = await supabase.rpc('merge_anonymous_data', { 
                         old_uid: anonId, 
                         new_uid: currentUserId 
@@ -144,9 +185,37 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
                     if (error) {
                         console.warn('Merge failed:', error.message);
                         if (activeUserIdRef.current === currentUserId) setLoading(false);
-                        // Identify anyway so analytics continues
                         identifyUser(currentUserId, currentUserEmail || undefined);
                     } else {
+                        // 3. Re-encrypt entries (now owned by currentUserId)
+                        if (anonPosts && anonPosts.length > 0) {
+                            try {
+                                const updates = anonPosts.map(async (post) => {
+                                    try {
+                                        // Decrypt with current key to ensure readability
+                                        const decrypted = await encryption.decrypt(post.text);
+                                        
+                                        // Re-encrypt with current key (refreshes salt/integrity)
+                                        const reEncrypted = await encryption.encrypt(decrypted);
+
+                                        if (reEncrypted !== post.text) {
+                                            const { error: updateError } = await supabase
+                                                .from('posts')
+                                                .update({ text: reEncrypted })
+                                                .eq('id', post.id);
+                                            
+                                            if (updateError) console.warn('Re-key update failed', updateError);
+                                        }
+                                    } catch (e) {
+                                        console.warn(`Failed to re-encrypt post ${post.id}`, e);
+                                    }
+                                });
+                                await Promise.all(updates);
+                            } catch (e) {
+                                console.error("Re-encryption sequence error", e);
+                            }
+                        }
+
                         await SecureStore.deleteItemAsync('pending_merge_anonymous_id');
                         
                         // Analytics identity sync
@@ -198,6 +267,11 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
             const newStreak = calculateStreak(metadata);
             setStreak(newStreak);
             
+            // Sync max_streak to profile
+            if (profile && newStreak > (profile.max_streak || 0)) {
+                updateProfile({ max_streak: newStreak });
+            }
+            
             if (userId) {
                 AsyncStorage.setItem(`user_streak_cache_${userId}`, newStreak.toString()).catch(console.warn);
             }
@@ -207,14 +281,63 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
                 AsyncStorage.setItem(`user_streak_cache_${userId}`, '0').catch(console.warn);
             }
         }
-    }, [metadata, loading, session?.user?.id]);
+    }, [metadata, loading, session?.user?.id, profile?.max_streak]);
 
     const loadMore = async () => {
         if (loadingMore || !hasMore || !session?.user?.id) return;
         const nextPage = page + 1;
         setPage(nextPage);
-        await fetchPage(nextPage, session.user.id);
+        await fetchPage(nextPage, session.user.id, false, filterMode);
     };
+
+    const fetchEntriesForDate = useCallback(async (dateStr: string | null) => {
+        const currentUserId = activeUserIdRef.current;
+        if (!currentUserId || !session?.user?.id) return;
+
+        if (!dateStr) {
+            setPage(0);
+            setEntries([]);
+            await fetchPage(0, session.user.id, true);
+            return;
+        }
+
+        setLoading(true);
+        setEntries([]);
+        // Find IDs in metadata that match the local date string
+        const matchingIds = metadata.filter(item => {
+            const d = new Date(item.created_at);
+            const userYear = d.getFullYear();
+            const userMonth = (d.getMonth() + 1).toString().padStart(2, '0');
+            const userDay = d.getDate().toString().padStart(2, '0');
+            return `${userYear}-${userMonth}-${userDay}` === dateStr;
+        }).map(item => item.id);
+
+        if (matchingIds.length === 0) {
+            setEntries([]);
+            setHasMore(false);
+            setLoading(false);
+            return;
+        }
+
+        const { data, error } = await supabase
+            .from('posts')
+            .select('id, user_id, text, is_favorite, created_at, type')
+            .in('id', matchingIds)
+            .order('created_at', { ascending: false });
+
+        if (!error && data && activeUserIdRef.current === currentUserId) {
+            const decryptedData = await Promise.all(data.map(async (entry: JournalEntry) => ({
+                ...entry,
+                text: await encryption.decrypt(entry.text)
+            })));
+            setEntries(decryptedData);
+            setHasMore(false);
+        }
+        
+        if (activeUserIdRef.current === currentUserId) {
+            setLoading(false);
+        }
+    }, [metadata, session?.user?.id, fetchPage]);
 
     const addEntry = async (text: string) => {
         if (!session?.user?.id) return;
@@ -259,6 +382,11 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
             posthog.capture('journal_entry_favorited', { entry_id: id });
         } else {
             posthog.capture('journal_entry_unfavorited', { entry_id: id });
+            
+            // If we are in favorites mode and we unfavorite, remove it from the list immediately
+            if (filterMode === 'favorites') {
+                setEntries(prev => prev.filter(e => e.id !== id));
+            }
         }
 
         const { error } = await supabase
@@ -327,8 +455,11 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
         toggleFavorite,
         deleteEntry,
         refreshEntries,
-        loadMore
-    }), [entries, effectiveLoading, loadingMore, hasMore, streak, refreshEntries, loadMore]);
+        loadMore,
+        fetchEntriesForDate,
+        filterMode,
+        setFilterMode
+    }), [entries, effectiveLoading, loadingMore, hasMore, streak, refreshEntries, loadMore, fetchEntriesForDate, filterMode, setFilterMode]);
 
     return (
         <JournalContext.Provider value={value}>

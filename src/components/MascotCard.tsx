@@ -8,10 +8,11 @@ interface MascotCardProps {
     asset: ImageSourcePropType;
     isSelected: boolean;
     isLocked: boolean;
+    requiredStreak?: number;
     onPress: () => void;
 }
 
-export const MascotCard = ({ name, asset, isSelected, isLocked, onPress }: MascotCardProps) => {
+export const MascotCard = ({ name, asset, isSelected, isLocked, requiredStreak, onPress }: MascotCardProps) => {
     const handlePress = () => {
         haptics.selection();
         onPress();
@@ -47,7 +48,7 @@ export const MascotCard = ({ name, asset, isSelected, isLocked, onPress }: Masco
             <Text className={`font-q-bold text-[10px] mt-2 uppercase ${
                 isLocked ? 'text-muted/50' : isSelected ? 'text-primary' : 'text-muted'
             }`}>
-                {isLocked ? 'Locked' : name}
+                {isLocked ? (requiredStreak !== undefined ? `${requiredStreak} Days` : 'Locked') : name}
             </Text>
         </TouchableOpacity>
     );

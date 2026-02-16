@@ -1,173 +1,109 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Switch, ScrollView, TextInput } from 'react-native';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, RefreshControl } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { supabase } from '../lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
-import { MASCOTS } from '../constants/Assets';
-import { GOALS } from '../constants/Goals';
-import { STRUGGLES } from '../constants/Struggles';
-import { Layout } from '../components/Layout';
-import { TopNav } from '../components/TopNav';
-import { ActivityGraph } from '../components/ActivityGraph';
-import { SelectionPill } from '../components/SelectionPill';
-import { BottomSheet } from '../components/BottomSheet';
-import { Skeleton } from '../components/Skeleton';
-import { useJournal } from '../context/JournalContext';
 import { useProfile } from '../context/ProfileContext';
-import { ProfileNudge } from '../components/ProfileNudge';
-import { MascotCard } from '../components/MascotCard';
-import { COMPANIONS } from '../constants/Companions';
-import { TimePicker } from '../components/TimePicker';
-import { Button } from '../components/Button';
+import { useJournal } from '../context/JournalContext';
 import { haptics } from '../utils/haptics';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useAlert } from '../context/AlertContext';
-import { MascotImage } from '../components/MascotImage';
-import { security } from '../utils/security';
-import { getFriendlyAuthErrorMessage } from '../utils/authErrors';
-import { resetUser } from '../lib/posthog';
-import { useAnalytics } from '../hooks/useAnalytics';
+import { TopNav } from '../components/TopNav';
+import { ProfileNudge } from '../components/ProfileNudge';
+import { Button } from '../components/Button';
+import { ActivityGraph } from '../components/ActivityGraph';
 import { AppFooter } from '../components/AppFooter';
-import { FeedbackSheet } from '../components/FeedbackSheet';
-import { ActivityIndicator } from 'react-native';
+import { BottomSheet } from '../components/BottomSheet';
+import { MascotCard } from '../components/MascotCard';
+import { SelectionPill } from '../components/SelectionPill';
+import { Skeleton } from '../components/Skeleton';
+import { MascotImage } from '../components/MascotImage';
+import { MASCOTS } from '../constants/Assets';
+import { Insights } from '../components/Insights';
+import { useAnalytics } from '../hooks/useAnalytics';
+import { Layout } from '../components/Layout';
 
+import { COMPANIONS } from '../constants/Companions';
+
+const GENDERS = ['Female', 'Male', 'Non-binary', 'Prefer not to say'];
+const GOALS = ['Mental Clarity', 'Memory keeping', 'Self-discipline', 'Creativity', 'Gratitude'];
+const STRUGGLES = ['Anxiety', 'Stress', 'Sleep', 'Focus', 'Motivation', 'N/A'];
 
 export const ProfileScreen = () => {
-    const { showAlert } = useAlert();
-    const { streak, rawStreakData } = useJournal();
-    const { profile, isAnonymous, userId, loading: profileLoading, updateProfile } = useProfile();
+    const { streak, rawStreakData, refreshEntries } = useJournal();
+    const { profile, loading: profileLoading, updateProfile, isAnonymous, userId } = useProfile();
     const { trackEvent } = useAnalytics();
-
+    let navigation: any;
+    try {
+        navigation = useNavigation<any>();
+    } catch (e) {
+        console.error('[ProfileScreen] Navigation context missing!');
+    }
+    const [isRefreshing, setIsRefreshing] = useState(false);
     
-    // UI Local States (for sheets/modals)
+    // Local state for sheets
     const [isNameSheetVisible, setIsNameSheetVisible] = useState(false);
-    const [isGoalSheetVisible, setIsGoalSheetVisible] = useState(false);
-    const [isStruggleSheetVisible, setIsStruggleSheetVisible] = useState(false);
-    const [isTimeSheetVisible, setIsTimeSheetVisible] = useState(false);
     const [isMascotSheetVisible, setIsMascotSheetVisible] = useState(false);
     const [isAgeSheetVisible, setIsAgeSheetVisible] = useState(false);
     const [isGenderSheetVisible, setIsGenderSheetVisible] = useState(false);
     const [isCountrySheetVisible, setIsCountrySheetVisible] = useState(false);
-    const [isDeleteSheetVisible, setIsDeleteSheetVisible] = useState(false);
-    const [isFeedbackSheetVisible, setIsFeedbackSheetVisible] = useState(false);
-    
-    const [tempAge, setTempAge] = useState('');
+    const [isGoalSheetVisible, setIsGoalSheetVisible] = useState(false);
+    const [isStruggleSheetVisible, setIsStruggleSheetVisible] = useState(false);
+
+    // Temp states for editing
     const [tempName, setTempName] = useState('');
+    const [tempAge, setTempAge] = useState('');
+    const [tempGender, setTempGender] = useState('');
     const [tempCountry, setTempCountry] = useState('');
-    const [reminderDate, setReminderDate] = useState(new Date());
     const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
     const [selectedStruggles, setSelectedStruggles] = useState<string[]>([]);
-    const [tempGender, setTempGender] = useState('');
     const [tempMascotName, setTempMascotName] = useState('');
-    const [bioSupported, setBioSupported] = useState(false);
 
-
-    const navigation = useNavigation<any>();
+    const displayName = profile?.display_name;
+    const currentMascotName = profile?.mascot_name || 'cloudy';
+    const currentMascot = COMPANIONS.find(c => c.name === currentMascotName) || COMPANIONS[0];
 
     useEffect(() => {
         if (profile) {
             setTempName(profile.display_name || '');
-            setTempAge(profile.age?.toString() || '');
+            setTempAge(profile.age ? profile.age.toString() : '');
+            setTempGender(profile.gender || '');
             setTempCountry(profile.country || '');
             setSelectedGoals(profile.goals || []);
             setSelectedStruggles(profile.struggles || []);
-            setTempGender(profile.gender || '');
             setTempMascotName(profile.mascot_name || COMPANIONS[0].name);
-            
-            if (profile.reminder_time) {
-                const [hours, minutes] = profile.reminder_time.split(':');
-                const d = new Date();
-                d.setHours(parseInt(hours));
-                d.setMinutes(parseInt(minutes));
-                setReminderDate(d);
-            }
         }
     }, [profile]);
 
-    useEffect(() => {
-        const checkBio = async () => {
-            const supported = await security.isSupported();
-            setBioSupported(supported);
-        };
-        checkBio();
-    }, []);
-
-    const handleLogout = async () => {
-        try {
-            await AsyncStorage.removeItem('has_seen_first_entry');
-            await AsyncStorage.removeItem('user_streak_cache');
-            await AsyncStorage.removeItem('pending_merge_anonymous_id');
-            await AsyncStorage.removeItem('security_lock_enabled');
-            
-            // Log out from Google if applicable
-            try {
-                await GoogleSignin.signOut();
-            } catch (e) {
-                // Ignore if not signed in with Google
-            }
-
-            const { error } = await supabase.auth.signOut();
-            if (error) throw error;
-            trackEvent('user_logged_out');
-            resetUser();
-
-        } catch (error: any) {
-            const { title, message } = getFriendlyAuthErrorMessage(error);
-            showAlert(title, message, [{ text: 'Okay' }], 'error');
-        }
+    const onRefresh = async () => {
+        setIsRefreshing(true);
+        haptics.light();
+        await refreshEntries();
+        setIsRefreshing(false);
     };
-
-    const handleDeleteAccount = async () => {
-        try {
-            if (!userId) return;
-
-            // 1. Delete the profile (posts will cascade delete)
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .delete()
-                .eq('id', userId);
-
-            if (profileError) throw profileError;
-
-            // 2. Log out and clear local data
-            trackEvent('user_deleted_account');
-            await handleLogout();
-            
-            setIsDeleteSheetVisible(false);
-            
-            showAlert(
-                'Account Deleted',
-                'Your data has been removed. We hope to see you again someday.',
-                [{ text: 'Goodbye' }],
-                'success'
-            );
-        } catch (error: any) {
-            showAlert('Error', 'Could not delete account. Please try logging out instead.', [{ text: 'Okay' }], 'error');
-        }
-    };
-
-
-
-    const GENDERS = ['Male', 'Female', 'Non-binary', 'Prefer not to say'];
-    
-    const currentMascot = COMPANIONS.find(c => c.name === profile?.mascot_name) || COMPANIONS[0];
-    const reminderTime = profile?.reminder_time;
-    const displayReminderTime = reminderTime || '20:00';
-    const isHapticsEnabled = profile?.haptics_enabled ?? true;
-    const displayName = profile?.display_name || '';
 
     return (
         <Layout noScroll={true} isTabScreen={true} useSafePadding={false}>
             <View className="px-6 pt-4">
-                <TopNav title="Profile" />
+                <TopNav 
+                    title="Profile" 
+                    rightElement={
+                        <TouchableOpacity onPress={() => { haptics.selection(); navigation.navigate('Settings'); }}>
+                             <Ionicons name="settings-outline" size={24} color="#333333" />
+                        </TouchableOpacity>
+                    }
+                />
             </View>
 
             <ScrollView 
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 160 }}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={isRefreshing}
+                        onRefresh={onRefresh}
+                        tintColor="#FF9E7D"
+                        colors={["#FF9E7D"]}
+                    />
+                }
             >
-                {/* Profile Nudge Banner */}
                 <ProfileNudge 
                     isAnonymous={isAnonymous}
                     isComplete={!!displayName}
@@ -176,7 +112,6 @@ export const ProfileScreen = () => {
                     className="mb-8"
                 />
 
-                {/* Streak & Mascot Header */}
                 <View className="flex-row justify-between items-center mb-8">
                     <View className="flex-1">
                          <TouchableOpacity onPress={() => { haptics.selection(); setIsNameSheetVisible(true); }} className="mb-1">
@@ -196,6 +131,11 @@ export const ProfileScreen = () => {
                             <View>
                                 <Text className="text-[44px] leading-[50px] font-q-bold text-text">{streak} Day</Text>
                                 <Text className="text-[44px] leading-[50px] font-q-bold text-text">Streak!</Text>
+                                <View className="bg-white px-4 py-2 rounded-2xl shadow-sm border border-primary/5 flex-row items-center mt-3 self-start">
+                                    <Text className="text-primary font-q-bold text-sm">
+                                        Max Streak: {Math.max(streak, profile?.max_streak || 0)} Days 🔥
+                                    </Text>
+                                </View>
                             </View>
                         )}
                     </View>
@@ -211,43 +151,15 @@ export const ProfileScreen = () => {
                     </TouchableOpacity>
                 </View>
 
-                {/* Activity Graph */}
                 <ActivityGraph entries={rawStreakData} />
 
-                {/* Personal Settings Section */}
+                <Insights userId={userId || undefined} />
+
+
+
                 <View className="mb-8 bg-card rounded-[32px] p-6 shadow-[#0000000D] shadow-xl"
                     style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}>
                     
-                    {/* Daily Reminder */}
-                    <View className="flex-row items-center justify-between py-4">
-                        <View className="flex-1">
-                            <Text className="text-lg font-q-bold text-text">Daily Reminder</Text>
-                            <TouchableOpacity onPress={() => { haptics.selection(); setIsTimeSheetVisible(true); }}>
-                                <Text className="text-primary font-q-bold text-base mt-1">{displayReminderTime}</Text>
-                            </TouchableOpacity>
-                        </View>
-                        <Switch
-                            trackColor={{ false: '#E0E0E0', true: '#FF9E7D' }}
-                            thumbColor="#FFFFFF"
-                            onValueChange={(val) => {
-                                haptics.selection();
-                                if (val) {
-                                    // Turn on: use current display time or default
-                                    updateProfile({ reminder_time: displayReminderTime });
-                                } else {
-                                    // Turn off: set to null
-                                    updateProfile({ reminder_time: null });
-                                }
-                            }}
-                            value={!!reminderTime}
-                        />
-                    </View>
-
-                    <View className="h-[1px] bg-inactive opacity-10" />
-
-                    <View className="h-[1px] bg-inactive opacity-10" />
-
-                    {/* Age, Gender, Country, Goals, Struggles row */}
                     <View className="py-2">
                         <TouchableOpacity onPress={() => { haptics.selection(); setIsAgeSheetVisible(true); }} className="flex-row justify-between items-center py-3">
                             <Text className="text-lg font-q-bold text-text">Age</Text>
@@ -294,101 +206,9 @@ export const ProfileScreen = () => {
                     </View>
                 </View>
 
-                {/* App Settings Section */}
-                <View className="mb-8 bg-card rounded-[32px] p-6 shadow-[#0000000D] shadow-xl"
-                    style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}>
-                    {/* Haptic Feedback */}
-                    <View className="flex-row items-center justify-between py-4">
-                        <View className="flex-1">
-                            <Text className="text-lg font-q-bold text-text">Haptic Feedback</Text>
-                            <Text className="text-muted font-q-medium text-xs">Soft vibrations for interactions</Text>
-                        </View>
-                        <Switch
-                            trackColor={{ false: '#E0E0E0', true: '#FF9E7D' }}
-                            thumbColor="#FFFFFF"
-                            onValueChange={(val) => {
-                                updateProfile({ haptics_enabled: val });
-                                haptics.selection();
-                            }}
-                            value={isHapticsEnabled}
-                        />
-                    </View>
-
-                    <View className="h-[1px] bg-inactive opacity-10" />
-
-                    {/* Biometric Lock */}
-                    <View className="flex-row items-center justify-between py-4">
-                        <View className="flex-1">
-                            <Text className="text-lg font-q-bold text-text">Lock my Cloud</Text>
-                            <Text className="text-muted font-q-medium text-xs">Biometric protection for your diary</Text>
-                        </View>
-                        <Switch
-                            trackColor={{ false: '#E0E0E0', true: '#FF9E7D' }}
-                            thumbColor="#FFFFFF"
-                            onValueChange={(val) => {
-                                haptics.selection();
-                                if (val && !bioSupported) {
-                                    showAlert(
-                                        'Not Supported', 
-                                        'Your device does not support biometrics or none are enrolled.', 
-                                        [{ text: 'Okay' }], 
-                                        'info'
-                                    );
-                                    return;
-                                }
-                                updateProfile({ security_lock_enabled: val });
-                            }}
-                            value={profile?.security_lock_enabled ?? false}
-                        />
-                    </View>
-
-                    <View className="h-[1px] bg-inactive opacity-10" />
-
-
-
-                    {/* Privacy Policy */}
-                    <TouchableOpacity 
-                        onPress={() => { haptics.selection(); navigation.navigate('Legal', { type: 'privacy' }); }}
-                        className="flex-row items-center justify-between py-4"
-                    >
-                        <Text className="text-lg font-q-bold text-text">Privacy & Security</Text>
-                        <Ionicons name="lock-closed-outline" size={22} color="#FF9E7D" />
-                    </TouchableOpacity>
-
-                    <View className="h-[1px] bg-inactive opacity-10" />
-
-                    {/* Feedback */}
-                    <TouchableOpacity 
-                        onPress={() => { haptics.selection(); setIsFeedbackSheetVisible(true); }}
-                        className="flex-row items-center justify-between py-4"
-                    >
-                        <View>
-                            <Text className="text-lg font-q-bold text-text">Cloudy Whisper</Text>
-                            <Text className="text-muted font-q-medium text-xs">Send feedback or report bugs</Text>
-                        </View>
-                        <Ionicons name="chatbubble-ellipses-outline" size={22} color="#FF9E7D" />
-                    </TouchableOpacity>
-
-                    <View className="h-[1px] bg-inactive opacity-10" />
-
-                    {/* Delete Account */}
-                    <TouchableOpacity 
-                        onPress={() => { haptics.selection(); setIsDeleteSheetVisible(true); }}
-                        className="flex-row items-center justify-between py-4"
-                    >
-                        <Text className="text-lg font-q-bold text-text">Delete Account & Data</Text>
-                        <Ionicons name="trash-outline" size={22} color="#FF9E7D" />
-                    </TouchableOpacity>
-                </View>
-
-                {/* Log Out */}
-                <TouchableOpacity onPress={() => { haptics.heavy(); handleLogout(); }} className="mt-4 items-center py-4 active:scale-95 transition-transform">
-                    <Text className="text-lg font-q-bold text-red-400/60">Log Out</Text>
-                </TouchableOpacity>
-
                 <AppFooter />
             </ScrollView>
-
+            
              <BottomSheet visible={isNameSheetVisible} onClose={() => setIsNameSheetVisible(false)}>
                 <View className="items-center w-full">
                      <MascotImage source={MASCOTS.THINK} className="w-40 h-40 mb-4" resizeMode="contain" />
@@ -587,40 +407,26 @@ export const ProfileScreen = () => {
                 </View>
             </BottomSheet>
 
-             <BottomSheet visible={isTimeSheetVisible} onClose={() => setIsTimeSheetVisible(false)}>
-                <View className="items-center mt-2 w-full">
-                    <MascotImage source={MASCOTS.WATCH} className="w-40 h-40 mb-4" resizeMode="contain" />
-                    <Text className="text-2xl font-q-bold text-text text-center mb-6">When to remind you?</Text>
-                    
-                    <View className="w-full mb-8">
-                        <TimePicker value={reminderDate} onChange={setReminderDate} />
-                    </View>
-
-                    <Button 
-                        label="Update Time"
-                        onPress={() => {
-                            const h = reminderDate.getHours().toString().padStart(2, '0');
-                            const m = reminderDate.getMinutes().toString().padStart(2, '0');
-                            const formatted = `${h}:${m}`;
-                            updateProfile({ reminder_time: formatted });
-                            setIsTimeSheetVisible(false);
-                            haptics.success();
-                        }}
-                    />
-
-                    <TouchableOpacity onPress={() => { haptics.selection(); setIsTimeSheetVisible(false); }} className="mt-4 py-2 active:scale-95 transition-transform">
-                         <Text className="text-muted font-q-bold text-base">Cancel</Text>
-                    </TouchableOpacity>
-                </View>
-            </BottomSheet>
-
              <BottomSheet visible={isMascotSheetVisible} onClose={() => setIsMascotSheetVisible(false)}>
                 <View className="items-center w-full">
                     <MascotImage source={MASCOTS.HUG} className="w-40 h-40 mb-4" resizeMode="contain" />
-                    <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">Choose your companion</Text>
-                    <View className="flex-row flex-wrap justify-between w-full mb-8">
+                    <Text className="text-2xl font-q-bold text-text text-center mb-1 px-4">Choose your companion</Text>
+                    
+                    <TouchableOpacity 
+                        onPress={() => {
+                            haptics.selection();
+                            setIsMascotSheetVisible(false);
+                            navigation.navigate('Progress');
+                        }}
+                        className="mb-8"
+                    >
+                        <Text className="text-primary font-q-bold text-sm uppercase tracking-widest border-b border-primary/30 pb-0.5">See Progress</Text>
+                    </TouchableOpacity>
+
+                    <View className="flex-row flex-wrap justify-between w-full mb-4">
                         {COMPANIONS.map((companion) => {
-                            const isLocked = streak < companion.requiredStreak;
+                            const effectiveStreak = Math.max(streak, profile?.max_streak || 0);
+                            const isLocked = effectiveStreak < companion.requiredStreak;
                             return (
                                 <MascotCard 
                                     key={companion.id}
@@ -628,6 +434,7 @@ export const ProfileScreen = () => {
                                     asset={companion.asset}
                                     isSelected={tempMascotName === companion.name}
                                     isLocked={isLocked}
+                                    requiredStreak={companion.requiredStreak}
                                     onPress={() => {
                                         if (!isLocked) {
                                             setTempMascotName(companion.name);
@@ -638,44 +445,25 @@ export const ProfileScreen = () => {
                             );
                         })}
                     </View>
-                    <Button 
-                        label="Save Companion"
-                        onPress={() => {
-                            updateProfile({ mascot_name: tempMascotName });
-                            setIsMascotSheetVisible(false);
-                            haptics.success();
-                        }}
-                    />
-                    <TouchableOpacity onPress={() => { haptics.selection(); setIsMascotSheetVisible(false); }} className="mt-4 py-2 active:scale-95 transition-transform">
-                         <Text className="text-muted font-q-bold text-base">Cancel</Text>
-                    </TouchableOpacity>
+                    <View className="w-full">
+                        <Button 
+                            label="Save"
+                            onPress={() => {
+                                updateProfile({ mascot_name: tempMascotName });
+                                setIsMascotSheetVisible(false);
+                                haptics.success();
+                            }}
+                        />
+                        <TouchableOpacity 
+                            onPress={() => { haptics.selection(); setIsMascotSheetVisible(false); }} 
+                            className="mt-4 py-2 items-center active:scale-95 transition-transform"
+                        >
+                             <Text className="text-muted font-q-bold text-base">Maybe later</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </BottomSheet>
 
-            <BottomSheet visible={isDeleteSheetVisible} onClose={() => setIsDeleteSheetVisible(false)}>
-                <View className="items-center w-full">
-                    <MascotImage source={MASCOTS.CRY} className="w-32 h-32 mb-4" resizeMode="contain" />
-                    <Text className="text-2xl font-q-bold text-text text-center mb-4 px-6">Are you sure you want to leave?</Text>
-                    <Text className="text-lg font-q-medium text-muted text-center mb-8 px-4 leading-6">
-                        This will permanently erase all your memories and your profile. This action cannot be undone.
-                    </Text>
-                    
-                    <Button 
-                        label="Yes, Delete Everything"
-                        onPress={() => { haptics.heavy(); handleDeleteAccount(); }}
-                        haptic="heavy"
-                    />
-
-                    <TouchableOpacity onPress={() => { haptics.selection(); setIsDeleteSheetVisible(false); }} className="mt-4 py-2 active:scale-95 transition-transform">
-                         <Text className="text-muted font-q-bold text-base">Wait, I'll stay!</Text>
-                    </TouchableOpacity>
-                </View>
-            </BottomSheet>
-
-            <FeedbackSheet 
-                visible={isFeedbackSheetVisible} 
-                onClose={() => setIsFeedbackSheetVisible(false)} 
-            />
         </Layout>
     );
 };

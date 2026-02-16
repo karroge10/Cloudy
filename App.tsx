@@ -44,7 +44,9 @@ import { preloadAssets } from './src/utils/assetLoader';
 import { AssetWarmup } from './src/components/AssetWarmup';
 import { CustomSplashScreen } from './src/components/CustomSplashScreen';
 import { LegalScreen } from './src/screens/LegalScreen';
-import { RoadmapScreen } from './src/screens/RoadmapScreen';
+import { SettingsScreen } from './src/screens/SettingsScreen';
+import { ProgressScreen } from './src/screens/ProgressScreen';
+import { ProfileScreen } from './src/screens/ProfileScreen'; // Added ProfileScreen import
 
 const AppContent = () => {
   useNotifications(true); // Pass flag to ignore hook errors if needed, but we'll use ref now
@@ -73,39 +75,35 @@ const RootNavigator = ({ session, isBioLocked, isColdStartWithSession, isAuthLoa
   const [viewMode, setViewMode] = useState<'loading' | 'onboarding' | 'app' | 'auth'>('loading');
 
   useEffect(() => {
-    // Stage 0: Essentials
-    if (!fontsLoaded || isAuthLoading || isBioLocked === null) {
-      if (viewMode !== 'loading') setViewMode('loading');
-      return;
-    }
+    const nextViewMode = (() => {
+        // Stage 0: Essentials
+        if (!fontsLoaded || isAuthLoading || isBioLocked === null) return 'loading';
 
-    // Stage 1: Absolute Logout
-    if (!session) {
-      if (viewMode !== 'auth') setViewMode('auth');
-      return;
-    }
+        // Stage 1: Absolute Logout
+        if (!session) return 'auth';
 
-    // Stage 2: Navigation Logic (Priority: App)
-    // If we have a profile that is done with onboarding, GO to app stack.
-    if (profile?.onboarding_completed) {
-      if (viewMode !== 'app') {
-        setViewMode('app');
-      }
-      return;
-    }
+        // Stage 2: App Priority
+        if (profile?.onboarding_completed) return 'app';
 
-    // STICKY APP: If we are already in the app, don't leave it unless session is gone.
-    if (viewMode === 'app') return;
+        // Stage 3: Sticky App - If we are already in the app, don't leave it while profile is just refreshing
+        if (viewMode === 'app' && profileLoading) return 'app';
 
-    // Stage 3: Onboarding or Auth Stack
-    if (!profileLoading) {
-      if (profile) {
-        // Logged in with a profile that ISN'T finished
-        if (viewMode !== 'onboarding') setViewMode('onboarding');
-      } else {
-        // Missing profile entirely (Fresh Anonymous User/New Account)
-        if (viewMode !== 'onboarding') setViewMode('onboarding');
-      }
+        // Stage 4: Onboarding or Auth Stack
+        if (!profileLoading) {
+            return 'onboarding';
+        }
+
+        return viewMode; // Keep current if loading and not essentially blocked
+    })();
+
+    if (nextViewMode !== viewMode) {
+        console.log(`[RootNavigator] Changing viewMode: ${viewMode} -> ${nextViewMode}`, { 
+            session: !!session, 
+            profile: !!profile, 
+            onboarding: profile?.onboarding_completed,
+            profileLoading
+        });
+        setViewMode(nextViewMode);
     }
   }, [session, profileLoading, profile?.onboarding_completed, isAuthLoading, fontsLoaded, isBioLocked]);
 
@@ -119,7 +117,6 @@ const RootNavigator = ({ session, isBioLocked, isColdStartWithSession, isAuthLoa
         isColdStart={isColdStartWithSession}
     >
       <Stack.Navigator
-        key={viewMode}
         initialRouteName={viewMode === 'app' ? "MainApp" : "Welcome"}
         screenOptions={{
           headerShown: false,
@@ -133,7 +130,9 @@ const RootNavigator = ({ session, isBioLocked, isColdStartWithSession, isAuthLoa
               <Stack.Screen name="JournalEntry" component={JournalEntryScreen} />
               <Stack.Screen name="Memory" component={MemoryScreen} />
               <Stack.Screen name="Legal" component={LegalScreen} />
-              <Stack.Screen name="Roadmap" component={RoadmapScreen} />
+
+              <Stack.Screen name="Settings" component={SettingsScreen} />
+              <Stack.Screen name="Progress" component={ProgressScreen} />
               {/* Unique name to prevent navigation focus leakage from the Login screen */}
               <Stack.Screen name="SecureAccount" component={AuthScreen} />
             </>

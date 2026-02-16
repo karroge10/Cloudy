@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COMPANIONS } from '../constants/Companions';
+import { MASCOTS } from '../constants/Assets';
 import { MascotImage } from './MascotImage';
 import { haptics } from '../utils/haptics';
 import { Skeleton } from './Skeleton';
@@ -66,7 +67,7 @@ export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, className, onPre
                         ) : nextCompanion ? (
                             <MascotImage source={nextCompanion.asset} className="w-8 h-8" resizeMode="contain" />
                         ) : (
-                            <Ionicons name="trophy" size={24} color="#FF9E7D" />
+                            <MascotImage source={MASCOTS.STAR} className="w-8 h-8" resizeMode="contain" />
                         )}
                     </View>
                     <View className="flex-1">
@@ -74,7 +75,7 @@ export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, className, onPre
                             {isLoading ? (
                                 <Skeleton width={60} height={10} borderRadius={2} />
                             ) : (
-                                nextCompanion ? 'Next Companion' : 'Next Milestone'
+                                'Next Milestone'
                             )}
                         </Text>
                         <View className="h-6 justify-center">
@@ -104,7 +105,7 @@ export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, className, onPre
             </View>
 
             {/* Progress Bar */}
-            <View className="h-3 w-full bg-inactive/10 rounded-full overflow-hidden">
+            <View className="h-3 w-full bg-inactive/40 rounded-full overflow-hidden">
                 <Animated.View 
                     style={animatedProgressStyle} 
                     className="h-full bg-primary rounded-full" 
