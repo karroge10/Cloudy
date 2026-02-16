@@ -26,7 +26,7 @@ interface ProfileContextType {
     userId: string | null;
     loading: boolean;
     refreshProfile: () => Promise<void>;
-    updateProfile: (updates: Partial<Profile>) => Promise<void>;
+    updateProfile: (updates: Partial<Profile>) => Promise<boolean>;
 }
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
@@ -48,15 +48,19 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
 
         setLoading(true);
         try {
-            setIsAnonymous(session?.user?.is_anonymous || false);
+            const isAnon = session?.user?.is_anonymous || false;
+            setIsAnonymous(isAnon);
 
             const { data, error } = await supabase
                 .from('profiles')
                 .select('display_name, haptics_enabled, security_lock_enabled, onboarding_completed, reminder_time, age, gender, country, mascot_name, goals, struggles')
                 .eq('id', userId)
-                .single();
+                .maybeSingle();
 
-            if (data && !error) {
+            if (error) {
+                console.error('[Profile] Error fetching profile:', error);
+                setProfile(null);
+            } else if (data) {
                 const mappedProfile: Profile = {
                     display_name: data.display_name,
                     haptics_enabled: data.haptics_enabled ?? true,
@@ -82,26 +86,47 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
                 } else {
                     await AsyncStorage.removeItem('security_lock_enabled');
                 }
-            } else if (error) {
-                console.error('[Profile] Error fetching profile:', error);
-                setProfile(null);
             } else {
                 setProfile(null);
             }
-            setLoading(false);
         } catch (error) {
             console.error('[Profile] Unexpected error during profile fetch:', error);
             setProfile(null);
+        } finally {
             setLoading(false);
         }
     };
 
-    const updateProfile = async (updates: Partial<Profile>) => {
-        if (!userId) return;
+    const updateProfile = async (updates: Partial<Profile>): Promise<boolean> => {
+        // 1. Resolve Identity - ALWAYS use the client's current truth to avoid RLS 42501
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        
+        if (!currentUser) {
+            console.warn('[Profile] Aborting update: No authenticated user found in Supabase client.');
+            return false;
+        }
 
-        // 1. Optimistic UI Update
+        const activeUserId = currentUser.id;
+
+        // 2. Optimistic UI Update
+        const oldProfile = profile;
         if (profile) {
             setProfile({ ...profile, ...updates });
+        } else if (updates.onboarding_completed) {
+            // Trigger transition for new users by providing a skeleton profile
+            setProfile({
+                display_name: null,
+                haptics_enabled: true,
+                security_lock_enabled: false,
+                onboarding_completed: true,
+                reminder_time: null,
+                age: null,
+                gender: null,
+                country: null,
+                mascot_name: null,
+                goals: updates.goals || [],
+                struggles: updates.struggles || [],
+            });
         }
         
         // Fire immediate side effects
@@ -117,22 +142,55 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
             notifications.scheduleDailyReminder(updates.reminder_time, true);
         }
 
-        // 2. Database Sync
-        const { error } = await supabase
-            .from('profiles')
-            .upsert({ ...updates, id: userId, updated_at: new Date() });
+        // 3. Database Sync
+        try {
+            // Tiny delay to ensure SDK headers are synchronized after sign-in
+            await new Promise(resolve => setTimeout(resolve, 100));
 
-        if (error) {
-            console.error('Error updating profile:', error);
-            fetchProfile(); // Revert/Sync on error
-        } else {
-            // SUCCESS: Re-fetch to ensure the local state is 100% accurate 
-            // and contains the newly created record if it's the first time.
+            // More granular approach than simple upsert to isolate RLS issues
+            const profileData = { ...updates, id: activeUserId, updated_at: new Date().toISOString() };
+            
+            // Try updating first (if returning user)
+            const { error: updateError, data: updateData } = await supabase
+                .from('profiles')
+                .update(updates)
+                .eq('id', activeUserId)
+                .select();
+
+            // If no rows were updated (updateData is empty), try insert
+            if (updateError || !updateData || updateData.length === 0) {
+                const { error: insertError } = await supabase
+                    .from('profiles')
+                    .insert(profileData);
+
+                if (insertError) {
+                    console.error('[Profile] Profile initialization failed:', insertError.code, insertError.message);
+                    setProfile(oldProfile);
+                    return false;
+                }
+            }
+
+            // If we just finished onboarding, the optimistic state is enough to trigger navigation.
+            // We skip immediate fetchProfile() to avoid race conditions/resetting profile to false.
+            if (updates.onboarding_completed) {
+                console.log('[Profile] Onboarding save complete. Skipping re-fetch to maintain navigation state.');
+                return true;
+            }
+
             await fetchProfile();
+            return true;
+        } catch (err) {
+            console.error('[Profile] Unexpected database sync error:', err);
+            setProfile(oldProfile);
+            return false;
         }
     };
 
     useEffect(() => {
+        setProfile(null);
+        if (userId) {
+            setLoading(true);
+        }
         fetchProfile();
 
         const refreshListener = DeviceEventEmitter.addListener('refresh_profile', fetchProfile);

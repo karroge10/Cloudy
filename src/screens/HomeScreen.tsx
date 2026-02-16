@@ -23,7 +23,7 @@ import { ReviewNudge } from '../components/ReviewNudge';
 export const HomeScreen = () => {
     const { showAlert } = useAlert();
     const navigation = useNavigation<any>();
-    const { addEntry, streak } = useJournal();
+    const { addEntry, streak, loading: journalLoading } = useJournal();
     const { profile, updateProfile, isAnonymous, userId } = useProfile();
     const { trackEvent } = useAnalytics();
 
@@ -184,15 +184,6 @@ export const HomeScreen = () => {
 
     const inputRef = useRef<TextInput>(null);
 
-    useEffect(() => {
-        if (isNewUser) {
-            // Small delay to ensure the component is fully ready
-            setTimeout(() => {
-                inputRef.current?.focus();
-            }, 100);
-        }
-    }, [isNewUser]);
-
     return (
         <Layout isTabScreen={true} useSafePadding={false} className="px-6 pt-4">
             {/* Header */}
@@ -215,7 +206,11 @@ export const HomeScreen = () => {
                         >
                             <View className="flex-row items-center bg-white px-2 py-1 rounded-full shadow-sm">
                                 <Ionicons name="flame" size={16} color="#FF9E7D" />
-                                <Text className="font-q-bold text-primary ml-1 text-base">{streak}</Text>
+                                {journalLoading ? (
+                                    <View className="bg-primary/10 w-4 h-4 rounded-full ml-1" />
+                                ) : (
+                                    <Text className="font-q-bold text-primary ml-1 text-base">{streak}</Text>
+                                )}
                             </View>
                         </TouchableOpacity>
                     </View>
@@ -226,6 +221,7 @@ export const HomeScreen = () => {
             {/* Streak Goal Milestone - Now at the top */}
             <StreakGoal 
                 streak={streak} 
+                isLoading={journalLoading}
                 className="mb-8" 
                 onPress={() => {
                     trackEvent('roadmap_viewed');
@@ -248,7 +244,6 @@ export const HomeScreen = () => {
                     value={text}
                     onChangeText={setText}
                     maxLength={200}
-                    autoFocus={isNewUser}
                 />
                 
                 <View className="flex-row justify-between items-center pt-4 border-t border-gray-50">
@@ -274,15 +269,6 @@ export const HomeScreen = () => {
                     </TouchableOpacity>
                 </View>
             </View>
-            {/* Tip Box - Only show for very new users */}
-            {streak === 0 && (
-                <InfoCard 
-                    title="Writing Tip"
-                    subtitle="Focus on one small thing that went well today, no matter how tiny it seems."
-                    icon="bulb"
-                    className="mb-8"
-                />
-            )}
 
             {/* Post-Save Setup Sheet */}
             <BottomSheet 

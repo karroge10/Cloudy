@@ -41,8 +41,8 @@ export const ReviewNudge = ({ visible, onClose }: ReviewNudgeProps) => {
     return (
         <BottomSheet visible={visible} onClose={onClose}>
             <View className="items-center w-full">
-                <MascotImage source={MASCOTS.ZEN} className="w-40 h-40 mb-4" resizeMode="contain" />
-                <Text className="text-xl font-q-bold text-primary text-center mb-1">Moment of Zen ✨</Text>
+                <MascotImage source={MASCOTS.STAR} className="w-40 h-40 mb-4" resizeMode="contain" />
+                <Text className="text-xl font-q-bold text-primary text-center mb-1">Moment of Delight ✨</Text>
                 <Text className="text-2xl font-q-bold text-text text-center mb-4 px-6">
                     Are you enjoying your journey with Cloudy?
                 </Text>

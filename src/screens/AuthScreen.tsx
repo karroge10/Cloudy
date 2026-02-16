@@ -3,6 +3,7 @@ import Constants from 'expo-constants';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { supabase } from '../lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { MASCOTS } from '../constants/Assets';
 import { Ionicons } from '@expo/vector-icons';
@@ -46,7 +47,7 @@ export const AuthScreen = () => {
         // Capture anonymous ID for merging if signing in to existing account
         const { data: { user: currentUser } } = await supabase.auth.getUser();
         if (currentUser?.is_anonymous) {
-            await AsyncStorage.setItem('pending_merge_anonymous_id', currentUser.id);
+            await SecureStore.setItemAsync('pending_merge_anonymous_id', currentUser.id);
         }
 
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -161,7 +162,7 @@ export const AuthScreen = () => {
                 // Capture anonymous ID for merging
                 const { data: { user: currentUser } } = await supabase.auth.getUser();
                 if (currentUser?.is_anonymous) {
-                    await AsyncStorage.setItem('pending_merge_anonymous_id', currentUser.id);
+                    await SecureStore.setItemAsync('pending_merge_anonymous_id', currentUser.id);
                 }
 
                 const { data, error } = await supabase.auth.signInWithIdToken({

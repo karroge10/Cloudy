@@ -66,47 +66,63 @@ const CloudyTheme = {
 // Prevent auto hide splash screen
 SplashScreen.preventAutoHideAsync();
 
-const RootNavigator = ({ session, isBioLocked, isColdStartWithSession }: { session: Session | null, isBioLocked: boolean | null, isColdStartWithSession: boolean }) => {
+const RootNavigator = ({ session, isBioLocked, isColdStartWithSession, isAuthLoading, fontsLoaded }: { session: Session | null, isBioLocked: boolean | null, isColdStartWithSession: boolean, isAuthLoading: boolean, fontsLoaded: boolean }) => {
   const { profile, loading: profileLoading } = useProfile();
   
   // Decide which stack to show. 
-  // We use a state to "lock in" the view so we don't flicker during loading.
   const [viewMode, setViewMode] = useState<'loading' | 'onboarding' | 'app' | 'auth'>('loading');
 
   useEffect(() => {
+    // Stage 0: Essentials
+    if (!fontsLoaded || isAuthLoading || isBioLocked === null) {
+      if (viewMode !== 'loading') setViewMode('loading');
+      return;
+    }
+
     // Stage 1: Absolute Logout
     if (!session) {
       if (viewMode !== 'auth') setViewMode('auth');
       return;
     }
 
-    // Stage 2: Profile is ready
-    if (!profileLoading && profile) {
-      setViewMode(profile.onboarding_completed ? 'app' : 'onboarding');
+    // Stage 2: Navigation Logic (Priority: App)
+    // If we have a profile that is done with onboarding, GO to app stack.
+    if (profile?.onboarding_completed) {
+      if (viewMode !== 'app') {
+        console.log('[Navigator] Onboarding complete, switching to app stack');
+        setViewMode('app');
+      }
       return;
     }
 
-    // Stage 3: Profile is missing but loading is done (Brand new account)
-    if (!profileLoading && !profile) {
-      setViewMode('onboarding');
-      return;
-    }
+    // STICKY APP: If we are already in the app, don't leave it unless session is gone.
+    // This prevents flickering during background profile refreshes.
+    if (viewMode === 'app') return;
 
-    // Stage 4: Profile is loading
-    // We only show the full-screen loader if it's a cold boot with a session.
-    // If we just logged in, we stay in the current viewMode (usually 'auth') 
-    // until Stage 2 or 3 kicks in, preventing the transition flicker.
-    if (isColdStartWithSession) {
-      setViewMode('loading');
+    // Stage 3: Onboarding or Auth Stack
+    if (!profileLoading) {
+      if (profile) {
+        // Logged in with a profile that ISN'T finished
+        if (viewMode !== 'onboarding') setViewMode('onboarding');
+      } else {
+        // Missing profile entirely (Fresh Anonymous User/New Account)
+        // Only jump to onboarding if we are currently in 'loading' or 'auth'
+        if (viewMode !== 'auth' && viewMode !== 'onboarding') {
+          setViewMode('onboarding');
+        }
+      }
+    } else if (isColdStartWithSession && viewMode !== 'loading') {
+       // Stage 4: Still loading on cold start
+       setViewMode('loading');
     }
-  }, [session, profileLoading, profile?.onboarding_completed, isColdStartWithSession]);
+  }, [session, profileLoading, profile?.onboarding_completed, viewMode, isColdStartWithSession, isAuthLoading, fontsLoaded, isBioLocked]);
 
-  // If we are cold starting with a session, show a loader until profile is ready.
-  // Otherwise, we keep the current viewMode to prevent jumping.
+  // CRITICAL: Prevent ANY frame of private content leakage.
+  // If we should be locked or are still determining the state, show the absolute minimum.
   if (viewMode === 'loading' || (profileLoading && session && isColdStartWithSession)) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF9F0' }}>
-        <ActivityIndicator color="#FF9E7D" size="large" />
+      <View style={{ flex: 1, backgroundColor: '#FFF9F0' }}>
+        {/* Total empty screen keeps navigation stacks from mounting/rendering hidden data */}
       </View>
     );
   }
@@ -119,7 +135,7 @@ const RootNavigator = ({ session, isBioLocked, isColdStartWithSession }: { sessi
     >
       <Stack.Navigator
         key={viewMode}
-        initialRouteName={viewMode === 'app' ? "MainApp" : viewMode === 'onboarding' ? "StruggleSelection" : "Welcome"}
+        initialRouteName={viewMode === 'app' ? "MainApp" : "Welcome"}
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: '#FFF9F0' },
@@ -138,6 +154,7 @@ const RootNavigator = ({ session, isBioLocked, isColdStartWithSession }: { sessi
             </>
         ) : viewMode === 'onboarding' ? (
             <>
+              <Stack.Screen name="Welcome" component={WelcomeScreen} />
               <Stack.Screen name="StruggleSelection" component={StruggleSelectionScreen} />
               <Stack.Screen name="GoalSelection" component={GoalSelectionScreen} />
               <Stack.Screen name="Summary" component={SummaryScreen} />
@@ -204,6 +221,12 @@ export default function App() {
       if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
         const val = await AsyncStorage.getItem('security_lock_enabled');
         setIsBioLocked(val === 'true');
+        
+        // If it's a real SIGNED_IN event (not initial session), it's not a cold start lock anymore.
+        // This prevents the lock from appearing immediately after a Google login or Conversion.
+        if (event === 'SIGNED_IN') {
+           isColdStartWithSession.current = false;
+        }
       }
     });
 
@@ -277,8 +300,8 @@ export default function App() {
         <SafeAreaProvider>
 
         <AlertProvider>
-          <ProfileProvider session={session}>
-            <JournalProvider session={session}>
+          <ProfileProvider session={session} key={session?.user?.id || 'guest'}>
+            <JournalProvider session={session} key={session?.user?.id || 'guest'}>
               <NavigationContainer 
                 theme={CloudyTheme} 
                 ref={navigationRef}
@@ -304,6 +327,8 @@ export default function App() {
                         session={session} 
                         isBioLocked={isBioLocked} 
                         isColdStartWithSession={isColdStartWithSession.current === true} 
+                        isAuthLoading={isAuthLoading}
+                        fontsLoaded={fontsLoaded}
                       />
                     </>
                 ) : null}

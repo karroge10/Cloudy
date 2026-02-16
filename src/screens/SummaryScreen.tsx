@@ -54,17 +54,22 @@ export const SummaryScreen = () => {
                 });
 
                 // Initialize profile with onboarding data via Context
-                await updateProfile({
+                const success = await updateProfile({
                     goals: goals,
                     struggles: struggles,
                     onboarding_completed: true,
                 });
+
+                if (!success) {
+                    throw new Error('Could not save your preferences. Please try again.');
+                }
             }
 
             trackEvent('onboarding_finished', { struggles, goals });
         } catch (error: any) {
             const { title, message } = getFriendlyAuthErrorMessage(error);
             showAlert(title, message, [{ text: 'Okay' }], 'error');
+        } finally {
             setLoading(false);
         }
     };

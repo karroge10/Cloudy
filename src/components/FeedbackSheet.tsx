@@ -57,7 +57,7 @@ export const FeedbackSheet = ({ visible, onClose }: FeedbackSheetProps) => {
     return (
         <BottomSheet visible={visible} onClose={onClose}>
             <View className="items-center w-full">
-                <MascotImage source={MASCOTS.THINK} className="w-32 h-32 mb-4" resizeMode="contain" />
+                <MascotImage source={MASCOTS.ENVELOPE} className="w-32 h-32 mb-4" resizeMode="contain" />
                 <Text className="text-2xl font-q-bold text-text text-center mb-2 px-6">
                     Cloudy Whisper
                 </Text>

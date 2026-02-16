@@ -654,7 +654,7 @@ export const ProfileScreen = () => {
 
             <BottomSheet visible={isDeleteSheetVisible} onClose={() => setIsDeleteSheetVisible(false)}>
                 <View className="items-center w-full">
-                    <MascotImage source={MASCOTS.SAD} className="w-32 h-32 mb-4" resizeMode="contain" />
+                    <MascotImage source={MASCOTS.CRY} className="w-32 h-32 mb-4" resizeMode="contain" />
                     <Text className="text-2xl font-q-bold text-text text-center mb-4 px-6">Are you sure you want to leave?</Text>
                     <Text className="text-lg font-q-medium text-muted text-center mb-8 px-4 leading-6">
                         This will permanently erase all your memories and your profile. This action cannot be undone.
