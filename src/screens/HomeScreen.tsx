@@ -19,12 +19,13 @@ import { useAnalytics } from '../hooks/useAnalytics';
 import { Button } from '../components/Button';
 import { COMPANIONS } from '../constants/Companions';
 import { ReviewNudge } from '../components/ReviewNudge';
+import { StreakLostSheet } from '../components/StreakLostSheet';
 
 export const HomeScreen = () => {
     const { showAlert } = useAlert();
     const navigation = useNavigation<any>();
-    const { addEntry, streak, loading: journalLoading, refreshEntries } = useJournal();
-    const { profile, updateProfile, isAnonymous, userId, refreshProfile } = useProfile();
+    const { addEntry, streak, rawStreakData, loading: journalLoading, refreshEntries, isMerging } = useJournal();
+    const { profile, loading: profileLoading, updateProfile, isAnonymous, userId, refreshProfile } = useProfile();
     const { trackEvent } = useAnalytics();
 
     
@@ -33,6 +34,7 @@ export const HomeScreen = () => {
     const [showSetupSheet, setShowSetupSheet] = useState(false);
     const [showStreakNudge, setShowStreakNudge] = useState(false);
     const [showReviewNudge, setShowReviewNudge] = useState(false);
+    const [showStreakLostSheet, setShowStreakLostSheet] = useState(false);
     const [isSavingName, setIsSavingName] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [tempDisplayName, setTempDisplayName] = useState('');
@@ -63,6 +65,34 @@ export const HomeScreen = () => {
             })
         ]).start();
     };
+
+    // Check for streak loss on mount/updates
+    // Check for streak loss on mount/updates
+    useEffect(() => {
+        const checkStreakLoss = async () => {
+             // Only show if user is fully loaded and has a past max streak of importance (e.g. >= 3)
+             if (!journalLoading && streak === 0 && (profile?.max_streak || 0) >= 3) {
+                 const lastShownEntryDate = await AsyncStorage.getItem('last_loss_sheet_shown_for_entry_date');
+                 
+                 // Find the most recent entry
+                 const sortedData = [...rawStreakData].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                 const latestEntry = sortedData[0];
+
+                 if (latestEntry) {
+                     // logic: If the latest entry is different from the one we last showed the sheet for,
+                     // it means we haven't acknowledged THIS streak loss yet.
+                     // Even if I post today, streak becomes 1. last_loss_sheet_shown_for_entry_date stays old.
+                     // If I lose streak again, streak becomes 0. Latest entry is new. Mismatch! -> Show.
+                     if (latestEntry.created_at !== lastShownEntryDate) {
+                        setShowStreakLostSheet(true);
+                        await AsyncStorage.setItem('last_loss_sheet_shown_for_entry_date', latestEntry.created_at);
+                        trackEvent('streak_loss_sheet_shown', { max_streak: profile?.max_streak });
+                     }
+                 }
+             }
+        };
+        checkStreakLoss();
+    }, [streak, journalLoading, profile?.max_streak, rawStreakData]);
 
     const handleSave = async () => {
         if (!text.trim()) {
@@ -254,7 +284,8 @@ export const HomeScreen = () => {
             {/* Streak Goal Milestone - Now at the top */}
             <StreakGoal 
                 streak={streak} 
-                isLoading={journalLoading && streak === 0}
+                maxStreak={profile?.max_streak}
+                isLoading={journalLoading || profileLoading || isMerging}
                 className="mb-8" 
                 onPress={() => {
                     trackEvent('progress_viewed');
@@ -414,6 +445,11 @@ export const HomeScreen = () => {
                     setShowReviewNudge(false);
                     setText('');
                 }}
+            />
+
+            <StreakLostSheet 
+                visible={showStreakLostSheet}
+                onClose={() => setShowStreakLostSheet(false)}
             />
         </Layout>
     );

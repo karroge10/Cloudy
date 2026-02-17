@@ -18,6 +18,7 @@ const STORAGE_KEYS = {
     NEXT_FLASHBACK_DATE: 'cloudy_next_flashback_date',
     LAST_APP_OPEN: 'cloudy_last_app_open',
     LAST_REMINDER_SENT_DATE: 'cloudy_last_reminder_sent_date',
+    LAST_STREAK_PROTECTION: 'cloudy_last_streak_protection',
 };
 
 const REMINDER_TITLES = [
@@ -295,6 +296,49 @@ class NotificationService {
         });
 
         if (__DEV__) console.log('[NotificationService] Rescue nudge scheduled for 3 days from now');
+    }
+
+    /**
+     * Streak Protection: Schedules a notification for when the streak is about to be lost.
+     * Logic: If I posted today (e.g. Mon), I am safe for Mon. I must post Tue. 
+     * If I don't post Tue, streak is lost Wed morning.
+     * So we schedule for Wed 09:00 AM.
+     */
+    async scheduleStreakProtection(lastEntryDate: string) {
+        // Don't prompt, silently fail if no perms
+        const hasPermission = await this.requestPermissions(false);
+        if (!hasPermission) return;
+
+        // Cancel previous protection
+        await Notifications.cancelScheduledNotificationAsync('streak-protection');
+
+        const entryDate = new Date(lastEntryDate);
+        // Start from the entry date. 
+        // Streak lasts for 1 day gap usually. 
+        // Day 0: Entry 
+        // Day 1: Must post (Streak active)
+        // Day 2: Streak lost if no post on Day 1.
+        
+        // So we warn on Day 2 morning.
+        const triggerDate = new Date(); // Use NOW to be safe relating to current time, but logic uses entryDate reference?
+        // Actually, simpler: Just set it for "Day after tomorrow" relative to NOW if the entry was just made NOW.
+        // Assuming this is called right after adding an entry.
+        
+        triggerDate.setDate(triggerDate.getDate() + 2);
+        triggerDate.setHours(9, 0, 0, 0); // 9 AM
+
+        await Notifications.scheduleNotificationAsync({
+            identifier: 'streak-protection',
+            content: {
+                title: "Oh no! Your streak reset 😢",
+                body: "You missed a day, but don't worry! Start a new streak today and keep the momentum going.",
+                sound: true,
+                data: { type: 'STREAK_LOST' }
+            },
+            trigger: triggerDate as any,
+        });
+
+        if (__DEV__) console.log(`[NotificationService] Streak protection scheduled for ${triggerDate.toDateString()} 09:00`);
     }
 
     async cancelAllNotifications() {

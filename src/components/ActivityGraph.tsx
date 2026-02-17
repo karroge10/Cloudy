@@ -3,9 +3,10 @@ import { View, Text, ScrollView, Dimensions } from 'react-native';
 
 interface ActivityGraphProps {
     entries?: { created_at: string }[]; // Array of objects with ISO date strings
+    maxStreak?: number;
 }
 
-export const ActivityGraph: React.FC<ActivityGraphProps> = ({ entries }) => {
+export const ActivityGraph: React.FC<ActivityGraphProps> = ({ entries, maxStreak }) => {
     const scrollViewRef = useRef<ScrollView>(null);
     // Calculate reliable width
     const screenWidth = Dimensions.get('window').width;
@@ -24,7 +25,9 @@ export const ActivityGraph: React.FC<ActivityGraphProps> = ({ entries }) => {
     const activityData = React.useMemo(() => {
         const counts = new Map<string, number>();
         entries?.forEach(entry => {
-            const key = new Date(entry.created_at).toISOString().split('T')[0];
+            // Use local date string to match streak calculation logic
+            const d = new Date(entry.created_at);
+            const key = d.toLocaleDateString('en-CA');
             counts.set(key, (counts.get(key) || 0) + 1);
         });
 
@@ -35,7 +38,7 @@ export const ActivityGraph: React.FC<ActivityGraphProps> = ({ entries }) => {
         for (let i = totalDays - 1; i >= 0; i--) {
             const d = new Date();
             d.setDate(today.getDate() - i);
-            const key = d.toISOString().split('T')[0];
+            const key = d.toLocaleDateString('en-CA');
             const count = counts.get(key) || 0;
             days.push(Math.min(count, 3));
         }
@@ -53,7 +56,8 @@ export const ActivityGraph: React.FC<ActivityGraphProps> = ({ entries }) => {
         const data: number[] = [];
         const counts = new Map<string, number>();
         entries?.forEach(entry => {
-             const key = new Date(entry.created_at).toISOString().split('T')[0];
+             const d = new Date(entry.created_at);
+             const key = d.toLocaleDateString('en-CA');
              counts.set(key, (counts.get(key) || 0) + 1);
         });
 
@@ -61,7 +65,7 @@ export const ActivityGraph: React.FC<ActivityGraphProps> = ({ entries }) => {
         for (let i = totalDays - 1; i >= 0; i--) {
             const d = new Date(endOfCurrentWeek);
             d.setDate(d.getDate() - i);
-            const key = d.toISOString().split('T')[0];
+            const key = d.toLocaleDateString('en-CA');
             const count = counts.get(key) || 0;
             // Don't show future days logic?
             if (d > today) {
@@ -96,7 +100,7 @@ export const ActivityGraph: React.FC<ActivityGraphProps> = ({ entries }) => {
     return (
         <View className="bg-card rounded-3xl p-6 shadow-[#0000000D] shadow-xl mb-8"
             style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}>
-            <View className="flex-row justify-between items-center mb-4">
+            <View className="flex-row justify-between items-center mb-6">
                 <Text className="text-lg font-q-bold text-text">Activity</Text>
                 <Text className="text-sm font-q-medium text-muted">Last {monthsText} months</Text>
             </View>
@@ -131,14 +135,23 @@ export const ActivityGraph: React.FC<ActivityGraphProps> = ({ entries }) => {
                 </ScrollView>
             </View>
 
-            <View className="flex-row items-center mt-4 gap-2">
-                <Text className="text-[10px] font-q-medium text-muted">Less</Text>
-                <View className="w-2.5 h-2.5 rounded-sm bg-inactive opacity-30" />
-                <View className="w-2.5 h-2.5 rounded-sm bg-primary opacity-30" />
-                <View className="w-2.5 h-2.5 rounded-sm bg-primary opacity-60" />
-                <View className="w-2.5 h-2.5 rounded-sm bg-primary" />
-                <Text className="text-[10px] font-q-medium text-muted">More</Text>
+            <View className="flex-row items-center justify-between mt-4">
+                <View className="flex-row items-center gap-2">
+                    <Text className="text-[10px] font-q-medium text-muted">Less</Text>
+                    <View className="w-2.5 h-2.5 rounded-sm bg-inactive opacity-30" />
+                    <View className="w-2.5 h-2.5 rounded-sm bg-primary opacity-30" />
+                    <View className="w-2.5 h-2.5 rounded-sm bg-primary opacity-60" />
+                    <View className="w-2.5 h-2.5 rounded-sm bg-primary" />
+                    <Text className="text-[10px] font-q-medium text-muted">More</Text>
+                </View>
+                
+                {maxStreak !== undefined && (
+                    <Text className="text-[10px] font-q-bold text-primary">
+                        Max Streak: {maxStreak} Days 🔥
+                    </Text>
+                )}
             </View>
         </View>
     );
 };
+

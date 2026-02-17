@@ -76,24 +76,24 @@ const RootNavigator = ({ session, isBioLocked, isColdStartWithSession, isAuthLoa
 
   useEffect(() => {
     const nextViewMode = (() => {
-        // Stage 0: Essentials
+        // Stage 0: Initializing
         if (!fontsLoaded || isAuthLoading || isBioLocked === null) return 'loading';
 
-        // Stage 1: Absolute Logout
+        // Stage 1: Logged Out
         if (!session) return 'auth';
 
-        // Stage 2: App Priority
-        if (profile?.onboarding_completed) return 'app';
-
-        // Stage 3: Sticky App - If we are already in the app, don't leave it while profile is just refreshing
-        if (viewMode === 'app' && profileLoading) return 'app';
-
-        // Stage 4: Onboarding or Auth Stack
-        if (!profileLoading) {
-            return 'onboarding';
+        // Stage 2: Transitional Loading (Avoid flickering by staying in current state)
+        if (profileLoading) {
+            if (viewMode === 'app' || viewMode === 'onboarding') return viewMode; 
+            // If we just logged in, stay in 'auth' stack (which shows local spinner) until profile is fetched
+            if (viewMode === 'auth') return 'auth';
+            return 'loading';
         }
 
-        return viewMode; // Keep current if loading and not essentially blocked
+        // Stage 3: Ready
+        if (profile?.onboarding_completed) return 'app';
+
+        return 'onboarding';
     })();
 
     if (nextViewMode !== viewMode) {
@@ -105,7 +105,7 @@ const RootNavigator = ({ session, isBioLocked, isColdStartWithSession, isAuthLoa
         });
         setViewMode(nextViewMode);
     }
-  }, [session, profileLoading, profile?.onboarding_completed, isAuthLoading, fontsLoaded, isBioLocked]);
+  }, [session, profileLoading, profile?.onboarding_completed, isAuthLoading, fontsLoaded, isBioLocked, viewMode]);
 
   // We rely on the button loaders and screen transitions for UI feedback.
   // Full-screen empty blocks are disruptive to navigation states.

@@ -27,7 +27,7 @@ import { Button } from '../components/Button';
 import { useProfile } from '../context/ProfileContext';
 import { CalendarView } from '../components/CalendarView';
 
-const ITEM_HEIGHT = 180;
+const ITEM_HEIGHT = 190;
 
 /**
  * TimelineItem - Optimized with FlashList recycling support
@@ -133,13 +133,13 @@ const TimelineItem = ({
                         <View className="mt-2 ml-1">
                             <Text 
                                 className="font-q-medium text-base leading-6 text-text/80"
-                                numberOfLines={3}
+                                numberOfLines={4}
                             >
                                 {item.text}
                             </Text>
                         </View>
                         
-                        <View className="flex-row justify-between mt-4 md:mt-6 items-center border-t border-primary/10 pt-4">
+                        <View className="flex-row justify-between mt-4 md:mt-6 items-center">
                             <View className="flex-row items-center bg-[#FF9E7D10] px-3 py-1 rounded-full">
                                 <Ionicons name="time-outline" size={14} color="#FF9E7D" />
                                 <Text className="text-primary font-q-semibold ml-2 text-xs">
@@ -380,7 +380,6 @@ export const JourneyScreen = () => {
             {/* Profile Nudge */}
             <ProfileNudge 
                 isAnonymous={isAnonymous}
-                isComplete={!isProfileIncomplete}
                 loading={profileLoading}
                 className="mb-8"
             />

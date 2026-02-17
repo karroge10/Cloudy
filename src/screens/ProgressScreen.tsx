@@ -57,7 +57,7 @@ export const ProgressScreen = () => {
     };
 
     // Logic for Level tied to milestones
-    const unlockedCompanions = COMPANIONS.filter(c => streak >= c.requiredStreak);
+    const unlockedCompanions = COMPANIONS.filter(c => effectiveStreak >= c.requiredStreak);
     const currentLevel = unlockedCompanions.length;
     
     // Find next companion for "days until" message

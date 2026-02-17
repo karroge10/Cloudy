@@ -8,6 +8,8 @@ import { haptics } from '../utils/haptics';
 import { notifications } from '../utils/notifications';
 import { useAlert } from './AlertContext';
 import { posthog, identifyUser } from '../lib/posthog';
+import { useAnalytics } from '../hooks/useAnalytics';
+import { DeviceEventEmitter } from 'react-native';
 import { encryption } from '../utils/encryption';
 import { useProfile } from './ProfileContext';
 
@@ -37,6 +39,7 @@ interface JournalContextType {
     fetchEntriesForDate: (date: string | null) => Promise<void>;
     filterMode: 'all' | 'favorites';
     setFilterMode: (mode: 'all' | 'favorites') => void;
+    isMerging: boolean;
 }
 
 const PAGE_SIZE = 20;
@@ -45,29 +48,33 @@ const JournalContext = createContext<JournalContextType | undefined>(undefined);
 
 export const JournalProvider: React.FC<{ children: React.ReactNode, session: Session | null }> = ({ children, session }) => {
     const { showAlert } = useAlert();
-    const { profile, updateProfile } = useProfile();
+    const { profile, updateProfile, refreshProfile } = useProfile();
     const [entries, setEntries] = useState<JournalEntry[]>([]);
     const [metadata, setMetadata] = useState<{ id: string, created_at: string }[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
-    const [streak, setStreak] = useState(0);
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
     const [filterMode, setFilterModeState] = useState<'all' | 'favorites'>('all');
+    const [isMerging, setIsMerging] = useState(false);
+    const mergeInProgress = useRef(false);
+    const prevSessionRef = useRef(session);
 
-    // Initial load from cache
-    useEffect(() => {
-        const loadCache = async () => {
-            const userId = session?.user?.id;
-            if (!userId) return;
-            
-            const cachedStreak = await AsyncStorage.getItem(`user_streak_cache_${userId}`);
-            if (cachedStreak) setStreak(parseInt(cachedStreak));
-        };
-        loadCache();
-    }, []);
+    // Initial load - Note: Initial streak is derived from metadata or cache.
+    // For a cold start, metadata will initially be empty. 
+    // We don't use 'setStreak' anymore as it's a memo.
 
     const activeUserIdRef = useRef<string | null>(session?.user?.id || null);
+
+    // Synchronous merge detection to prevent flash
+    if (prevSessionRef.current?.user?.is_anonymous && !session?.user?.is_anonymous && session?.user?.id && !isMerging) {
+        setIsMerging(true);
+        mergeInProgress.current = true;
+    }
+    
+    useEffect(() => {
+        prevSessionRef.current = session;
+    }, [session]);
 
     // Sync ref with current session ID
     useEffect(() => {
@@ -75,8 +82,6 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
     }, [session?.user?.id]);
 
     const fetchMetadata = useCallback(async (currentUserId: string) => {
-        if (!currentUserId) return;
-
         const { data, error } = await supabase
             .from('posts')
             .select('id, created_at')
@@ -86,6 +91,8 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
 
         if (!error && data && activeUserIdRef.current === currentUserId) {
             setMetadata(data);
+        } else if (error) {
+            console.warn(`[Journal] fetchMetadata error:`, error);
         }
     }, []);
 
@@ -110,14 +117,10 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
         const { data, error } = await query;
 
         if (!error && data && activeUserIdRef.current === currentUserId) {
-            console.log(`[Journal] Fetching page ${pageNum}, mode: ${mode}, items: ${data.length}`);
             // Decrypt entries
             const decryptedData = await Promise.all(data.map(async (entry: JournalEntry) => {
                 try {
                     const decryptedText = await encryption.decrypt(entry.text);
-                    if (decryptedText.startsWith('v1:aes:')) {
-                        console.warn(`[Journal] Decryption FAILED for entry ${entry.id}`);
-                    }
                     return { ...entry, text: decryptedText };
                 } catch (e) {
                     console.error(`[Journal] Decryption error for entry ${entry.id}:`, e);
@@ -158,130 +161,120 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
         ]);
     }, [fetchMetadata, fetchPage, filterMode]);
 
-    // Handle anonymous account merging
+    // Unified Session and Merge Handler
     useEffect(() => {
-        const handleMerge = async () => {
+        const transitionListener = DeviceEventEmitter.addListener('session_transition', () => {
+            setEntries([]);
+            setMetadata([]);
+            setLoading(true);
+            setIsMerging(true);
+            mergeInProgress.current = true;
+        });
+
+        return () => transitionListener.remove();
+    }, []);
+
+    useEffect(() => {
+        const syncSessionData = async () => {
             const currentUserId = session?.user?.id;
             const currentUserEmail = session?.user?.email;
-            if (!currentUserId || session.user.is_anonymous) return;
+            const isAnon = session?.user?.is_anonymous;
+
+            if (!currentUserId) {
+                setEntries([]);
+                setMetadata([]);
+                    setLoading(false);
+                setIsMerging(false);
+                return;
+            }
 
             try {
+                // 1. Check for pending merge
                 const anonId = await SecureStore.getItemAsync('pending_merge_anonymous_id');
-                if (anonId && anonId !== currentUserId) {
-                    setLoading(true);
+                
+                if (anonId && anonId !== currentUserId && !isAnon) {
+                    mergeInProgress.current = true;
+                    setIsMerging(true); 
                     
-                    // 1. Fetch Anon Entries for Re-Encryption
-                    const { data: anonPosts } = await supabase
-                         .from('posts')
-                         .select('id, text')
-                         .eq('user_id', anonId);
+                    // Clear stale anonymous data immediately to show skeleton
+                    setEntries([]);
+                    setMetadata([]);
+                    setLoading(true); // Ensure loading is true for the skeleton state
 
-                    // 2. Perform the database merge
-                    const { data: name, error } = await supabase.rpc('merge_anonymous_data', { 
+                    const { data: userName, error } = await supabase.rpc('merge_anonymous_data', { 
                         old_uid: anonId, 
                         new_uid: currentUserId 
                     });
                     
                     if (error) {
-                        console.warn('Merge failed:', error.message);
-                        if (activeUserIdRef.current === currentUserId) setLoading(false);
-                        identifyUser(currentUserId, currentUserEmail || undefined);
+                        console.error('[Journal] Merge RPC failed:', error.message);
                     } else {
-                        // 3. Re-encrypt entries (now owned by currentUserId)
-                        if (anonPosts && anonPosts.length > 0) {
-                            try {
-                                const updates = anonPosts.map(async (post) => {
-                                    try {
-                                        // Decrypt with current key to ensure readability
-                                        const decrypted = await encryption.decrypt(post.text);
-                                        
-                                        // Re-encrypt with current key (refreshes salt/integrity)
-                                        const reEncrypted = await encryption.encrypt(decrypted);
-
-                                        if (reEncrypted !== post.text) {
-                                            const { error: updateError } = await supabase
-                                                .from('posts')
-                                                .update({ text: reEncrypted })
-                                                .eq('id', post.id);
-                                            
-                                            if (updateError) console.warn('Re-key update failed', updateError);
-                                        }
-                                    } catch (e) {
-                                        console.warn(`Failed to re-encrypt post ${post.id}`, e);
-                                    }
-                                });
-                                await Promise.all(updates);
-                            } catch (e) {
-                                console.error("Re-encryption sequence error", e);
-                            }
-                        }
+                        
+                        // IMPORTANT: Sync ref immediately so the subsequent fetches are accepted
+                        activeUserIdRef.current = currentUserId;
 
                         await SecureStore.deleteItemAsync('pending_merge_anonymous_id');
-                        
-                        // Analytics identity sync
                         identifyUser(currentUserId, currentUserEmail || undefined);
+                        // Note: Re-keying is skipped as master key is device-persistent.
+                        await Promise.all([
+                            refreshEntries(),
+                            refreshProfile().catch(() => {})
+                        ]);
+                    }
+                    
+                    mergeInProgress.current = false;
+                    setIsMerging(false); // Release guards
 
-                        // Re-fetch now that data has moved
-                        if (activeUserIdRef.current === currentUserId) {
-                            await refreshEntries();
+                    if (!error) {
+                        setTimeout(() => {
                             showAlert(
                                 'Success', 
-                                `Welcome back, ${name}! We've added your recent memories to your journal.`,
+                                `Welcome back, ${userName || 'friend'}! We've added your recent memories to your journal.`,
                                 [{ text: 'Great!' }],
                                 'success'
                             );
-                        }
+                        }, 100);
                     }
-                } else {
-                    // Standard login (no merge pending)
-                    identifyUser(currentUserId, currentUserEmail || undefined);
+                    return;
                 }
-            } catch (err) {
-                console.error('Merge check error:', err);
-                if (activeUserIdRef.current === currentUserId) setLoading(false);
+
+                // 2. Standard Session Sync
+                activeUserIdRef.current = currentUserId; // Sync ref before refresh
+                mergeInProgress.current = false;
+                setIsMerging(false);
                 identifyUser(currentUserId, currentUserEmail || undefined);
+                await refreshEntries();
+
+            } catch (err) {
+                console.error('[Journal] syncSessionData error:', err);
+                mergeInProgress.current = false;
+                setIsMerging(false);
             }
         };
 
-        handleMerge();
-    }, [session, refreshEntries, showAlert]);
+        syncSessionData();
+    }, [session?.user?.id, refreshEntries, showAlert, refreshProfile]);
 
-    // Simplified fetch on session change
-    // Since the provider now remounts when session ID changes (App.tsx keys),
-    // this effect primarily handles the initial mount fetch and any session object updates.
-    useEffect(() => {
-        const currentUserId = session?.user?.id;
-        if (currentUserId) {
-            refreshEntries();
-        } else {
-            setEntries([]);
-            setMetadata([]);
-            setStreak(0);
-            setLoading(false);
-        }
-    }, [session?.user?.id]);
+    // Derived streak calculation - synchronous with metadata updates
+    const streak = useMemo(() => {
+        if (metadata.length === 0) return 0;
+        return calculateStreak(metadata);
+    }, [metadata]);
 
+    // Side effect: sync max_streak to profile and cache
     useEffect(() => {
         const userId = session?.user?.id;
-        if (metadata.length > 0) {
-            const newStreak = calculateStreak(metadata);
-            setStreak(newStreak);
-            
-            // Sync max_streak to profile
-            if (profile && newStreak > (profile.max_streak || 0)) {
-                updateProfile({ max_streak: newStreak });
+        if (streak > 0) {
+            if (profile && streak > (profile.max_streak || 0)) {
+                updateProfile({ max_streak: streak });
             }
-            
             if (userId) {
-                AsyncStorage.setItem(`user_streak_cache_${userId}`, newStreak.toString()).catch(console.warn);
+                AsyncStorage.setItem(`user_streak_cache_${userId}`, streak.toString()).catch(console.warn);
             }
-        } else if (!loading) {
-            setStreak(0);
-            if (userId) {
-                AsyncStorage.setItem(`user_streak_cache_${userId}`, '0').catch(console.warn);
-            }
+        } else if (!loading && userId) {
+            AsyncStorage.setItem(`user_streak_cache_${userId}`, '0').catch(console.warn);
         }
-    }, [metadata, loading, session?.user?.id, profile?.max_streak]);
+    }, [streak, profile?.max_streak, session?.user?.id, loading]);
 
     const loadMore = async () => {
         if (loadingMore || !hasMore || !session?.user?.id) return;
@@ -370,6 +363,9 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
             setEntries(prev => [localEntry, ...prev]);
 
             setMetadata(prev => [{ id: data.id, created_at: data.created_at }, ...prev]);
+            
+            // Protect streak: Schedule warning for streak loss
+            notifications.scheduleStreakProtection(data.created_at);
         }
     };
 
@@ -442,15 +438,17 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
         }
     }, [loading, metadata.length]);
 
-    const effectiveLoading = loading || (!!session?.user?.id && activeUserIdRef.current !== session.user.id);
+    const dataMatchesUser = !!session?.user?.id && activeUserIdRef.current === session.user.id;
+    const effectiveLoading = loading || !dataMatchesUser;
 
     const value = useMemo(() => ({
-        entries,
+        entries: dataMatchesUser ? entries : [],
         loading: effectiveLoading,
+        isMerging, 
         loadingMore,
         hasMore,
-        streak,
-        rawStreakData: metadata,
+        streak: dataMatchesUser ? streak : 0,
+        rawStreakData: dataMatchesUser ? metadata : [],
         addEntry,
         toggleFavorite,
         deleteEntry,
@@ -459,7 +457,7 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
         fetchEntriesForDate,
         filterMode,
         setFilterMode
-    }), [entries, effectiveLoading, loadingMore, hasMore, streak, refreshEntries, loadMore, fetchEntriesForDate, filterMode, setFilterMode]);
+    }), [entries, effectiveLoading, isMerging, loadingMore, hasMore, streak, metadata, refreshEntries, loadMore, fetchEntriesForDate, filterMode, setFilterMode]);
 
     return (
         <JournalContext.Provider value={value}>

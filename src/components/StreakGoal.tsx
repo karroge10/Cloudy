@@ -10,12 +10,13 @@ import Animated, { useAnimatedStyle, useSharedValue, withTiming, withSpring } fr
 
 interface StreakGoalProps {
     streak: number;
+    maxStreak?: number;
     className?: string;
     onPress?: () => void;
     isLoading?: boolean;
 }
 
-export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, className, onPress, isLoading }) => {
+export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, maxStreak = 0, className, onPress, isLoading }) => {
     const progressValue = useSharedValue(0);
 
     const handlePress = () => {
@@ -26,12 +27,15 @@ export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, className, onPre
     };
 
     // Determine the next companion reward
-    const nextCompanion = COMPANIONS.find(c => c.requiredStreak > streak);
+    // Skip companions that have already been unlocked via maxStreak
+    const nextCompanion = COMPANIONS.find(c => c.requiredStreak > Math.max(streak, maxStreak || 0));
     
     // Fallback to standard milestones if all companions are unlocked
     const milestones = [3, 7, 10, 14, 21, 30, 50, 75, 100, 365];
-    const nextMilestoneValue = nextCompanion ? nextCompanion.requiredStreak : (milestones.find(m => m > streak) || milestones[milestones.length - 1]);
+    const effectiveStreak = Math.max(streak, maxStreak || 0);
+    const nextMilestoneValue = nextCompanion ? nextCompanion.requiredStreak : (milestones.find(m => m > effectiveStreak) || milestones[milestones.length - 1]);
     
+    // Progress calculation remains based on CURRENT streak because you have to climb back up
     const targetProgress = isLoading ? 0 : Math.min(streak / nextMilestoneValue, 1);
     const daysLeft = nextMilestoneValue - streak;
 
@@ -83,7 +87,9 @@ export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, className, onPre
                                 <Skeleton width={120} height={18} borderRadius={4} />
                             ) : (
                                 <Text className="text-lg font-q-bold text-text leading-6" numberOfLines={1}>
-                                    {nextCompanion ? `Unlock ${nextCompanion.name}` : `${nextMilestoneValue} Day Streak`}
+                                    {nextCompanion ? (
+                                        (maxStreak >= nextCompanion.requiredStreak) ? `Reach ${nextCompanion.name}` : `Unlock ${nextCompanion.name}`
+                                    ) : `${nextMilestoneValue} Day Streak`}
                                 </Text>
                             )}
                         </View>

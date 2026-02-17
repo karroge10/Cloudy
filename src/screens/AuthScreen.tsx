@@ -17,6 +17,7 @@ import { getFriendlyAuthErrorMessage } from '../utils/authErrors';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { identifyUser } from '../lib/posthog';
 import { useAnalytics } from '../hooks/useAnalytics';
+import { DeviceEventEmitter } from 'react-native';
 
 
 
@@ -58,6 +59,9 @@ export const AuthScreen = () => {
         if (data.user) {
             trackEvent('user_signed_in', { method: 'email' });
             
+            // Signal all providers to clear state immediately
+            DeviceEventEmitter.emit('session_transition');
+
             // CONVERSION GUARD: Only navigate manually if we are securing a guest journey.
             const isGuestConversion = route.name === 'SecureAccount';
             if (isGuestConversion) {
@@ -129,6 +133,7 @@ export const AuthScreen = () => {
                 
                 if (data.session) {
                     // App.tsx handles the switch
+                    DeviceEventEmitter.emit('session_transition');
                 } else {
                     showAlert('Success', 'Please check your email to confirm your account.', [
                         { text: 'Okay', onPress: () => navigation.goBack() }
@@ -148,8 +153,15 @@ export const AuthScreen = () => {
         try {
             haptics.selection();
             setLoading(true);
+            try {
+                await GoogleSignin.signOut();
+            } catch (e) {
+                // Ignore, might not be signed in
+            }
+
             await GoogleSignin.hasPlayServices();
             const response = await GoogleSignin.signIn();
+
             
             if (response.type === 'cancelled') {
                 setLoading(false);
@@ -168,17 +180,24 @@ export const AuthScreen = () => {
                     token: response.data.idToken,
                 });
                 
+                if (error) {
+                    console.error('[Auth] Supabase sign in error:', error);
+                    throw error;
+                }
+
                 if (data.user) {
                     trackEvent('user_signed_in', { method: 'google', is_conversion: !!currentUser?.is_anonymous });
+                    
+                    // Signal all providers to clear state immediately to prevent flicker
+                    DeviceEventEmitter.emit('session_transition');
 
                     // CONVERSION GUARD: Only navigate manually if we are securing a guest journey.
                     const isGuestConversion = route.name === 'SecureAccount';
                     if (isGuestConversion) {
                         navigation.navigate('MainApp');
                     }
+                    // For standard login, RootNavigator in App.tsx handles the switch
                 }
-
-                if (error) throw error;
 
             } else if (response.type === 'success' && !response.data.idToken) {
                 throw new Error('No ID Token found');
