@@ -37,12 +37,12 @@ export const ProgressScreen = () => {
                 const dayIndex = Math.max(0, c.requiredStreak - 1);
                 const dateStr = uniqueDays[dayIndex];
                 if (dateStr) {
-                    details[c.id] = { 
-                        unlockDate: new Date(dateStr).toLocaleDateString(undefined, { 
-                            month: 'short', 
-                            day: 'numeric', 
-                            year: 'numeric' 
-                        }) 
+                    details[c.id] = {
+                        unlockDate: new Date(dateStr).toLocaleDateString(undefined, {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                        })
                     };
                 }
             }
@@ -59,7 +59,7 @@ export const ProgressScreen = () => {
     // Logic for Level tied to milestones
     const unlockedCompanions = COMPANIONS.filter(c => effectiveStreak >= c.requiredStreak);
     const currentLevel = unlockedCompanions.length;
-    
+
     // Find next companion for "days until" message
     const nextCompanion = COMPANIONS.find(c => streak < c.requiredStreak);
     const daysUntilNextLevel = nextCompanion ? nextCompanion.requiredStreak - streak : null;
@@ -67,14 +67,14 @@ export const ProgressScreen = () => {
     return (
         <Layout noScroll={true} useSafePadding={false}>
             <View className="px-6 pt-4">
-                <TopNav 
-                    title="Progress" 
+                <TopNav
+                    title="Progress"
                     onBack={() => navigation.goBack()}
                     roundButtons={true}
                 />
             </View>
 
-            <ScrollView 
+            <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}
                 refreshControl={
@@ -94,7 +94,7 @@ export const ProgressScreen = () => {
                             Max Streak: {maxStreak} Days 🔥
                         </Text>
                     </View>
-                    
+
                     <View className="flex-row items-center mt-8 px-4">
                         <Text className="text-sm font-q-medium text-muted leading-5 text-center flex-1">
                             Each friend represents a milestone in your mental growth as you cultivate your daily habits.
@@ -112,26 +112,30 @@ export const ProgressScreen = () => {
                 <View style={{ gap: 24 }}>
                     {COMPANIONS.map((companion, index) => {
                         const isUnlocked = effectiveStreak >= companion.requiredStreak;
-                        const isNext = effectiveStreak < companion.requiredStreak && (index === 0 || effectiveStreak >= COMPANIONS[index-1].requiredStreak);
+                        const isNext = effectiveStreak < companion.requiredStreak && (index === 0 || effectiveStreak >= COMPANIONS[index - 1].requiredStreak);
                         const progress = Math.min(1, effectiveStreak / companion.requiredStreak);
                         const detail = companionDetails[companion.id];
-                        
+
                         return (
-                            <View 
-                                key={companion.id} 
-                                className={`p-6 rounded-[32px] border ${
-                                    isUnlocked 
-                                        ? 'bg-white border-primary/10 shadow-sm' 
+                            <View
+                                key={companion.id}
+                                className={`p-6 rounded-[32px] border ${isUnlocked
+                                        ? 'bg-white border-primary/10 shadow-sm'
                                         : 'bg-[#F8FAFC] border-dashed border-2 border-primary/10' // Improved locked state
-                                }`}
+                                    }`}
                             >
                                 <View className="flex-row items-center mb-4">
-                                    <View className={`p-4 rounded-2xl mr-5 ${isUnlocked ? 'bg-secondary/30' : 'bg-transparent'}`}>
-                                        <MascotImage 
-                                            source={companion.asset} 
-                                            className={`w-14 h-14 ${isUnlocked ? '' : 'opacity-60'}`} 
-                                            resizeMode="contain" 
+                                    <View className={`p-4 rounded-2xl mr-5 items-center justify-center ${isUnlocked ? 'bg-secondary/30' : 'bg-transparent'}`}>
+                                        <MascotImage
+                                            source={companion.asset}
+                                            className={`w-14 h-14 ${isUnlocked ? '' : 'grayscale opacity-50'}`}
+                                            resizeMode="contain"
                                         />
+                                        {!isUnlocked && (
+                                            <View className="absolute bg-white/90 rounded-full p-1 border border-inactive/20">
+                                                <Ionicons name="lock-closed" size={12} color="#94A3B8" />
+                                            </View>
+                                        )}
                                     </View>
                                     <View className="flex-1">
                                         <View className="flex-row items-center justify-between">
@@ -140,23 +144,23 @@ export const ProgressScreen = () => {
                                             </Text>
                                             {isUnlocked && (
                                                 <View className="flex-row items-center bg-[#FF9E7D10] px-3 py-1.5 rounded-full border border-primary/5">
-                                                    <Ionicons 
+                                                    <Ionicons
                                                         name={
                                                             companion.trait === 'Beginner' ? 'flag' :
-                                                            companion.trait === 'Consistency' ? 'repeat' :
-                                                            companion.trait === 'Dedication' ? 'heart' :
-                                                            companion.trait === 'Insight' ? 'bulb' :
-                                                            companion.trait === 'Growth' ? 'trending-up' :
-                                                            'trophy'
-                                                        } 
-                                                        size={12} 
-                                                        color="#FF9E7D" 
+                                                                companion.trait === 'Consistency' ? 'repeat' :
+                                                                    companion.trait === 'Dedication' ? 'heart' :
+                                                                        companion.trait === 'Insight' ? 'bulb' :
+                                                                            companion.trait === 'Growth' ? 'trending-up' :
+                                                                                'trophy'
+                                                        }
+                                                        size={12}
+                                                        color="#FF9E7D"
                                                     />
                                                     <Text className="text-primary font-q-bold text-[10px] uppercase tracking-wider ml-1.5">{companion.trait}</Text>
                                                 </View>
                                             )}
                                         </View>
-                                        
+
                                         <Text className={`font-q-medium text-xs mt-1.5 leading-4 ${isUnlocked ? 'text-text/70' : 'text-text/40'}`} numberOfLines={2}>
                                             {isUnlocked ? companion.description : 'Keep practicing to unlock this companion.'}
                                         </Text>
@@ -180,10 +184,10 @@ export const ProgressScreen = () => {
                                             {Math.min(effectiveStreak, companion.requiredStreak)}/{companion.requiredStreak}
                                         </Text>
                                     </View>
-                                    
+
                                     <View className="h-2 bg-inactive/30 rounded-full overflow-hidden">
-                                        <View 
-                                            style={{ width: `${progress * 100}%` }} 
+                                        <View
+                                            style={{ width: `${progress * 100}%` }}
                                             className={`h-full ${isUnlocked ? 'bg-primary' : 'bg-primary/60'}`}
                                         />
                                     </View>
@@ -194,7 +198,7 @@ export const ProgressScreen = () => {
                 </View>
 
                 <View className="mt-12">
-                    <Button 
+                    <Button
                         label="Maintain the Habit"
                         onPress={() => {
                             haptics.selection();

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Switch, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, Switch, ScrollView, TextInput } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Layout } from '../components/Layout';
@@ -32,6 +32,10 @@ export const SettingsScreen = () => {
     const [isDeleteSheetVisible, setIsDeleteSheetVisible] = useState(false);
     const [isTimeSheetVisible, setIsTimeSheetVisible] = useState(false);
     const [reminderDate, setReminderDate] = useState(new Date());
+    const [isPasswordSheetVisible, setIsPasswordSheetVisible] = useState(false);
+    const [hasPasswordLogin, setHasPasswordLogin] = useState(true); // Default true to prevent flicker
+    const [newPassword, setNewPassword] = useState('');
+    const [passwordLoading, setPasswordLoading] = useState(false);
     const [bioSupported, setBioSupported] = useState(false);
 
     const isHapticsEnabled = profile?.haptics_enabled ?? true;
@@ -39,11 +43,15 @@ export const SettingsScreen = () => {
     const displayReminderTime = reminderTime || '20:00';
 
     useEffect(() => {
-        const checkBio = async () => {
+        const checkAuthStatus = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            const hasPass = user?.identities?.some(id => id.provider === 'email') ?? true;
+            setHasPasswordLogin(hasPass);
+
             const supported = await security.isSupported();
             setBioSupported(supported);
         };
-        checkBio();
+        checkAuthStatus();
     }, []);
 
     useEffect(() => {
@@ -62,7 +70,7 @@ export const SettingsScreen = () => {
             await AsyncStorage.removeItem('user_streak_cache');
             await AsyncStorage.removeItem('pending_merge_anonymous_id');
             await AsyncStorage.removeItem('security_lock_enabled');
-            
+
             try {
                 await GoogleSignin.signOut();
             } catch (e) {
@@ -93,9 +101,9 @@ export const SettingsScreen = () => {
 
             trackEvent('user_deleted_account');
             await handleLogout();
-            
+
             setIsDeleteSheetVisible(false);
-            
+
             showAlert(
                 'Account Deleted',
                 'Your data has been removed. We hope to see you again someday.',
@@ -107,20 +115,49 @@ export const SettingsScreen = () => {
         }
     };
 
+    const handleAddPassword = async () => {
+        if (!newPassword || newPassword.length < 6) {
+            showAlert('Wait', 'Password must be at least 6 characters.', [{ text: 'Okay' }], 'error');
+            return;
+        }
+
+        setPasswordLoading(true);
+        try {
+            const { error } = await supabase.auth.updateUser({
+                password: newPassword
+            });
+
+            if (error) throw error;
+
+            setHasPasswordLogin(true);
+            setIsPasswordSheetVisible(false);
+            setNewPassword('');
+            haptics.success();
+            showAlert('Success', 'Password added! You can now log in with either Google or email.', [{ text: 'Great' }], 'success');
+            trackEvent('user_added_password');
+
+        } catch (error: any) {
+            const { title, message } = getFriendlyAuthErrorMessage(error);
+            showAlert(title, message, [{ text: 'Okay' }], 'error');
+        } finally {
+            setPasswordLoading(false);
+        }
+    };
+
     return (
         <Layout noScroll={true} useSafePadding={false}>
             <View className="px-6 pt-4">
                 <TopNav title="Settings" showBack={true} />
             </View>
 
-            <ScrollView 
+            <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40, paddingTop: 20 }}
             >
                 {/* App Settings Section */}
                 <View className="mb-8 bg-card rounded-[32px] p-6 shadow-[#0000000D] shadow-xl"
                     style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}>
-                    
+
                     {/* Daily Reminder */}
                     <View className="flex-row items-center justify-between py-4">
                         <View className="flex-1">
@@ -178,9 +215,9 @@ export const SettingsScreen = () => {
                                 haptics.selection();
                                 if (val && !bioSupported) {
                                     showAlert(
-                                        'Not Supported', 
-                                        'Your device does not support biometrics or none are enrolled.', 
-                                        [{ text: 'Okay' }], 
+                                        'Not Supported',
+                                        'Your device does not support biometrics or none are enrolled.',
+                                        [{ text: 'Okay' }],
                                         'info'
                                     );
                                     return;
@@ -194,7 +231,7 @@ export const SettingsScreen = () => {
                     <View className="h-[1px] bg-inactive opacity-10" />
 
                     {/* Privacy Policy */}
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         onPress={() => { haptics.selection(); navigation.navigate('Legal', { type: 'privacy' }); }}
                         className="flex-row items-center justify-between py-4"
                     >
@@ -205,7 +242,7 @@ export const SettingsScreen = () => {
                     <View className="h-[1px] bg-inactive opacity-10" />
 
                     {/* Feedback */}
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         onPress={() => { haptics.selection(); setIsFeedbackSheetVisible(true); }}
                         className="flex-row items-center justify-between py-4"
                     >
@@ -218,8 +255,27 @@ export const SettingsScreen = () => {
 
                     <View className="h-[1px] bg-inactive opacity-10" />
 
+                    <View className="h-[1px] bg-inactive opacity-10" />
+
+                    {/* Add Password (for Google/Anon users) */}
+                    {!hasPasswordLogin && (
+                        <>
+                            <TouchableOpacity
+                                onPress={() => { haptics.selection(); setIsPasswordSheetVisible(true); }}
+                                className="flex-row items-center justify-between py-4"
+                            >
+                                <View>
+                                    <Text className="text-lg font-q-bold text-text">Add Password Login</Text>
+                                    <Text className="text-muted font-q-medium text-xs">Enable logging in with email & password</Text>
+                                </View>
+                                <Ionicons name="key-outline" size={22} color="#FF9E7D" />
+                            </TouchableOpacity>
+                            <View className="h-[1px] bg-inactive opacity-10" />
+                        </>
+                    )}
+
                     {/* Delete Account */}
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         onPress={() => { haptics.selection(); setIsDeleteSheetVisible(true); }}
                         className="flex-row items-center justify-between py-4"
                     >
@@ -240,12 +296,12 @@ export const SettingsScreen = () => {
                 <View className="items-center mt-2 w-full">
                     <MascotImage source={MASCOTS.WATCH} className="w-40 h-40 mb-4" resizeMode="contain" />
                     <Text className="text-2xl font-q-bold text-text text-center mb-6">When to remind you?</Text>
-                    
+
                     <View className="w-full mb-8">
                         <TimePicker value={reminderDate} onChange={setReminderDate} />
                     </View>
 
-                    <Button 
+                    <Button
                         label="Update Time"
                         onPress={() => {
                             const h = reminderDate.getHours().toString().padStart(2, '0');
@@ -258,7 +314,39 @@ export const SettingsScreen = () => {
                     />
 
                     <TouchableOpacity onPress={() => { haptics.selection(); setIsTimeSheetVisible(false); }} className="mt-4 py-2 active:scale-95 transition-transform">
-                            <Text className="text-muted font-q-bold text-base">Cancel</Text>
+                        <Text className="text-muted font-q-bold text-base">Cancel</Text>
+                    </TouchableOpacity>
+                </View>
+            </BottomSheet>
+
+            <BottomSheet visible={isPasswordSheetVisible} onClose={() => setIsPasswordSheetVisible(false)}>
+                <View className="items-center w-full px-4">
+                    <MascotImage source={MASCOTS.SAVE} className="w-32 h-32 mb-4" resizeMode="contain" />
+                    <Text className="text-2xl font-q-bold text-text text-center mb-2">Create Password</Text>
+                    <Text className="text-base font-q-medium text-muted text-center mb-6">
+                        This will allow you to log in to your account using your email and this password.
+                    </Text>
+
+                    <View className="w-full mb-6">
+                        <TextInput
+                            className="bg-white/60 px-6 py-4 rounded-3xl font-q-bold text-lg text-text border-2 border-inactive/10 w-full"
+                            placeholder="Set a secure password"
+                            placeholderTextColor="#CBD5E1"
+                            onChangeText={setNewPassword}
+                            value={newPassword}
+                            secureTextEntry={true}
+                            autoCapitalize="none"
+                        />
+                    </View>
+
+                    <Button
+                        label="Set Password"
+                        onPress={handleAddPassword}
+                        loading={passwordLoading}
+                    />
+
+                    <TouchableOpacity onPress={() => { haptics.selection(); setIsPasswordSheetVisible(false); }} className="mt-4 py-2">
+                        <Text className="text-muted font-q-bold text-base">Cancel</Text>
                     </TouchableOpacity>
                 </View>
             </BottomSheet>
@@ -270,22 +358,22 @@ export const SettingsScreen = () => {
                     <Text className="text-lg font-q-medium text-muted text-center mb-8 px-4 leading-6">
                         This will permanently erase all your memories and your profile. This action cannot be undone.
                     </Text>
-                    
-                    <Button 
+
+                    <Button
                         label="Yes, Delete Everything"
                         onPress={() => { haptics.heavy(); handleDeleteAccount(); }}
                         haptic="heavy"
                     />
 
                     <TouchableOpacity onPress={() => { haptics.selection(); setIsDeleteSheetVisible(false); }} className="mt-4 py-2 active:scale-95 transition-transform">
-                            <Text className="text-muted font-q-bold text-base">Wait, I'll stay!</Text>
+                        <Text className="text-muted font-q-bold text-base">Wait, I'll stay!</Text>
                     </TouchableOpacity>
                 </View>
             </BottomSheet>
 
-            <FeedbackSheet 
-                visible={isFeedbackSheetVisible} 
-                onClose={() => setIsFeedbackSheetVisible(false)} 
+            <FeedbackSheet
+                visible={isFeedbackSheetVisible}
+                onClose={() => setIsFeedbackSheetVisible(false)}
             />
         </Layout>
     );

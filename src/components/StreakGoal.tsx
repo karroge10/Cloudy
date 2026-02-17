@@ -29,12 +29,12 @@ export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, maxStreak = 0, c
     // Determine the next companion reward
     // Skip companions that have already been unlocked via maxStreak
     const nextCompanion = COMPANIONS.find(c => c.requiredStreak > Math.max(streak, maxStreak || 0));
-    
+
     // Fallback to standard milestones if all companions are unlocked
     const milestones = [3, 7, 10, 14, 21, 30, 50, 75, 100, 365];
     const effectiveStreak = Math.max(streak, maxStreak || 0);
     const nextMilestoneValue = nextCompanion ? nextCompanion.requiredStreak : (milestones.find(m => m > effectiveStreak) || milestones[milestones.length - 1]);
-    
+
     // Progress calculation remains based on CURRENT streak because you have to climb back up
     const targetProgress = isLoading ? 0 : Math.min(streak / nextMilestoneValue, 1);
     const daysLeft = nextMilestoneValue - streak;
@@ -47,6 +47,11 @@ export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, maxStreak = 0, c
         width: `${progressValue.value * 100}%`
     }));
 
+    // If all companions are unlocked and we're not loading, hide the milestone card
+    if (!nextCompanion && !isLoading) {
+        return null;
+    }
+
     const containerClasses = `bg-white p-5 rounded-[32px] border border-primary/10 shadow-sm ${className}`;
 
     return (
@@ -57,86 +62,91 @@ export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, maxStreak = 0, c
             shadowRadius: 12,
             elevation: 3
         }}>
-            <TouchableOpacity 
+            <TouchableOpacity
                 onPress={handlePress}
                 activeOpacity={onPress && !isLoading ? 0.8 : 1}
                 disabled={isLoading}
                 className={containerClasses}
             >
-            <View className="flex-row justify-between items-center mb-4">
-                <View className="flex-row items-center flex-1">
-                    <View className="bg-primary/10 p-2.5 rounded-2xl mr-3">
-                        {isLoading ? (
-                            <Skeleton width={32} height={32} borderRadius={8} />
-                        ) : nextCompanion ? (
-                            <MascotImage source={nextCompanion.asset} className="w-8 h-8" resizeMode="contain" />
-                        ) : (
-                            <MascotImage source={MASCOTS.STAR} className="w-8 h-8" resizeMode="contain" />
-                        )}
-                    </View>
-                    <View className="flex-1">
-                        <Text className="text-[10px] font-q-bold text-muted uppercase tracking-wider mb-0.5">
+                <View className="flex-row justify-between items-center mb-4">
+                    <View className="flex-row items-center flex-1">
+                        <View className="bg-primary/10 p-2.5 rounded-2xl mr-3">
                             {isLoading ? (
-                                <Skeleton width={60} height={10} borderRadius={2} />
+                                <Skeleton width={32} height={32} borderRadius={8} />
+                            ) : nextCompanion ? (
+                                <View className="items-center justify-center">
+                                    <MascotImage source={nextCompanion.asset} className="w-8 h-8 grayscale opacity-50" resizeMode="contain" />
+                                    <View className="absolute bg-white/90 rounded-full p-0.5 border border-inactive/20">
+                                        <Ionicons name="lock-closed" size={8} color="#94A3B8" />
+                                    </View>
+                                </View>
                             ) : (
-                                'Next Milestone'
-                            )}
-                        </Text>
-                        <View className="h-6 justify-center">
-                            {isLoading ? (
-                                <Skeleton width={120} height={18} borderRadius={4} />
-                            ) : (
-                                <Text className="text-lg font-q-bold text-text leading-6" numberOfLines={1}>
-                                    {nextCompanion ? (
-                                        (maxStreak >= nextCompanion.requiredStreak) ? `Reach ${nextCompanion.name}` : `Unlock ${nextCompanion.name}`
-                                    ) : `${nextMilestoneValue} Day Streak`}
-                                </Text>
+                                <MascotImage source={MASCOTS.STAR} className="w-8 h-8" resizeMode="contain" />
                             )}
                         </View>
+                        <View className="flex-1">
+                            <Text className="text-[10px] font-q-bold text-muted uppercase tracking-wider mb-0.5">
+                                {isLoading ? (
+                                    <Skeleton width={60} height={10} borderRadius={2} />
+                                ) : (
+                                    'Next Milestone'
+                                )}
+                            </Text>
+                            <View className="h-6 justify-center">
+                                {isLoading ? (
+                                    <Skeleton width={120} height={18} borderRadius={4} />
+                                ) : (
+                                    <Text className="text-lg font-q-bold text-text leading-6" numberOfLines={1}>
+                                        {nextCompanion ? (
+                                            (maxStreak >= nextCompanion.requiredStreak) ? `Reach ${nextCompanion.name}` : `Unlock ${nextCompanion.name}`
+                                        ) : `${nextMilestoneValue} Day Streak`}
+                                    </Text>
+                                )}
+                            </View>
+                        </View>
+                    </View>
+                    <View className="items-end ml-4">
+                        {isLoading ? (
+                            <>
+                                <Skeleton width={30} height={28} borderRadius={4} style={{ marginBottom: 4 }} />
+                                <Skeleton width={45} height={10} borderRadius={2} />
+                            </>
+                        ) : (
+                            <>
+                                <Text className="text-primary font-q-bold text-2xl leading-7">{daysLeft}</Text>
+                                <Text className="text-[10px] font-q-bold text-muted uppercase">days left</Text>
+                            </>
+                        )}
                     </View>
                 </View>
-                <View className="items-end ml-4">
-                    {isLoading ? (
-                        <>
-                            <Skeleton width={30} height={28} borderRadius={4} style={{ marginBottom: 4 }} />
-                            <Skeleton width={45} height={10} borderRadius={2} />
-                        </>
-                    ) : (
-                        <>
-                            <Text className="text-primary font-q-bold text-2xl leading-7">{daysLeft}</Text>
-                            <Text className="text-[10px] font-q-bold text-muted uppercase">days left</Text>
-                        </>
-                    )}
-                </View>
-            </View>
 
-            {/* Progress Bar */}
-            <View className="h-3 w-full bg-inactive/40 rounded-full overflow-hidden">
-                <Animated.View 
-                    style={animatedProgressStyle} 
-                    className="h-full bg-primary rounded-full" 
-                />
-            </View>
-            
-            <View className="flex-row justify-between mt-2.5">
-                <View className="flex-row items-center">
+                {/* Progress Bar */}
+                <View className="h-3 w-full bg-inactive/40 rounded-full overflow-hidden">
+                    <Animated.View
+                        style={animatedProgressStyle}
+                        className="h-full bg-primary rounded-full"
+                    />
+                </View>
+
+                <View className="flex-row justify-between mt-2.5">
+                    <View className="flex-row items-center">
+                        {isLoading ? (
+                            <Skeleton width={6} height={6} borderRadius={3} style={{ marginRight: 6 }} />
+                        ) : (
+                            <View className="w-1.5 h-1.5 rounded-full bg-primary mr-1.5" />
+                        )}
+                        {isLoading ? (
+                            <Skeleton width={70} height={12} borderRadius={2} />
+                        ) : (
+                            <Text className="text-[11px] font-q-bold text-muted">{streak} days active</Text>
+                        )}
+                    </View>
                     {isLoading ? (
-                        <Skeleton width={6} height={6} borderRadius={3} style={{ marginRight: 6 }} />
+                        <Skeleton width={60} height={12} borderRadius={2} />
                     ) : (
-                        <View className="w-1.5 h-1.5 rounded-full bg-primary mr-1.5" />
-                    )}
-                    {isLoading ? (
-                        <Skeleton width={70} height={12} borderRadius={2} />
-                    ) : (
-                        <Text className="text-[11px] font-q-bold text-muted">{streak} days active</Text>
+                        <Text className="text-[11px] font-q-bold text-muted">{nextMilestoneValue} days goal</Text>
                     )}
                 </View>
-                {isLoading ? (
-                    <Skeleton width={60} height={12} borderRadius={2} />
-                ) : (
-                    <Text className="text-[11px] font-q-bold text-muted">{nextMilestoneValue} days goal</Text>
-                )}
-            </View>
             </TouchableOpacity>
         </View>
     );

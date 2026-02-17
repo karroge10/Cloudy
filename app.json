@@ -4,6 +4,10 @@
     "slug": "Cloudy",
     "scheme": "cloudy",
     "version": "1.0.0",
+    "android": {
+      "versionCode": 1
+    },
+    "description": "A mindful space for your daily memories and gratitude.",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
