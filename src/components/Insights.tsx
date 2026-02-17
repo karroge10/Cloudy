@@ -13,7 +13,6 @@ import { encryption } from '../utils/encryption';
 
 interface InsightsProps {
     userId: string | undefined;
-    maxStreak?: number;
 }
 
 interface InsightsData {
@@ -33,7 +32,7 @@ const STOP_WORDS = new Set([
     'the', 'and', 'to', 'of', 'a', 'in', 'that', 'is', 'was', 'he', 'for', 'it', 'with', 'as', 'his', 'on', 'be', 'at', 'by', 'i', 'this', 'had', 'not', 'are', 'but', 'from', 'or', 'have', 'an', 'they', 'which', 'one', 'you', 'were', 'her', 'all', 'she', 'there', 'would', 'their', 'we', 'him', 'been', 'has', 'when', 'who', 'will', 'no', 'if', 'out', 'so', 'said', 'what', 'up', 'its', 'about', 'into', 'than', 'them', 'can', 'only', 'other', 'new', 'some', 'could', 'time', 'these', 'two', 'may', 'then', 'do', 'first', 'any', 'my', 'now', 'such', 'like', 'our', 'over', 'man', 'me', 'even', 'most', 'made', 'after', 'also', 'did', 'many', 'before', 'must', 'through', 'back', 'years', 'where', 'much', 'your', 'way', 'well', 'down', 'should', 'because', 'each', 'just', 'those', 'people', 'mr', 'how', 'too', 'little', 'state', 'good', 'very', 'make', 'world', 'still', 'own', 'see', 'men', 'work', 'long', 'get', 'here', 'between', 'both', 'life', 'being', 'under', 'never', 'day', 'same', 'another', 'know', 'while', 'last', 'might', 'us', 'great', 'since', 'off', 'come', 'go', 'came', 'right', 'used', 'take', 'three', 'am', 'today', 'feeling', 'felt', 'feel'
 ]);
 
-export const Insights = ({ userId, maxStreak }: InsightsProps) => {
+export const Insights = ({ userId }: InsightsProps) => {
     const { entries: cachedEntries, rawStreakData } = useJournal();
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<InsightsData | null>(null);
@@ -267,14 +266,6 @@ export const Insights = ({ userId, maxStreak }: InsightsProps) => {
                 </View>
             </View>
 
-            {maxStreak !== undefined && (
-                <View className="bg-white px-4 py-2 rounded-2xl border border-primary/5 flex-row items-center mb-6 self-start shadow-sm">
-                    <Text className="text-primary font-q-bold text-sm">
-                        Max Streak: {maxStreak} Days 🔥
-                    </Text>
-                </View>
-            )}
-
             {data.topWords.length > 0 && (
                 <View>
                     <Text className="text-xs font-q-bold text-muted mb-3 uppercase tracking-wider">Top Themes</Text>
@@ -308,28 +299,6 @@ export const Insights = ({ userId, maxStreak }: InsightsProps) => {
             <ScrollView className="max-h-[500px]" showsVerticalScrollIndicator={false}>
                 
                 <View className="px-2 mb-6">
-                    {/* Max Streak */}
-                    {maxStreak !== undefined && (
-                        <View className="w-full bg-card border border-inactive/10 rounded-[24px] p-5 mb-4 flex-row items-center justify-between shadow-sm">
-                             <View className="flex-row items-center">
-                                 <View className="bg-primary/10 p-3 rounded-full mr-4">
-                                    <Ionicons name="flame-outline" size={20} color="#FF9E7D" />
-                                 </View>
-                                 <View>
-                                     <Text className="text-base font-q-bold text-text">Max Streak</Text>
-                                     <Text className="text-sm text-muted font-q-medium">
-                                         Consistently journaling
-                                     </Text>
-                                 </View>
-                             </View>
-                             <View className="bg-primary/10 px-3 py-1 rounded-full">
-                                <Text className="text-primary font-q-bold text-sm">
-                                    {maxStreak} Days
-                                </Text>
-                             </View>
-                        </View>
-                    )}
-
                     {/* Active Days */}
                     <View className="w-full bg-card border border-inactive/10 rounded-[24px] p-5 mb-4 flex-row items-center justify-between shadow-sm">
                          <View className="flex-row items-center">

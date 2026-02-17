@@ -129,11 +129,6 @@ export const ProfileScreen = () => {
                             <View>
                                 <Text className="text-[44px] leading-[50px] font-q-bold text-text">{streak} Day</Text>
                                 <Text className="text-[44px] leading-[50px] font-q-bold text-text">Streak!</Text>
-                                 <View className="bg-white px-4 py-2 rounded-2xl shadow-sm border border-primary/5 flex-row items-center mt-3 self-start">
-                                     <Text className="text-primary font-q-bold text-sm">
-                                         Max Streak: {Math.max(streak, profile?.max_streak || 0)} Days 🔥
-                                     </Text>
-                                 </View>
                              </View>
                          )}
                      </View>
@@ -151,7 +146,7 @@ export const ProfileScreen = () => {
 
                  <ActivityGraph entries={rawStreakData} maxStreak={Math.max(streak, profile?.max_streak || 0)} />
 
-                 <Insights userId={userId || undefined} maxStreak={Math.max(streak, profile?.max_streak || 0)} />
+                 <Insights userId={userId || undefined} />
 
 
 
