@@ -65,6 +65,9 @@ export const ProfileScreen = () => {
     const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
     const [selectedStruggles, setSelectedStruggles] = useState<string[]>([]);
     const [tempMascotName, setTempMascotName] = useState('');
+    
+    // Session state to prevent loops
+    const hasDismissedOnboarding = React.useRef(false);
 
     // Onboarding flow states
     const [showOnboarding, setShowOnboarding] = useState(false);
@@ -96,15 +99,30 @@ export const ProfileScreen = () => {
             setSelectedStruggles(profile.struggles || []);
             setTempMascotName(profile.mascot_name || 'Cloudy');
 
-            // Auto-trigger onboarding if name is missing
-            // We check !display_name as the primary driver for anonymous users, 
-            // as onboarding_completed might be true from stale records.
-            if (!profile.display_name && isAnonymous) {
-                console.log('[ProfileScreen] Triggering onboarding: Name missing for anon user');
-                setShowOnboarding(true);
+            // Auto-trigger onboarding based on completion flag.
+            // If user has a name but no completion flag -> jump to step 1 (Reminder).
+            // If they have no name -> step 0.
+            console.log('[ProfileScreen] Check onboarding:', { 
+                completed: profile.onboarding_completed, 
+                name: profile.display_name,
+                isAnon: isAnonymous 
+            });
+
+            const isProfileIncomplete = !profile.onboarding_completed || !profile.display_name;
+
+            if (isProfileIncomplete && !hasDismissedOnboarding.current) {
+                 if (profile.display_name) {
+                     setOnboardingStep(1);
+                     setShowOnboarding(true);
+                 } else {
+                     setOnboardingStep(0);
+                     setShowOnboarding(true);
+                 }
             }
         } else if (!profileLoading && isAnonymous) {
-            // Fresh anonymous user with no profile yet
+            // Fresh anonymous user has no profile record yet -> Start onboarding
+            console.log('[ProfileScreen] No profile found (Anonymous), starting onboarding');
+            setOnboardingStep(0);
             setShowOnboarding(true);
         }
     }, [profile, profileLoading, isAnonymous]);
@@ -617,6 +635,9 @@ export const ProfileScreen = () => {
                         <TouchableOpacity 
                             onPress={() => { 
                                 haptics.selection(); 
+                                hasDismissedOnboarding.current = true;
+                                // Optimistically update local state to stop the effect from re-triggering immediately
+                                if (profile) profile.onboarding_completed = true; 
                                 setShowOnboarding(false);
                                 updateProfile({ onboarding_completed: true }).catch(console.warn);
                             }}

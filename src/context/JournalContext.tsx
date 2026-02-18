@@ -258,7 +258,9 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
     // Derived streak calculation - synchronous with metadata updates
     const streak = useMemo(() => {
         if (metadata.length === 0) return 0;
-        return calculateStreak(metadata);
+        const s = calculateStreak(metadata);
+        console.log('[JournalContext] Recalculated streak:', s, 'Metadata count:', metadata.length);
+        return s;
     }, [metadata]);
 
     // Side effect: sync max_streak to profile and cache

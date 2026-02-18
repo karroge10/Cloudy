@@ -95,7 +95,7 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
                     .maybeSingle();
                     
                 if (fetchStartTime < lastUpdateTimestamp.current) {
-                    console.log('[Profile] Discarding stale fetch result (older than manual update)');
+                    // Discarding stale fetch result
                     return;
                 }
                 
@@ -123,8 +123,12 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
                 setProfile(null);
             } else if (data) {
                 if (fetchStartTime < lastUpdateTimestamp.current) {
-                    console.log('[Profile] Discarding stale fetch result (older than manual update)');
+                    // Discarding stale fetch result
                     return;
+                }
+
+                if (session?.user?.is_anonymous) {
+                    console.log('[ProfileContext] Anon User Data Found:', data);
                 }
 
                 const mappedProfile: Profile = {
@@ -161,7 +165,7 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
                         display_name: null,
                         haptics_enabled: true,
                         security_lock_enabled: false,
-                        onboarding_completed: true, // Google users skip onboarding
+                        onboarding_completed: false, // Ensure they see setup flow
                         reminder_time: null,
                         age: null,
                         gender: null,

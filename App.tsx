@@ -149,7 +149,9 @@ const RootNavigator = ({ session, isBioLocked, isColdStartWithSession, isAuthLoa
               <Stack.Screen name="Statistics" component={StatisticsScreen} />
             </>
         ) : viewMode === 'loading' ? (
-            <Stack.Screen name="InitialLoading" component={() => <View style={{ flex: 1, backgroundColor: isDarkMode ? '#111427' : '#FFF9F0' }} />} />
+            <Stack.Screen name="InitialLoading">
+              {() => <View style={{ flex: 1, backgroundColor: isDarkMode ? '#111427' : '#FFF9F0' }} />}
+            </Stack.Screen>
         ) : (
           <>
             <Stack.Screen name="Welcome" component={WelcomeScreen} />

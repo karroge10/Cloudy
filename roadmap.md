@@ -28,6 +28,11 @@ This is a living document for all the things we want to polish or add later that
 *   **Locale Detection**: Auto-detect device language and apply appropriate translations.
 *   **Date/Time Localization**: Format dates and times according to user's locale settings.
 
+
+## 🛠️ Post-Launch & Productivity
+*   **Create "Cloudy Core" Template**: Once Cloudy is fully polished and launched, extract the core architecture (Auth, Theme, Supabase, Navigation) into a clean, reusable GitHub Template Repository. This will serve as the "backbone" for future app ideas (like the "Impulse Purchase Lock" app).
+    *   **Goal**: `npx create-cloudy-app` experience via a simple "Use this template" button on GitHub.
+
 ---
 
 ## ✅ Completed

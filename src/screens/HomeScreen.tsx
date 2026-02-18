@@ -164,6 +164,7 @@ export const HomeScreen = () => {
             if (unlockedMascot && likelyStreak > currentMax) {
                 setPendingNudgeStreak(likelyStreak);
                 setMilestoneMascot(unlockedMascot);
+                console.log('[HomeScreen] Mascot Unlocked:', unlockedMascot.name, 'Streak:', likelyStreak);
                 trackEvent('mascot_unlocked', { mascot: unlockedMascot.name });
             } else {
                 // 2. Check for Secondary Nudges (Setup, Day 3 prompts, etc.)
@@ -313,10 +314,11 @@ export const HomeScreen = () => {
             </View>
 
             {/* Streak Goal Milestone - Now at the top */}
+            {/* Streak Goal Milestone - Now at the top */}
             <StreakGoal 
                 streak={streak} 
                 maxStreak={profile?.max_streak}
-                isLoading={journalLoading || profileLoading || isMerging}
+                isLoading={(!streak && journalLoading) || (!profile && profileLoading) || isMerging}
                 className="mb-8" 
                 onPress={() => {
                     trackEvent('progress_viewed');
