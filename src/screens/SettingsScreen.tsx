@@ -230,26 +230,15 @@ export const SettingsScreen = () => {
                     <View className="flex-row items-center justify-between py-4">
                         <View className="flex-1 pr-4">
                             <TouchableOpacity 
-                                disabled={isThemeUnlocked}
-                                onPress={() => { haptics.selection(); navigation.navigate('Progress'); }}
+                                onPress={() => { haptics.selection(); toggleTheme(); }}
                                 className="active:opacity-70"
                             >
                                 <View className="flex-row items-center">
                                     <Text className="text-lg font-q-bold text-text">Cloudy Night Theme</Text>
-                                    {!isThemeUnlocked && (
-                                        <Ionicons name="lock-closed" size={14} color={isDarkMode ? "#E5E7EB" : "#94A3B8"} style={{ marginLeft: 6 }} />
-                                    )}
                                 </View>
                                 <Text className="text-muted font-q-medium text-xs mt-0.5">
-                                    {isThemeUnlocked 
-                                        ? "Switch to a calming dark palette" 
-                                        : "Unlock Dreamy (30-day streak) to use"}
+                                    Switch to a calming dark palette
                                 </Text>
-                                {!isThemeUnlocked && (
-                                    <Text className="text-primary font-q-bold text-[10px] uppercase tracking-wider mt-1">
-                                        View Progress →
-                                    </Text>
-                                )}
                             </TouchableOpacity>
                         </View>
                         <Switch
@@ -257,25 +246,9 @@ export const SettingsScreen = () => {
                             thumbColor="#FFFFFF"
                             onValueChange={() => {
                                 haptics.selection();
-                                if (!isThemeUnlocked && !isDarkMode) {
-                                    showAlert(
-                                        'Feature Locked',
-                                        'You need to unlock the Dreamy mascot (30-day streak) to use the Night Theme.',
-                                        [{ 
-                                            text: 'See Progress', 
-                                            onPress: () => navigation.navigate('Progress') 
-                                        }, { 
-                                            text: 'Got it', 
-                                            style: 'cancel' 
-                                        }],
-                                        'info'
-                                    );
-                                    return;
-                                }
                                 toggleTheme();
                             }}
                             value={isDarkMode}
-                            disabled={!isThemeUnlocked && !isDarkMode}
                         />
                     </View>
 

@@ -49,8 +49,8 @@ export const COMPANIONS: readonly Companion[] = [
         requiredStreak: 30,
         description: 'Mastering the magic of nightly reflection.',
         trait: 'Master',
-        unlockPerk: 'Cloudy Night Theme',
-        unlockPerkDescription: 'Unlock Dreamy to enable Dark Mode.'
+        unlockPerk: 'Dreamy Theme',
+        unlockPerkDescription: 'Unlock Dreamy for a special cosmic theme.'
     },
     { 
         id: 'GROOVY', 

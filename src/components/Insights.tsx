@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, InteractionManager } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { Skeleton } from './Skeleton';
@@ -36,6 +37,7 @@ const STOP_WORDS = new Set([
 ]);
 
 export const Insights = ({ userId }: InsightsProps) => {
+    const navigation = useNavigation<any>();
     const { entries: cachedEntries, rawStreakData } = useJournal();
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<InsightsData | null>(null);
@@ -264,7 +266,6 @@ export const Insights = ({ userId }: InsightsProps) => {
             onPress={() => { 
                 haptics.selection(); 
                 if (data) {
-                    // @ts-ignore
                     navigation.navigate('Statistics', { data });
                 }
             }}
