@@ -3,7 +3,7 @@ import {
     View, Text, TouchableOpacity, Share, ScrollView, 
     ActivityIndicator, FlatList, Dimensions, 
     NativeSyntheticEvent, NativeScrollEvent, Image,
-    useWindowDimensions
+    useWindowDimensions, ListRenderItem
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -24,8 +24,6 @@ import Animated, {
     useAnimatedScrollHandler,
     interpolate,
     Extrapolation,
-    SlideInDown,
-    SlideOutUp
 } from 'react-native-reanimated';
 
 const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
@@ -41,7 +39,6 @@ const GENERIC_TITLES = [
     "Personal reflection"
 ];
 
-// Memoized Item Component moved outside
 const MemoryItem = React.memo(({ 
     item, 
     onToggleFavorite, 
@@ -158,20 +155,17 @@ export const MemoryScreen = () => {
     const route = useRoute<any>();
     const { entries, toggleFavorite, deleteEntry, rawStreakData, hasMore, loadMore } = useJournal();
     
-    // 2. State
     const [currentIndex, setCurrentIndex] = useState(0);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const listRef = useRef<FlatList>(null);
     
-    // 3. Data Prep
     const journalEntries = useMemo(() => 
         entries.filter(e => !e.deleted_at), 
     [entries]);
 
     const totalCount = rawStreakData.length;
 
-    // 4. Initial Scroll Sync
     const initialIndex = useMemo(() => {
         const entryId = route.params?.entryId;
         if (entryId && journalEntries.length > 0) {
@@ -209,7 +203,6 @@ export const MemoryScreen = () => {
         scrollX.value = event.contentOffset.x;
     });
 
-    // Mascot Animation - Subtle Parallax & Rotation
     const mascotAnimatedStyle = useAnimatedStyle(() => {
         const inputRange = [
             (currentIndex - 1) * SCREEN_WIDTH,
@@ -220,21 +213,21 @@ export const MemoryScreen = () => {
         const rotate = interpolate(
             scrollX.value,
             inputRange,
-            [5, 0, -5], // Much subtler rotation
+            [5, 0, -5],
             Extrapolation.CLAMP
         );
 
         const translateY = interpolate(
             scrollX.value,
             inputRange,
-            [10, 0, 10], // Bounces down slightly when moving
+            [10, 0, 10],
             Extrapolation.CLAMP
         );
         
         const scale = interpolate(
             scrollX.value,
             inputRange,
-            [0.9, 1, 0.9], // Subtle shrink
+            [0.9, 1, 0.9],
             Extrapolation.CLAMP
         );
 
@@ -247,9 +240,6 @@ export const MemoryScreen = () => {
         };
     });
 
-    // 5. Shared Values for Interaction
-
-    // 6. Actions
     const handleToggleFavorite = useCallback(async (item: JournalEntry) => {
         haptics.selection();
         await toggleFavorite(item.id, !item.is_favorite);
@@ -290,7 +280,7 @@ export const MemoryScreen = () => {
         }
     };
 
-    const renderItem = useCallback(({ item }: { item: JournalEntry }) => (
+    const renderItem: ListRenderItem<JournalEntry> = useCallback(({ item }) => (
         <MemoryItem
             item={item}
             onToggleFavorite={handleToggleFavorite}
@@ -301,10 +291,9 @@ export const MemoryScreen = () => {
         />
     ), [handleToggleFavorite, onDelete, CARD_WIDTH, SCREEN_WIDTH, getPromptForEntry]);
 
-    // 8. Error/Empty View
     if (!journalEntries || journalEntries.length === 0) {
         return (
-            <Layout useSafePadding={false} backgroundColors={['#FFF9F0', '#fff1db']}>
+            <Layout useSafePadding={false}>
                 <View className="px-6 pt-4">
                     <TopNav title="Journal" onBack={() => navigation.goBack()} />
                 </View>
@@ -323,7 +312,7 @@ export const MemoryScreen = () => {
 
     return (
         <>
-            <Layout noScroll useSafePadding={false} backgroundColors={['#FFF9F0', '#fff1db']} className="px-0 py-0">
+            <Layout noScroll useSafePadding={false} className="px-0 py-0">
                 <View className="px-6 pt-4">
                     <TopNav 
                         title={displayDate}
@@ -383,12 +372,11 @@ export const MemoryScreen = () => {
                     />
                 </View>
 
-                {/* Footer Controls */}
                 <View className="flex-row items-center justify-between px-8 pb-12 w-full">
                     <TouchableOpacity 
                         onPress={() => listRef.current?.scrollToIndex({ index: currentIndex - 1, animated: true })}
                         disabled={currentIndex === 0}
-                        className={`bg-white w-14 h-14 items-center justify-center rounded-full shadow-lg ${currentIndex === 0 ? 'opacity-20' : ''}`}
+                        className={`bg-card w-14 h-14 items-center justify-center rounded-full shadow-lg ${currentIndex === 0 ? 'opacity-20' : ''}`}
                     >
                         <Ionicons name="chevron-back" size={24} color="#FF9E7D" />
                     </TouchableOpacity>
@@ -405,7 +393,7 @@ export const MemoryScreen = () => {
                             }
                         }}
                         disabled={currentIndex === totalCount - 1}
-                        className={`bg-white w-14 h-14 items-center justify-center rounded-full shadow-lg ${currentIndex === totalCount - 1 ? 'opacity-20' : ''}`}
+                        className={`bg-card w-14 h-14 items-center justify-center rounded-full shadow-lg ${currentIndex === totalCount - 1 ? 'opacity-20' : ''}`}
                     >
                         <Ionicons name="chevron-forward" size={24} color="#FF9E7D" />
                     </TouchableOpacity>

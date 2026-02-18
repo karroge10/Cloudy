@@ -103,7 +103,7 @@ const TimelineItem = ({
                     <View className={`w-[1px] h-4 ${isFirst ? 'bg-transparent' : 'bg-inactive'}`} />
                     
                     <View 
-                        className="w-16 h-16 rounded-full items-center justify-center shadow-sm bg-white"
+                        className="w-16 h-16 rounded-full items-center justify-center shadow-sm bg-card"
                         style={{ shadowColor: '#00000010', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 2 }}
                     >
                         <View className="items-center justify-center">

@@ -3,6 +3,7 @@ import { View, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../context/ThemeContext';
 
 interface LayoutProps {
     children: React.ReactNode;
@@ -21,8 +22,12 @@ export const Layout = ({
     noScroll = false, 
     useSafePadding = true,
     edges,
-    backgroundColors = ['#FFF9F0', '#fff1db'] 
+    backgroundColors
 }: LayoutProps) => {
+    const { isDarkMode } = useTheme();
+    const defaultColors = isDarkMode ? ['#111427', '#0f1122'] : ['#FFF9F0', '#fff1db'];
+    const finalColors = backgroundColors || defaultColors;
+
     const content = (
         <View className={`flex-1 ${useSafePadding ? 'px-6 py-4' : ''} ${className}`}>
             {children}
@@ -49,16 +54,16 @@ export const Layout = ({
             className="flex-1" 
             edges={edges || (isTabScreen ? ['top', 'left', 'right'] : ['top', 'left', 'right', 'bottom'])}
         >
-            <StatusBar style="dark" translucent />
+            <StatusBar style={isDarkMode ? "light" : "dark"} translucent />
             {renderContent()}
         </SafeAreaView>
     );
 
     return (
         <View className="flex-1 bg-background">
-            {backgroundColors ? (
+            {finalColors ? (
                 <LinearGradient 
-                    colors={backgroundColors as [string, string, ...string[]]} 
+                    colors={finalColors as [string, string, ...string[]]} 
                     className="flex-1"
                 >
                     {renderLayout()}

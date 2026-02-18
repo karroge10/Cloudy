@@ -1,55 +1,77 @@
 import { MASCOTS } from './Assets';
 
-export const COMPANIONS = [
+export interface Companion {
+    id: string;
+    name: string;
+    asset: any;
+    requiredStreak: number;
+    description: string;
+    trait: string;
+    unlockPerk: string;
+    unlockPerkDescription: string;
+}
+
+export const COMPANIONS: readonly Companion[] = [
     { 
-        id: 'SPARKY', 
-        name: 'Sparky', 
-        asset: MASCOTS.HERO, 
-        requiredStreak: 3,
-        description: 'Your first guide in the journey of self-reflection.',
-        trait: 'Beginner'
+        id: 'SUNNY', 
+        name: 'Sunny', 
+        asset: MASCOTS.FARMER, 
+        requiredStreak: 0,
+        description: 'Planting the first seeds of mindfulness.',
+        trait: 'Beginner',
+        unlockPerk: 'Base Experience',
+        unlockPerkDescription: 'The standard Cloudy loop.'
     },
     { 
         id: 'COOKIE', 
         name: 'Cookie', 
         asset: MASCOTS.CHEF, 
         requiredStreak: 7,
-        description: 'Cooking up healthy thoughts and positive habits.',
-        trait: 'Consistency'
-    },
-    { 
-        id: 'DREAMY', 
-        name: 'Dreamy', 
-        asset: MASCOTS.WIZARD, 
-        requiredStreak: 14,
-        description: 'Magic happens when you show up for yourself every day.',
-        trait: 'Dedication'
+        description: 'Feeding your habit with daily presence.',
+        trait: 'Regular',
+        unlockPerk: 'Streak Freeze',
+        unlockPerkDescription: 'Saves your streak once per month (Passive).'
     },
     { 
         id: 'BRAINY', 
         name: 'Brainy', 
         asset: MASCOTS.DOCTOR, 
-        requiredStreak: 30,
-        description: 'Understanding the patterns of your mind with clinical precision.',
-        trait: 'Insight'
+        requiredStreak: 14,
+        description: 'Analyzing the patterns of your mind.',
+        trait: 'Expert',
+        unlockPerk: 'Insights Dashboard',
+        unlockPerkDescription: 'Unlock Brainy to see personal insights on profile screen.'
     },
     { 
-        id: 'SUNNY', 
-        name: 'Sunny', 
-        asset: MASCOTS.FARMER, 
-        requiredStreak: 60,
-        description: 'Harvesting the fruits of your long-term mental clarity.',
-        trait: 'Growth'
+        id: 'DREAMY', 
+        name: 'Dreamy', 
+        asset: MASCOTS.WIZARD, 
+        requiredStreak: 30,
+        description: 'Mastering the magic of nightly reflection.',
+        trait: 'Master',
+        unlockPerk: 'Cloudy Night Theme',
+        unlockPerkDescription: 'Unlock Dreamy to enable Dark Mode.'
     },
     { 
         id: 'GROOVY', 
         name: 'Groovy', 
         asset: MASCOTS.ROCK, 
+        requiredStreak: 60,
+        description: 'Rocking your journey with undeniable momentum.',
+        trait: 'Legend',
+        unlockPerk: 'Custom App Icons',
+        unlockPerkDescription: 'Unlock Groovy to customize your home screen.'
+    },
+    { 
+        id: 'SPARKY', 
+        name: 'Sparky', 
+        asset: MASCOTS.HERO, 
         requiredStreak: 90,
-        description: 'You are now rocking the habit of daily mindfulness.',
-        trait: 'Mastery'
+        description: 'The ultimate transformation into a hero of self-care.',
+        trait: 'HERO',
+        unlockPerk: 'Verified Status',
+        unlockPerkDescription: 'A golden profile badge and verified seal.'
     },
 ] as const;
 
 export type CompanionId = typeof COMPANIONS[number]['id'];
-export type Companion = typeof COMPANIONS[number];

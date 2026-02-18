@@ -1,17 +1,18 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: ["./App.{js,jsx,ts,tsx}", "./src/**/*.{js,jsx,ts,tsx}"],
+  darkMode: "class",
   theme: {
     extend: {
       colors: {
-        background: "#FFF9F0",
-        primary: "#FF9E7D",
-        card: "#FFFFFF",
-        text: "#333333",
-        muted: "#7F7F7F",
-        inactive: "#E0E0E0",
-        secondary: "#fff1dbff",
-        "tip-bg": "#fffff9ff",
+        background: "rgb(var(--background) / <alpha-value>)",
+        primary: "rgb(var(--primary) / <alpha-value>)",
+        card: "rgb(var(--card) / <alpha-value>)",
+        text: "rgb(var(--text) / <alpha-value>)",
+        muted: "rgb(var(--muted) / <alpha-value>)",
+        inactive: "rgb(var(--inactive) / <alpha-value>)",
+        secondary: "rgb(var(--secondary) / <alpha-value>)",
+        "tip-bg": "rgb(var(--tip-bg) / <alpha-value>)",
       },
       fontFamily: {
         "q-regular": ["Quicksand_400Regular"],

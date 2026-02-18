@@ -7,6 +7,7 @@ import { MascotImage } from './MascotImage';
 import { haptics } from '../utils/haptics';
 import { Skeleton } from './Skeleton';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, withSpring } from 'react-native-reanimated';
+import { useTheme } from '../context/ThemeContext';
 
 interface StreakGoalProps {
     streak: number;
@@ -17,6 +18,7 @@ interface StreakGoalProps {
 }
 
 export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, maxStreak = 0, className, onPress, isLoading }) => {
+    const { isDarkMode } = useTheme();
     const progressValue = useSharedValue(0);
 
     const handlePress = () => {
@@ -52,13 +54,13 @@ export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, maxStreak = 0, c
         return null;
     }
 
-    const containerClasses = `bg-white p-5 rounded-[32px] border border-primary/10 shadow-sm ${className}`;
+    const containerClasses = `bg-card p-5 rounded-[32px] border border-inactive/10 ${className}`;
 
     return (
         <View style={{
-            shadowColor: '#000',
+            shadowColor: isDarkMode ? '#000' : '#000',
             shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.05,
+            shadowOpacity: isDarkMode ? 0.3 : 0.05,
             shadowRadius: 12,
             elevation: 3
         }}>
@@ -76,8 +78,8 @@ export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, maxStreak = 0, c
                             ) : nextCompanion ? (
                                 <View className="items-center justify-center">
                                     <MascotImage source={nextCompanion.asset} className="w-8 h-8 grayscale opacity-50" resizeMode="contain" />
-                                    <View className="absolute bg-white/90 rounded-full p-0.5 border border-inactive/20">
-                                        <Ionicons name="lock-closed" size={8} color="#94A3B8" />
+                                    <View className="absolute bg-card rounded-full p-0.5 border border-inactive/20">
+                                        <Ionicons name="lock-closed" size={8} color={isDarkMode ? "#E5E7EB" : "#94A3B8"} />
                                     </View>
                                 </View>
                             ) : (
@@ -92,15 +94,17 @@ export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, maxStreak = 0, c
                                     'Next Milestone'
                                 )}
                             </Text>
-                            <View className="h-6 justify-center">
+                            <View className="h-Auto justify-center">
                                 {isLoading ? (
                                     <Skeleton width={120} height={18} borderRadius={4} />
                                 ) : (
-                                    <Text className="text-lg font-q-bold text-text leading-6" numberOfLines={1}>
-                                        {nextCompanion ? (
-                                            (maxStreak >= nextCompanion.requiredStreak) ? `Reach ${nextCompanion.name}` : `Unlock ${nextCompanion.name}`
-                                        ) : `${nextMilestoneValue} Day Streak`}
-                                    </Text>
+                                    <View>
+                                        <Text className="text-lg font-q-bold text-text leading-6" numberOfLines={1}>
+                                            {nextCompanion ? (
+                                                (maxStreak >= nextCompanion.requiredStreak) ? `Reach ${nextCompanion.name}` : `Unlock ${nextCompanion.name}`
+                                            ) : `${nextMilestoneValue} Day Streak`}
+                                        </Text>
+                                    </View>
                                 )}
                             </View>
                         </View>

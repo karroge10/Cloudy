@@ -38,7 +38,7 @@ export const InfoCard = ({
         <Container 
             onPress={handlePress}
             activeOpacity={onPress ? 0.7 : 1}
-            className={`bg-white border border-primary/20 rounded-[32px] overflow-hidden ${className}`}
+            className={`bg-card border border-primary/20 rounded-[32px] overflow-hidden ${className}`}
         >
             <View className="bg-secondary/30 p-6 flex-row items-center">
                 <View 

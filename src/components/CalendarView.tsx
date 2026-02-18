@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { haptics } from '../utils/haptics';
+import { useTheme } from '../context/ThemeContext';
 
 interface CalendarViewProps {
     markedDates: Set<string>; // YYYY-MM-DD
@@ -10,6 +11,7 @@ interface CalendarViewProps {
 }
 
 export const CalendarView = ({ markedDates, onDateSelect, selectedDate }: CalendarViewProps) => {
+    const { isDarkMode } = useTheme();
     const [currentMonth, setCurrentMonth] = useState(() => {
         if (selectedDate) {
             const [year, month, day] = selectedDate.split('-').map(Number);
@@ -98,7 +100,7 @@ export const CalendarView = ({ markedDates, onDateSelect, selectedDate }: Calend
                     }
                 }}
                 style={{
-                    backgroundColor: isSelected ? '#FF9E7D' : isCurrentDay ? '#FFF0E6' : 'transparent',
+                    backgroundColor: isSelected ? '#FF9E7D' : isCurrentDay ? (isDarkMode ? '#FF9E7D20' : '#FFF0E6') : 'transparent',
                     borderWidth: isCurrentDay && !isSelected ? 1 : 0,
                     borderColor: '#FF9E7D'
                 }}
@@ -128,7 +130,7 @@ export const CalendarView = ({ markedDates, onDateSelect, selectedDate }: Calend
         <View 
             className="bg-card rounded-3xl p-6 border border-inactive/10 shadow-lg"
             style={{ 
-                shadowColor: '#00000020', 
+                shadowColor: isDarkMode ? '#000' : '#00000020', 
                 shadowOffset: { width: 0, height: 4 }, 
                 shadowOpacity: 1, 
                 shadowRadius: 20, 
@@ -139,11 +141,11 @@ export const CalendarView = ({ markedDates, onDateSelect, selectedDate }: Calend
             {/* Header */}
             <View className="flex-row items-center justify-between mb-4 px-2">
                 <TouchableOpacity onPress={handlePrevMonth} className="p-2">
-                    <Ionicons name="chevron-back" size={20} color="#333" />
+                    <Ionicons name="chevron-back" size={20} color={isDarkMode ? "#E5E7EB" : "#333"} />
                 </TouchableOpacity>
                 <Text className="font-q-bold text-lg text-text">{monthLabel}</Text>
                 <TouchableOpacity onPress={handleNextMonth} className="p-2">
-                     <Ionicons name="chevron-forward" size={20} color="#333" />
+                     <Ionicons name="chevron-forward" size={20} color={isDarkMode ? "#E5E7EB" : "#333"} />
                 </TouchableOpacity>
             </View>
 

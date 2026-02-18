@@ -22,6 +22,7 @@ import { useAnalytics } from '../hooks/useAnalytics';
 import { Layout } from '../components/Layout';
 
 import { COMPANIONS } from '../constants/Companions';
+import { useTheme } from '../context/ThemeContext';
 
 const GENDERS = ['Female', 'Male', 'Non-binary', 'Prefer not to say'];
 const GOALS = ['Mental Clarity', 'Memory keeping', 'Self-discipline', 'Creativity', 'Gratitude'];
@@ -30,6 +31,9 @@ const STRUGGLES = ['Anxiety', 'Stress', 'Sleep', 'Focus', 'Motivation', 'N/A'];
 export const ProfileScreen = () => {
     const { streak, rawStreakData, refreshEntries } = useJournal();
     const { profile, loading: profileLoading, updateProfile, isAnonymous, userId, logout } = useProfile();
+    const { isDarkMode } = useTheme();
+    // TEMPORARY: Hardcoding 110 for Hero UI testing
+    const PROFILE_MAX_STREAK = 110; 
     const { trackEvent } = useAnalytics();
     let navigation: any;
     try {
@@ -84,6 +88,8 @@ export const ProfileScreen = () => {
         setIsRefreshing(false);
     };
 
+    const currentRank = [...COMPANIONS].reverse().find(c => PROFILE_MAX_STREAK >= c.requiredStreak)?.trait || 'Beginner';
+
     return (
         <Layout noScroll={true} isTabScreen={true} useSafePadding={false}>
             <View className="px-6 pt-4">
@@ -96,7 +102,7 @@ export const ProfileScreen = () => {
                                 navigation.navigate('Settings'); 
                             });
                         }}>
-                             <Ionicons name="settings-outline" size={24} color="#333333" />
+                             <Ionicons name="settings-outline" size={24} color={isDarkMode ? "#E5E7EB" : "#333333"} />
                         </TouchableOpacity>
                     }
                 />
@@ -126,7 +132,20 @@ export const ProfileScreen = () => {
                               {profileLoading ? (
                                  <Skeleton width={120} height={24} style={{ marginBottom: 4 }} borderRadius={12} />
                               ) : (
-                                 <Text className="text-xl font-q-bold text-muted">Hi, {displayName || 'Friend'}!</Text>
+                                 <View className="flex-row items-center flex-wrap">
+                                    <Text className="text-xl font-q-bold text-muted mr-3">Hi, {displayName || 'Friend'}!</Text>
+                                    
+                                    {currentRank === 'HERO' ? (
+                                        <View className={`${isDarkMode ? 'bg-[#FFD700]/20' : 'bg-black'} px-3 py-1 rounded-full border border-[#FFD700] flex-row items-center shadow-sm`}>
+                                            <Ionicons name="flash" size={10} color="#FFD700" />
+                                            <Text className="text-[#FFD700] font-q-bold text-[10px] ml-1.5 uppercase tracking-widest">HERO</Text>
+                                        </View>
+                                    ) : (
+                                        <View className="bg-primary/20 px-2.5 py-1 rounded-full">
+                                            <Text className="text-primary font-q-bold text-[10px] uppercase tracking-wider">{currentRank}</Text>
+                                        </View>
+                                    )}
+                                 </View>
                               )}
                          </TouchableOpacity>
                         
@@ -154,14 +173,14 @@ export const ProfileScreen = () => {
                      </TouchableOpacity>
                  </View>
 
-                 <ActivityGraph entries={rawStreakData} maxStreak={Math.max(streak, profile?.max_streak || 0)} />
+                 <ActivityGraph entries={rawStreakData} maxStreak={Math.max(streak, PROFILE_MAX_STREAK)} />
 
                  <Insights userId={userId || undefined} />
 
 
 
-                <View className="mb-8 bg-card rounded-[32px] p-6 shadow-[#0000000D] shadow-xl"
-                    style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}>
+                <View className="mb-8 bg-card rounded-[32px] p-6 shadow-xl"
+                    style={{ shadowColor: isDarkMode ? '#000' : '#0000000D', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}>
                     
                     <View className="py-2">
                         <TouchableOpacity onPress={() => { haptics.selection(); setIsAgeSheetVisible(true); }} className="flex-row justify-between items-center py-3">
@@ -248,9 +267,9 @@ export const ProfileScreen = () => {
                      <MascotImage source={MASCOTS.THINK} className="w-40 h-40 mb-4" resizeMode="contain" />
                      <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">What should Cloudy call you?</Text>
                     <TextInput
-                        className="w-full bg-card px-6 py-5 rounded-[24px] font-q-bold text-lg text-text border-2 border-inactive/10 mb-8"
+                        className="w-full bg-card px-6 py-5 rounded-[24px] font-q-bold text-lg text-text border-2 border-secondary mb-8"
                         placeholder="Your Name"
-                        placeholderTextColor="#CBD5E1"
+                        placeholderTextColor={isDarkMode ? "#64748B" : "#CBD5E1"}
                         onChangeText={setTempName}
                         value={tempName}
                         autoCapitalize="words"
@@ -454,12 +473,12 @@ export const ProfileScreen = () => {
                         }}
                         className="mb-8"
                     >
-                        <Text className="text-primary font-q-bold text-sm uppercase tracking-widest border-b border-primary/30 pb-0.5">See Progress</Text>
+                        <Text className="text-primary font-q-bold text-sm uppercase tracking-widest border-b border-primary pb-0.5">See Progress</Text>
                     </TouchableOpacity>
 
                     <View className="flex-row flex-wrap justify-between w-full mb-4">
                         {COMPANIONS.map((companion) => {
-                            const effectiveStreak = Math.max(streak, profile?.max_streak || 0);
+                            const effectiveStreak = Math.max(streak, PROFILE_MAX_STREAK);
                             const isLocked = effectiveStreak < companion.requiredStreak;
                             return (
                                 <MascotCard 
@@ -469,6 +488,7 @@ export const ProfileScreen = () => {
                                     isSelected={tempMascotName === companion.name}
                                     isLocked={isLocked}
                                     requiredStreak={companion.requiredStreak}
+                                    unlockPerk={companion.unlockPerk}
                                     onPress={() => {
                                         if (!isLocked) {
                                             setTempMascotName(companion.name);
@@ -489,6 +509,7 @@ export const ProfileScreen = () => {
                             }}
                         />
                         <TouchableOpacity 
+                            onPress={() => { haptics.selection(); setIsMascotSheetVisible(false); }}
                             className="mt-4 py-2 items-center active:scale-95 transition-transform"
                         >
                              <Text className="text-muted font-q-bold text-base">Maybe later</Text>

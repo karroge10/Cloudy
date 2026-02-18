@@ -10,6 +10,9 @@ import { MascotImage } from './MascotImage';
 import { MASCOTS } from '../constants/Assets';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { encryption } from '../utils/encryption';
+import { useProfile } from '../context/ProfileContext';
+import { LockedFeature } from './LockedFeature';
+import { useTheme } from '../context/ThemeContext';
 
 interface InsightsProps {
     userId: string | undefined;
@@ -217,6 +220,10 @@ export const Insights = ({ userId }: InsightsProps) => {
         return () => task.cancel();
     }, [userId, cachedEntries, rawStreakData, cacheKey]);
 
+    const { profile } = useProfile();
+    const { isDarkMode } = useTheme();
+    const isUnlocked = (profile?.max_streak || 0) >= 14;
+
     if (loading) {
         return (
             <View className="bg-card rounded-[32px] p-6 shadow-[#0000000D] shadow-xl mb-8"
@@ -235,13 +242,25 @@ export const Insights = ({ userId }: InsightsProps) => {
         );
     }
 
+    if (!isUnlocked) {
+        return (
+            <LockedFeature 
+                featureName="Insights" 
+                requiredStreak={14} 
+                currentStreak={profile?.max_streak || 0}
+                mascotAsset={MASCOTS.DOCTOR}
+                icon="bar-chart-outline"
+            />
+        );
+    }
+
     if (!data) return null;
 
     return (
         <>
         <TouchableOpacity 
-            className="bg-card rounded-[32px] p-6 shadow-[#0000000D] shadow-xl mb-8"
-            style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}
+            className="bg-card rounded-[32px] p-6 shadow-xl mb-8 border border-inactive/5"
+            style={{ shadowColor: isDarkMode ? '#000' : '#0000000D', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}
             onPress={() => { haptics.selection(); setIsSheetVisible(true); }}
             activeOpacity={0.9}
         >
@@ -249,7 +268,7 @@ export const Insights = ({ userId }: InsightsProps) => {
                 <Text className="text-lg font-q-bold text-text">Insights</Text>
                 <View className="flex-row items-center">
                     <Text className="text-sm font-q-medium text-muted mr-1">All Time</Text>
-                    <Ionicons name="chevron-forward" size={14} color="#94A3B8" />
+                    <Ionicons name="chevron-forward" size={14} color={isDarkMode ? "#CBD5E1" : "#94A3B8"} />
                 </View>
             </View>
 

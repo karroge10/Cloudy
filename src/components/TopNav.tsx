@@ -4,6 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { haptics } from '../utils/haptics';
 
+import { useTheme } from '../context/ThemeContext';
+
 interface TopNavProps {
     title?: string;
     subtitle?: string;
@@ -15,6 +17,7 @@ interface TopNavProps {
 }
 
 export const TopNav = ({ title, subtitle, showBack = true, onBack, rightElement, centerContent, roundButtons = false }: TopNavProps) => {
+    const { isDarkMode } = useTheme();
     let navigation: any;
     try {
         navigation = useNavigation();
@@ -34,7 +37,7 @@ export const TopNav = ({ title, subtitle, showBack = true, onBack, rightElement,
                         <Ionicons 
                             name={roundButtons ? "close" : "arrow-back"} 
                             size={28} 
-                            color="#333333" 
+                            color={isDarkMode ? "#E5E7EB" : "#333333"} 
                         />
                     </TouchableOpacity>
                 )}

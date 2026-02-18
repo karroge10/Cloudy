@@ -42,16 +42,22 @@ export const WelcomeScreen = () => {
                         <MascotImage
                             isAnimated
                             source={MASCOTS.WRITE}
-                            className="w-72 h-72 mb-10"
+                            className="w-64 h-64 mb-8"
                             resizeMode="contain"
                             style={{ transform: [{ scale: scaleAnim }] }}
                         />
                     </Pressable>
 
-                    <Text className="text-5xl font-q-bold text-text mb-6 text-center leading-[60px]">
+                    <Text 
+                        className="text-4xl font-q-bold text-text mb-6 text-center leading-tight px-4"
+                        allowFontScaling={false}
+                    >
                         Hi, I'm Cloudy
                     </Text>
-                    <Text className="text-2xl text-text opacity-80 text-center font-q-regular leading-relaxed px-4">
+                    <Text 
+                        className="text-xl text-text opacity-80 text-center font-q-regular leading-relaxed px-8"
+                        allowFontScaling={false}
+                    >
                         Your tiny companion for a clearer mind.
                     </Text>
                 </View>

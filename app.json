@@ -26,11 +26,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": true,
-      "package": "app.cloudy.journal",
-      "navigationBar": {
-        "barStyle": "dark-content",
-        "backgroundColor": "#FFF9F0"
-      }
+      "package": "app.cloudy.journal"
     },
     "web": {
       "favicon": "./assets/favicon.png"

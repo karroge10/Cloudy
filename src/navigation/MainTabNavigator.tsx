@@ -8,14 +8,24 @@ import { HomeScreen } from '../screens/HomeScreen';
 import { JourneyScreen } from '../screens/JourneyScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 
+import { useTheme } from '../context/ThemeContext';
+
 const Tab = createBottomTabNavigator();
 const { width } = Dimensions.get('window');
 
 const CustomTabBar = ({ state, descriptors, navigation }: any) => {
   const insets = useSafeAreaInsets();
+  const { isDarkMode } = useTheme();
   
   return (
-    <View style={[styles.tabBar, { height: 80 + insets.bottom, bottom: 0, paddingBottom: insets.bottom, alignItems: 'flex-start' }]}>
+    <View style={[
+      styles.tabBar, 
+      { 
+        height: 80 + insets.bottom, 
+        paddingBottom: insets.bottom, 
+        backgroundColor: isDarkMode ? '#1a1d35' : '#FFFFFF' 
+      }
+    ]}>
       {state.routes.map((route: any, index: number) => {
         const { options } = descriptors[route.key];
         const label =
@@ -60,7 +70,7 @@ const CustomTabBar = ({ state, descriptors, navigation }: any) => {
         }
 
         const activeColor = '#FF9E7D';
-        const inactiveColor = '#94A3B8';
+        const inactiveColor = isDarkMode ? '#64748B' : '#94A3B8';
 
         return (
           <TouchableOpacity

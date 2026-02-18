@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { View, Text, ScrollView, Dimensions } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 
 interface ActivityGraphProps {
     entries?: { created_at: string }[]; // Array of objects with ISO date strings
@@ -95,11 +96,13 @@ export const ActivityGraph: React.FC<ActivityGraphProps> = ({ entries, maxStreak
 
 
 
+    const { isDarkMode } = useTheme();
+
     const days = ['M', '', 'W', '', 'F', '', 'S'];
 
     return (
-        <View className="bg-card rounded-3xl p-6 shadow-[#0000000D] shadow-xl mb-8"
-            style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}>
+        <View className="bg-card rounded-3xl p-6 shadow-xl mb-8 border border-inactive/5"
+            style={{ shadowColor: isDarkMode ? '#000' : '#0000000D', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}>
             <View className="flex-row justify-between items-center mb-6">
                 <Text className="text-lg font-q-bold text-text">Activity</Text>
                 <Text className="text-sm font-q-medium text-muted">Last {monthsText} months</Text>

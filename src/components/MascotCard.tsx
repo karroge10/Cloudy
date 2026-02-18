@@ -2,6 +2,7 @@ import { TouchableOpacity, Text, ImageSourcePropType, View } from 'react-native'
 import { haptics } from '../utils/haptics';
 import { MascotImage } from './MascotImage';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 
 interface MascotCardProps {
     name: string;
@@ -9,10 +10,12 @@ interface MascotCardProps {
     isSelected: boolean;
     isLocked: boolean;
     requiredStreak?: number;
+    unlockPerk?: string;
     onPress: () => void;
 }
 
-export const MascotCard = ({ name, asset, isSelected, isLocked, requiredStreak, onPress }: MascotCardProps) => {
+export const MascotCard = ({ name, asset, isSelected, isLocked, requiredStreak, unlockPerk, onPress }: MascotCardProps) => {
+    const { isDarkMode } = useTheme();
     const handlePress = () => {
         haptics.selection();
         onPress();
@@ -29,7 +32,7 @@ export const MascotCard = ({ name, asset, isSelected, isLocked, requiredStreak, 
                     ? 'bg-inactive/5 border-transparent opacity-60'
                     : isSelected 
                         ? 'bg-secondary border-primary shadow-sm active:scale-95' 
-                        : 'bg-white border-primary/10 shadow-sm active:scale-95'
+                        : 'bg-card border-secondary shadow-sm active:scale-95'
             }`}
             style={!isLocked && isSelected ? { elevation: 2 } : { elevation: 1 }}
         >
@@ -40,8 +43,8 @@ export const MascotCard = ({ name, asset, isSelected, isLocked, requiredStreak, 
                     resizeMode="contain" 
                 />
                 {isLocked && (
-                    <View className="absolute bg-background/80 rounded-full p-1 border border-inactive/20">
-                        <Ionicons name="lock-closed" size={14} color="#94A3B8" />
+                    <View className="absolute bg-card rounded-full p-1 border border-inactive/20">
+                        <Ionicons name="lock-closed" size={14} color={isDarkMode ? "#E5E7EB" : "#94A3B8"} />
                     </View>
                 )}
             </View>
@@ -50,6 +53,11 @@ export const MascotCard = ({ name, asset, isSelected, isLocked, requiredStreak, 
             }`}>
                 {isLocked ? (requiredStreak !== undefined ? `${requiredStreak} Days` : 'Locked') : name}
             </Text>
+            {isLocked && unlockPerk && (
+                <Text className="font-q-medium text-[8px] text-primary/40 text-center px-1 leading-tight" numberOfLines={1}>
+                    {unlockPerk}
+                </Text>
+            )}
         </TouchableOpacity>
     );
 };

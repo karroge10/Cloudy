@@ -37,6 +37,7 @@ import { MemoryScreen } from './src/screens/MemoryScreen';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { JournalProvider } from './src/context/JournalContext';
 import { ProfileProvider } from './src/context/ProfileContext';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { AlertProvider } from './src/context/AlertContext';
 import { useNotifications } from './src/hooks/useNotifications';
 import { LockScreen } from './src/components/LockScreen';
@@ -56,20 +57,22 @@ const AppContent = () => {
 
 const Stack = createNativeStackNavigator();
 
-const CloudyTheme = {
+const getCloudyTheme = (isDark: boolean) => ({
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    background: '#FFF9F0',
-    card: '#FFF9F0',
+    background: isDark ? '#111427' : '#FFF9F0',
+    card: isDark ? '#111427' : '#FFF9F0',
+    text: isDark ? '#E5E7EB' : '#333333',
   },
-};
+});
 
 // Prevent auto hide splash screen
 SplashScreen.preventAutoHideAsync();
 
 const RootNavigator = ({ session, isBioLocked, isColdStartWithSession, isAuthLoading, fontsLoaded }: { session: Session | null, isBioLocked: boolean | null, isColdStartWithSession: boolean, isAuthLoading: boolean, fontsLoaded: boolean }) => {
   const { profile, loading: profileLoading } = useProfile();
+  const { isDarkMode } = useTheme();
   
   // Decide which stack to show. 
   const [viewMode, setViewMode] = useState<'loading' | 'onboarding' | 'app' | 'auth'>('loading');
@@ -124,10 +127,10 @@ const RootNavigator = ({ session, isBioLocked, isColdStartWithSession, isAuthLoa
         isColdStart={isColdStartWithSession}
     >
       <Stack.Navigator
-        initialRouteName={viewMode === 'app' ? "MainApp" : "Welcome"}
+        initialRouteName={viewMode === 'app' ? "MainApp" : viewMode === 'loading' ? "InitialLoading" : "Welcome"}
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: '#FFF9F0' },
+          contentStyle: { backgroundColor: isDarkMode ? '#111427' : '#FFF9F0' },
           animation: 'slide_from_right'
         }}
       >
@@ -143,14 +146,8 @@ const RootNavigator = ({ session, isBioLocked, isColdStartWithSession, isAuthLoa
               {/* Unique name to prevent navigation focus leakage from the Login screen */}
               <Stack.Screen name="SecureAccount" component={AuthScreen} />
             </>
-        ) : viewMode === 'onboarding' ? (
-            <>
-              <Stack.Screen name="Welcome" component={WelcomeScreen} />
-              <Stack.Screen name="StruggleSelection" component={StruggleSelectionScreen} />
-              <Stack.Screen name="GoalSelection" component={GoalSelectionScreen} />
-              <Stack.Screen name="Summary" component={SummaryScreen} />
-              <Stack.Screen name="Auth" component={AuthScreen} />
-            </>
+        ) : viewMode === 'loading' ? (
+            <Stack.Screen name="InitialLoading" component={() => <View style={{ flex: 1, backgroundColor: isDarkMode ? '#111427' : '#FFF9F0' }} />} />
         ) : (
           <>
             <Stack.Screen name="Welcome" component={WelcomeScreen} />
@@ -162,6 +159,76 @@ const RootNavigator = ({ session, isBioLocked, isColdStartWithSession, isAuthLoa
         )}
       </Stack.Navigator>
     </LockScreen>
+  );
+};
+
+const AppNavigator = ({ 
+  session, 
+  isAuthLoading, 
+  isBioLocked, 
+  isColdStartWithSession, 
+  fontsLoaded,
+  showAnimatedSplash,
+  setShowAnimatedSplash,
+  showPrivacyOverlay
+}: { 
+  session: Session | null, 
+  isAuthLoading: boolean, 
+  isBioLocked: boolean | null, 
+  isColdStartWithSession: boolean, 
+  fontsLoaded: boolean,
+  showAnimatedSplash: boolean,
+  setShowAnimatedSplash: (val: boolean) => void,
+  showPrivacyOverlay: boolean
+}) => {
+  const { isDarkMode } = useTheme();
+  const theme = getCloudyTheme(isDarkMode);
+
+  return (
+    <View style={{ flex: 1, backgroundColor: isDarkMode ? '#111427' : (session && isBioLocked ? '#111427' : '#FFF9F0') }}>
+      <NavigationContainer 
+        theme={theme} 
+        ref={navigationRef}
+        onReady={() => {
+          const currentRouteName = navigationRef.getCurrentRoute()?.name;
+          if (currentRouteName) {
+            posthog.screen(currentRouteName);
+          }
+        }}
+        onStateChange={() => {
+          const currentRouteName = navigationRef.getCurrentRoute()?.name;
+          if (currentRouteName) {
+            posthog.screen(currentRouteName);
+          }
+        }}
+      >
+        {fontsLoaded && !isAuthLoading && isBioLocked !== null ? (
+            <>
+              <AppContent />
+              <AssetWarmup />
+              <RootNavigator 
+                session={session} 
+                isBioLocked={isBioLocked} 
+                isColdStartWithSession={isColdStartWithSession} 
+                isAuthLoading={isAuthLoading}
+                fontsLoaded={fontsLoaded}
+              />
+            </>
+        ) : null}
+
+        {showAnimatedSplash && !(isBioLocked && session) && (
+           <CustomSplashScreen 
+            onFinish={() => setShowAnimatedSplash(false)} 
+           />
+        )}
+        <StatusBar style={isDarkMode ? "light" : "dark"} translucent />
+      </NavigationContainer>
+      {showPrivacyOverlay && (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: '#111427', zIndex: 1000, justifyContent: 'center', alignItems: 'center' }]}>
+           <MascotImage source={MASCOTS.LOCK} style={{ width: 120, height: 120 }} resizeMode="contain" />
+        </View>
+      )}
+    </View>
   );
 };
 
@@ -182,12 +249,10 @@ export default function App() {
   const isColdStartWithSession = useRef<boolean | null>(null);
 
   useEffect(() => {
-    // 0. Quick check for biometric lock to decide on splash strategy
     AsyncStorage.getItem('security_lock_enabled').then(val => {
       setIsBioLocked(val === 'true');
     });
 
-    // 1. Check initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (isColdStartWithSession.current === null) {
         isColdStartWithSession.current = !!session;
@@ -196,46 +261,36 @@ export default function App() {
       setIsAuthLoading(false);
     });
 
-    // 2. Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session);
       setIsAuthLoading(false);
       
-      // If we logout, we are definitely no longer in a "cold start with session"
       if (event === 'SIGNED_OUT') {
         isColdStartWithSession.current = false;
         setIsBioLocked(false);
       }
       
-      // If we just logged in (anon or otherwise), we check for the lock state
-      // but we don't treat it as a cold start lock.
       if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
         const val = await AsyncStorage.getItem('security_lock_enabled');
         setIsBioLocked(val === 'true');
         
-        // If it's a real SIGNED_IN event (not initial session), it's not a cold start lock anymore.
-        // This prevents the lock from appearing immediately after a Google login or Conversion.
         if (event === 'SIGNED_IN') {
            isColdStartWithSession.current = false;
         }
       }
     });
 
-    // 3. Preload mascot assets silently in the background
-    // We prioritize the WRITE mascot which is used on the splash screen
     const loadCriticalAssets = async () => {
       try {
         await preloadAssets();
         setAssetsLoaded(true);
       } catch (e) {
         console.warn('Failed to preload assets', e);
-        setAssetsLoaded(true); // Don't block app if this fails
+        setAssetsLoaded(true);
       }
     };
     loadCriticalAssets();
 
-    // 4. Capture a manual start event to ensure reliable funnel sequencing.
-    // Native 'Application Opened' can be delayed in React Native/Expo.
     posthog.capture('app_session_start');
 
     return () => {
@@ -243,11 +298,8 @@ export default function App() {
     };
   }, []);
 
-  // 4. Privacy Overlay for App Switcher (Snapshot Protection)
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
-      // If biometric lock is enabled, show overlay as soon as app is backgrounded/inactive
-      // This protects the app snapshot in the app switcher
       if (isBioLocked && (nextAppState === 'background' || nextAppState === 'inactive')) {
         setShowPrivacyOverlay(true);
       } else if (nextAppState === 'active') {
@@ -258,21 +310,14 @@ export default function App() {
     return () => subscription.remove();
   }, [isBioLocked]);
 
-  // 4. Identify user in PostHog as soon as session is available
   useEffect(() => {
     if (session?.user) {
       identifyUser(session.user.id, session.user.email);
     }
   }, [session]);
 
-
   useEffect(() => {
-    // Decision: Hide native splash and show app
-    // We now also wait for assetsLoaded to ensure mascot appears immediately
     if (fontsLoaded && !isAuthLoading && isBioLocked !== null && assetsLoaded) {
-      // If we are bio locked AND authenticated, we want to give the stack 
-      // a tiny bit of time to layout before we hide the native splash.
-      // This prevents the "empty cream screen" flash.
       const settleTime = (isBioLocked && session) ? 400 : 0;
 
       setTimeout(() => {
@@ -286,62 +331,27 @@ export default function App() {
   }, [fontsLoaded, isAuthLoading, isBioLocked, session, assetsLoaded]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#FFF9F0' }}>
-      <PostHogProvider client={posthog} autocapture={false}>
-        <SafeAreaProvider>
-
+    <PostHogProvider client={posthog} autocapture={false}>
+      <SafeAreaProvider>
         <AlertProvider>
           <ProfileProvider session={session}>
             <JournalProvider session={session}>
-              <NavigationContainer 
-                theme={CloudyTheme} 
-                ref={navigationRef}
-                onReady={() => {
-                  const currentRouteName = navigationRef.getCurrentRoute()?.name;
-                  if (currentRouteName) {
-                    posthog.screen(currentRouteName);
-                  }
-                }}
-                onStateChange={() => {
-                  const currentRouteName = navigationRef.getCurrentRoute()?.name;
-                  if (currentRouteName) {
-                    posthog.screen(currentRouteName);
-                  }
-                }}
-              >
-
-                {fontsLoaded && !isAuthLoading && isBioLocked !== null ? (
-                    <>
-                      <AppContent />
-                      <AssetWarmup />
-                      <RootNavigator 
-                        session={session} 
-                        isBioLocked={isBioLocked} 
-                        isColdStartWithSession={isColdStartWithSession.current === true} 
-                        isAuthLoading={isAuthLoading}
-                        fontsLoaded={fontsLoaded}
-                      />
-                    </>
-                ) : null}
-
-                {showAnimatedSplash && !(isBioLocked && session) && (
-                   <CustomSplashScreen 
-                    onFinish={() => setShowAnimatedSplash(false)} 
-                   />
-                )}
-                <StatusBar style="dark" />
-              </NavigationContainer>
+              <ThemeProvider>
+                <AppNavigator 
+                  session={session} 
+                  isAuthLoading={isAuthLoading} 
+                  isBioLocked={isBioLocked} 
+                  isColdStartWithSession={isColdStartWithSession.current === true}
+                  fontsLoaded={fontsLoaded}
+                  showAnimatedSplash={showAnimatedSplash}
+                  setShowAnimatedSplash={setShowAnimatedSplash}
+                  showPrivacyOverlay={showPrivacyOverlay}
+                />
+              </ThemeProvider>
             </JournalProvider>
           </ProfileProvider>
         </AlertProvider>
       </SafeAreaProvider>
-      </PostHogProvider>
-      {showPrivacyOverlay && (
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: '#FFF9F0', zIndex: 1000, justifyContent: 'center', alignItems: 'center' }]}>
-           <MascotImage source={MASCOTS.LOCK} style={{ width: 120, height: 120 }} resizeMode="contain" />
-        </View>
-      )}
-
-    </View>
+    </PostHogProvider>
   );
 }

@@ -1,15 +1,17 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, Animated, Dimensions, Platform } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, Animated, Dimensions } from 'react-native';
 import { MASCOTS } from '../constants/Assets';
 import { MascotImage } from './MascotImage';
+import { useTheme } from '../context/ThemeContext';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 /**
  * A beautiful, animated splash screen that bridges the gap between 
  * the native splash and the app content.
  */
 export const CustomSplashScreen = ({ onFinish, skipAnimation = false }: { onFinish: () => void, skipAnimation?: boolean }) => {
+    const { isDarkMode } = useTheme();
     const fadeAnim = useRef(new Animated.Value(1)).current;
     const mascotScale = useRef(new Animated.Value(0.8)).current;
     const mascotTranslateY = useRef(new Animated.Value(0)).current;
@@ -71,7 +73,7 @@ export const CustomSplashScreen = ({ onFinish, skipAnimation = false }: { onFini
         <Animated.View 
             style={{ 
                 opacity: fadeAnim,
-                backgroundColor: '#FFF9F0',
+                backgroundColor: isDarkMode ? '#111427' : '#FFF9F0',
                 position: 'absolute',
                 top: 0, left: 0, right: 0, bottom: 0,
                 zIndex: 9999,
@@ -93,9 +95,9 @@ export const CustomSplashScreen = ({ onFinish, skipAnimation = false }: { onFini
                 />
             </Animated.View>
             
-            <Animated.View style={{ opacity: textOpacity, marginTop: 40, alignItems: 'center' }}>
-                <Text className="text-4xl font-q-bold text-text">Cloudy</Text>
-                <Text className="text-lg font-q-medium text-muted mt-2">Your mindful companion</Text>
+            <Animated.View style={{ opacity: textOpacity, marginTop: 40, alignItems: 'center', width: '100%' }}>
+                <Text className="text-4xl font-q-bold text-text text-center px-4" allowFontScaling={false}>Cloudy</Text>
+                <Text className="text-lg font-q-medium text-muted mt-2 text-center px-8" allowFontScaling={false}>Your tiny companion for a clearer mind.</Text>
             </Animated.View>
         </Animated.View>
     );

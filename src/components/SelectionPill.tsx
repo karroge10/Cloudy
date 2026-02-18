@@ -18,7 +18,7 @@ export const SelectionPill: React.FC<SelectionPillProps> = ({ label, selected, o
 
     const containerBase = "flex-row items-center justify-between px-5 py-2.5 rounded-full border-2 transition-all duration-200 active:scale-95 transition-transform";
     const containerSelected = "bg-primary border-primary";
-    const containerInactive = "bg-background border-gray-300";
+    const containerInactive = "bg-card border-inactive/20";
 
     const textBase = "text-xl font-q-semibold"; 
     const textSelected = "text-white";

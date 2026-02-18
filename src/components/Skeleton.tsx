@@ -7,6 +7,7 @@ import Animated, {
     withTiming, 
     withSequence 
 } from 'react-native-reanimated';
+import { useTheme } from '../context/ThemeContext';
 
 interface SkeletonProps {
     width?: number | string;
@@ -21,6 +22,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
     style, 
     borderRadius = 4 
 }) => {
+    const { isDarkMode } = useTheme();
     const opacity = useSharedValue(0.3);
 
     useEffect(() => {
@@ -45,7 +47,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
                     width: width as any,
                     height: height as any,
                     borderRadius,
-                    backgroundColor: '#E0E0E0',
+                    backgroundColor: isDarkMode ? '#2D3250' : '#E0E0E0',
                 },
                 style,
                 animatedStyle,

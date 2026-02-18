@@ -272,7 +272,7 @@ export const HomeScreen = () => {
                             onPress={() => { haptics.selection(); navigation.navigate('Profile'); }} 
                             className="ml-3 active:scale-90 transition-transform"
                         >
-                            <View className="flex-row items-center bg-white px-2 py-1 rounded-full shadow-sm">
+                            <View className="flex-row items-center bg-card px-2 py-1 rounded-full shadow-sm">
                                 <Ionicons name="flame" size={16} color="#FF9E7D" />
                                 {journalLoading && streak === 0 ? (
                                     <View className="bg-primary/10 w-4 h-4 rounded-full ml-1" />
@@ -356,7 +356,7 @@ export const HomeScreen = () => {
                         </Text>
                         
                         <TextInput
-                            className="w-full bg-white px-6 py-5 rounded-[24px] font-q-bold text-lg text-text border-2 border-inactive/10 mb-8"
+                            className="w-full bg-card px-6 py-5 rounded-[24px] font-q-bold text-lg text-text border-2 border-secondary mb-8"
                             placeholder="Your Name"
                             placeholderTextColor="#CBD5E1"
                             onChangeText={setTempDisplayName}

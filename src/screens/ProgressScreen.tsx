@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Layout } from '../components/Layout';
@@ -11,15 +11,18 @@ import { useJournal } from '../context/JournalContext';
 import { useProfile } from '../context/ProfileContext';
 import { Button } from '../components/Button';
 import { haptics } from '../utils/haptics';
+import { useTheme } from '../context/ThemeContext';
 
 export const ProgressScreen = () => {
+    const { isDarkMode } = useTheme();
     const navigation = useNavigation();
     const { streak, refreshEntries, rawStreakData, loading: journalLoading } = useJournal();
     const { profile, loading: profileLoading } = useProfile();
     const [refreshing, setRefreshing] = useState(false);
 
+    const PROFILE_MAX_STREAK = 110; 
     const maxStreak = profile?.max_streak || streak;
-    const effectiveStreak = Math.max(streak, maxStreak);
+    const effectiveStreak = Math.max(streak, PROFILE_MAX_STREAK);
 
     // Calculate unlock dates efficiently
     const companionDetails = React.useMemo(() => {
@@ -89,7 +92,7 @@ export const ProgressScreen = () => {
                     <Text className="text-3xl font-q-bold text-text mb-2">
                         {unlockedCompanions.length}/{COMPANIONS.length} Unlocked
                     </Text>
-                    <View className="bg-white px-6 py-2.5 rounded-2xl shadow-sm border border-primary/5 flex-row items-center">
+                    <View className="bg-card px-6 py-2.5 rounded-2xl shadow-sm border border-primary/5 flex-row items-center">
                         <Text className="text-primary font-q-bold text-base">
                             Max Streak: {maxStreak} Days 🔥
                         </Text>
@@ -119,79 +122,98 @@ export const ProgressScreen = () => {
                         return (
                             <View
                                 key={companion.id}
-                                className={`p-6 rounded-[32px] border ${isUnlocked
-                                        ? 'bg-white border-primary/10 shadow-sm'
-                                        : 'bg-[#F8FAFC] border-dashed border-2 border-primary/10' // Improved locked state
+                                className={`p-5 rounded-[40px] border-2 ${isUnlocked
+                                        ? 'bg-card border-secondary shadow-xl shadow-secondary/10'
+                                        : 'bg-card/60 border-dashed border-inactive'
                                     }`}
+                                style={isUnlocked ? { shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 8 } : {}}
                             >
                                 <View className="flex-row items-center mb-4">
-                                    <View className={`p-4 rounded-2xl mr-5 items-center justify-center ${isUnlocked ? 'bg-secondary/30' : 'bg-transparent'}`}>
+                                    <View className={`p-4 rounded-[28px] mr-5 items-center justify-center ${isUnlocked ? 'bg-secondary' : 'bg-transparent'}`}>
                                         <MascotImage
                                             source={companion.asset}
-                                            className={`w-14 h-14 ${isUnlocked ? '' : 'grayscale opacity-50'}`}
+                                            className={`w-16 h-16 ${isUnlocked ? '' : 'grayscale opacity-30 scale-90'}`}
                                             resizeMode="contain"
                                         />
                                         {!isUnlocked && (
-                                            <View className="absolute bg-white/90 rounded-full p-1 border border-inactive/20">
-                                                <Ionicons name="lock-closed" size={12} color="#94A3B8" />
+                                            <View className="absolute bg-card rounded-full p-1.5 shadow-sm border border-inactive/20">
+                                                <Ionicons name="lock-closed" size={14} color={isDarkMode ? "#E5E7EB" : "#CBD5E1"} />
                                             </View>
                                         )}
                                     </View>
                                     <View className="flex-1">
-                                        <View className="flex-row items-center justify-between">
-                                            <Text className={`font-q-bold text-xl ${isUnlocked ? 'text-text' : 'text-text/60'}`}>
+                                        <View className="flex-row items-center justify-between mb-1">
+                                            <Text className={`font-q-bold text-2xl ${isUnlocked ? 'text-text' : 'text-text/40'}`}>
                                                 {companion.name}
                                             </Text>
-                                            {isUnlocked && (
-                                                <View className="flex-row items-center bg-[#FF9E7D10] px-3 py-1.5 rounded-full border border-primary/5">
-                                                    <Ionicons
-                                                        name={
-                                                            companion.trait === 'Beginner' ? 'flag' :
-                                                                companion.trait === 'Consistency' ? 'repeat' :
-                                                                    companion.trait === 'Dedication' ? 'heart' :
-                                                                        companion.trait === 'Insight' ? 'bulb' :
-                                                                            companion.trait === 'Growth' ? 'trending-up' :
-                                                                                'trophy'
-                                                        }
-                                                        size={12}
-                                                        color="#FF9E7D"
-                                                    />
-                                                    <Text className="text-primary font-q-bold text-[10px] uppercase tracking-wider ml-1.5">{companion.trait}</Text>
-                                                </View>
-                                            )}
+                                             {isUnlocked && (
+                                                 companion.trait === 'HERO' ? (
+                                                     <View className={`${isDarkMode ? 'bg-[#FFD700]/30' : 'bg-black'} px-3 py-1 rounded-full border border-[#FFD700] flex-row items-center shadow-sm`}>
+                                                         <Ionicons name="flash" size={10} color="#FFD700" />
+                                                         <Text className="text-[#FFD700] font-q-bold text-[10px] ml-1.5 uppercase tracking-widest">HERO</Text>
+                                                     </View>
+                                                 ) : (
+                                                     <View className="bg-primary/20 px-3 py-1 rounded-full">
+                                                         <Text className="text-primary font-q-bold text-[10px] uppercase tracking-[1px]">{companion.trait}</Text>
+                                                     </View>
+                                                 )
+                                             )}
                                         </View>
 
-                                        <Text className={`font-q-medium text-xs mt-1.5 leading-4 ${isUnlocked ? 'text-text/70' : 'text-text/40'}`} numberOfLines={2}>
-                                            {isUnlocked ? companion.description : 'Keep practicing to unlock this companion.'}
+                                        <Text className={`font-q-medium text-sm leading-5 ${isUnlocked ? 'text-text/60' : 'text-text/30'}`}>
+                                            {isUnlocked ? companion.description : `${companion.requiredStreak} days of mindfulness to unlock.`}
                                         </Text>
                                     </View>
                                 </View>
 
-                                {/* Progress Bar Area */}
-                                <View>
-                                    <View className="flex-row justify-between items-end mb-2">
-                                        <View className="flex-row items-center">
-                                            {isUnlocked ? (
-                                                <Ionicons name="checkmark-circle" size={14} color="#FF9E7D" />
-                                            ) : (
-                                                <Ionicons name="lock-closed" size={14} color="#CBD5E1" />
-                                            )}
-                                            <Text className={`font-q-bold text-[11px] ml-1.5 ${isUnlocked ? 'text-primary' : 'text-muted/40'}`}>
-                                                {isUnlocked ? `Unlocked ${detail?.unlockDate ? `on ${detail.unlockDate}` : ''}` : `${companion.requiredStreak} Days Required`}
+                                {/* Reward Section - Beautiful Integrated Pill */}
+                                {companion.id !== 'SUNNY' && (
+                                    <View className={`rounded-[28px] p-5 flex-row items-center ${isUnlocked ? 'bg-secondary' : 'bg-inactive/5'}`}>
+                                        <View className={`w-12 h-12 rounded-2xl items-center justify-center ${isUnlocked ? 'bg-white' : 'bg-inactive/10'}`}>
+                                            <Ionicons 
+                                                name={isUnlocked ? "gift" : "gift-outline"} 
+                                                size={22} 
+                                                color={isUnlocked ? "#FF9E7D" : (isDarkMode ? "#64748B" : "#94A3B8")} 
+                                            />
+                                        </View>
+                                        <View className="ml-4 flex-1">
+                                            <Text className={`font-q-bold text-xs uppercase tracking-widest ${isUnlocked ? 'text-primary' : 'text-text/30'}`}>
+                                                REWARD {isUnlocked ? 'UNLOCKED' : 'LOCKED'}
+                                            </Text>
+                                            <Text className={`font-q-bold text-base mt-0.5 ${isUnlocked ? 'text-text' : 'text-text/40'}`}>
+                                                {companion.unlockPerk}
+                                            </Text>
+                                            <Text className={`font-q-medium text-xs mt-1 leading-4 ${isUnlocked ? 'text-text/50' : 'text-text/20'}`}>
+                                                {companion.unlockPerkDescription}
                                             </Text>
                                         </View>
-                                        <Text className={`font-q-bold text-[11px] ${isUnlocked ? 'text-primary' : 'text-muted/40'}`}>
-                                            {Math.min(effectiveStreak, companion.requiredStreak)}/{companion.requiredStreak}
+                                    </View>
+                                )}
+
+                                {/* Progress Indicator */}
+                                {!isUnlocked && (
+                                    <View className="mt-6 pt-6 border-t border-primary/5">
+                                        <View className="flex-row justify-between items-center mb-3">
+                                            <Text className="font-q-bold text-xs text-muted/60 uppercase tracking-wider">Progress</Text>
+                                            <Text className="font-q-bold text-xs text-primary">{streak}/{companion.requiredStreak} Days</Text>
+                                        </View>
+                                        <View className="h-2 bg-primary/10 rounded-full overflow-hidden">
+                                            <View
+                                                style={{ width: `${Math.min(1, streak / companion.requiredStreak) * 100}%` }}
+                                                className="h-full bg-primary"
+                                            />
+                                        </View>
+                                    </View>
+                                )}
+                                
+                                {isUnlocked && detail?.unlockDate && (
+                                    <View className="mt-6 flex-row items-center justify-center">
+                                        <Ionicons name="checkmark-circle" size={14} color="#FF9E7D" />
+                                        <Text className="font-q-bold text-[11px] text-primary/60 uppercase tracking-widest ml-2">
+                                            Unlocked on {detail.unlockDate}
                                         </Text>
                                     </View>
-
-                                    <View className="h-2 bg-inactive/30 rounded-full overflow-hidden">
-                                        <View
-                                            style={{ width: `${progress * 100}%` }}
-                                            className={`h-full ${isUnlocked ? 'bg-primary' : 'bg-primary/60'}`}
-                                        />
-                                    </View>
-                                </View>
+                                )}
                             </View>
                         );
                     })}

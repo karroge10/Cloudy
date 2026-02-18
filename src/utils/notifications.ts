@@ -34,6 +34,12 @@ const REMINDER_TITLES = [
     "Stay mindful 🌊"
 ];
 
+const RESCUE_MESSAGES = [
+    { title: "Cloudy is worried... ☁️", body: "Forgot to post today? Your streak resets in 2 hours!" },
+    { title: "Don't lose your progress! ✨", body: "A quick 1-minute reflection and your streak is safe." },
+    { title: "Your streak is on the line! 🔥", body: "Keep the momentum going. Just a few words to save it." }
+];
+
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
         shouldShowAlert: true, // Legacy support
@@ -154,6 +160,31 @@ class NotificationService {
 
             const isRepeating = !!(trigger as any).repeats;
             if (__DEV__) console.log(`[NotificationService] Daily nudge scheduled for ${h}:${m} (Repeating: ${isRepeating})`);
+
+            // Phase 2: The Streak Rescue (Safety Net)
+            // Logic: IF reminder_time < 20:00 (8 PM): Schedule Rescue at 22:00 (10 PM).
+            await Notifications.cancelScheduledNotificationAsync('daily-safety-net');
+            if (h < 20) {
+                const rescueMsg = RESCUE_MESSAGES[Math.floor(Math.random() * RESCUE_MESSAGES.length)];
+                await Notifications.scheduleNotificationAsync({
+                    identifier: 'daily-safety-net',
+                    content: {
+                        title: rescueMsg.title,
+                        body: rescueMsg.body,
+                        sound: true,
+                        priority: Notifications.AndroidNotificationPriority.HIGH,
+                        data: { type: 'SAFETY_NET' },
+                        ...(Platform.OS === 'android' ? { channelId: 'default' } : {})
+                    },
+                    trigger: {
+                        hour: 22,
+                        minute: 0,
+                        repeats: true,
+                        type: Notifications.SchedulableTriggerInputTypes.DAILY,
+                    } as any,
+                });
+                if (__DEV__) console.log('[NotificationService] Safety net scheduled for 22:00');
+            }
         } catch (error) {
             console.error('[NotificationService] Error scheduling daily nudge:', error);
         }
@@ -173,12 +204,14 @@ class NotificationService {
         const now = new Date();
         const todayStr = now.toDateString();
         
-        // Don't check more than once a day
+        await AsyncStorage.setItem(STORAGE_KEYS.LAST_APP_OPEN, now.toISOString());
+        await this.scheduleRescueNudges(); // Always reset rescue timers on app open
+
+        // Don't check for flashbacks more than once a day
         const lastCheck = await AsyncStorage.getItem(STORAGE_KEYS.LAST_FLASHBACK_CHECK);
         if (lastCheck === todayStr) return;
 
         await AsyncStorage.setItem(STORAGE_KEYS.LAST_FLASHBACK_CHECK, todayStr);
-        await AsyncStorage.setItem(STORAGE_KEYS.LAST_APP_OPEN, now.toISOString());
 
         // Check if a flashback is already pending
         const scheduled = await Notifications.getAllScheduledNotificationsAsync();
@@ -194,8 +227,6 @@ class NotificationService {
         const hasDeliveredReminder = delivered.some(n => n.request.content.data?.type === 'DAILY_REMINDER');
         if (hasDeliveredReminder) {
             await this.markReminderAsSent();
-            // Optionally clear them to keep drawer clean
-            // await Notifications.dismissAllNotificationsAsync();
         }
 
         const findEntry = (monthsAgo: number) => {
@@ -227,18 +258,11 @@ class NotificationService {
         if (match) {
             await this.scheduleFlashback(match.id, match.text, type);
             
-            // RULE #1: If we scheduled a flashback for tomorrow, 
-            // we should ideally skip the daily reminder for tomorrow.
-            // We'll just refresh the daily reminder to pick a new prompt anyway.
             const reminderTime = await AsyncStorage.getItem('cloudy_reminder_time');
             if (reminderTime) {
-                // Refreshing it here ensures a new random prompt for the next day it fires.
-                // We definitely don't want to request permissions here if they were revoked.
                 this.scheduleDailyReminder(reminderTime, false);
             }
         }
-
-        await this.scheduleRescueNotification();
     }
 
     private async scheduleFlashback(entryId: string, content: string, label: string) {
@@ -270,32 +294,58 @@ class NotificationService {
 
 
     /**
-     * Rescue Nudge: Schedules a notification for 3 days from now.
-     * If the user opens the app before then, this gets reset.
+     * Multi-Stage Rescue Nudges: Schedules a sequence of notifications
+     * to pull inactive users back (Day 3, 7, 14, 30).
      */
-    async scheduleRescueNotification() {
-        // Rescue nudges are automated; never prompt from here
+    async scheduleRescueNudges() {
         const hasPermission = await this.requestPermissions(false);
         if (!hasPermission) return;
 
-        // Cancel previous rescue if any
-        await Notifications.cancelScheduledNotificationAsync('rescue-nudge');
+        // Cancel all existing rescue nudges first
+        const stages = [3, 7, 14, 30];
+        for (const stage of stages) {
+            await Notifications.cancelScheduledNotificationAsync(`rescue-nudge-${stage}`);
+        }
 
-        const triggerDate = new Date();
-        triggerDate.setDate(triggerDate.getDate() + 3);
-        triggerDate.setHours(11, 0, 0, 0); // Lunchtime rescue
+        const nudges = [
+            { day: 3, title: "We miss your thoughts! ☁️", body: "No pressure, just wanted to say hi. Ready to capture a memory?" },
+            { day: 7, title: "Sparky is feeling lonely... 🥺", body: "It's been a week since we talked. How are you doing?" },
+            { day: 14, title: "Remember this? 📸", body: "You wrote a beautiful memory 2 weeks ago. Tap to read it." },
+            { day: 30, title: "A fresh start? 🌟", body: "It's been a month. Come back and begin a new journey with Cloudy." }
+        ];
 
-        await Notifications.scheduleNotificationAsync({
-            identifier: 'rescue-nudge',
-            content: {
-                title: "We miss your thoughts! ☁️",
-                body: "No pressure, just wanted to say hi. Ready to capture a memory?",
-                sound: true,
-            },
-            trigger: triggerDate as any,
-        });
+        for (const nudge of nudges) {
+            const triggerDate = new Date();
+            triggerDate.setDate(triggerDate.getDate() + nudge.day);
+            triggerDate.setHours(11, 0, 0, 0); // Scheduled for 11 AM
 
-        if (__DEV__) console.log('[NotificationService] Rescue nudge scheduled for 3 days from now');
+            await Notifications.scheduleNotificationAsync({
+                identifier: `rescue-nudge-${nudge.day}`,
+                content: {
+                    title: nudge.title,
+                    body: nudge.body,
+                    sound: true,
+                    data: { type: 'RESCUE_NUDGE', stage: nudge.day }
+                },
+                trigger: triggerDate as any,
+            });
+        }
+
+        if (__DEV__) console.log('[NotificationService] Multi-stage rescue nudges scheduled (Day 3, 7, 14, 30)');
+    }
+
+    /**
+     * Legacy wrapper for backward compatibility
+     */
+    async scheduleRescueNotification() {
+        await this.scheduleRescueNudges();
+    }
+
+    async cancelRescueNudges() {
+        const stages = [3, 7, 14, 30];
+        for (const stage of stages) {
+            await Notifications.cancelScheduledNotificationAsync(`rescue-nudge-${stage}`);
+        }
     }
 
     /**
