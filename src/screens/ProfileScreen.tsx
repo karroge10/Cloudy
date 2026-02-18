@@ -18,8 +18,10 @@ import { Skeleton } from '../components/Skeleton';
 import { MascotImage } from '../components/MascotImage';
 import { MASCOTS } from '../constants/Assets';
 import { Insights } from '../components/Insights';
+import { MemoryMix } from '../components/MemoryMix';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { Layout } from '../components/Layout';
+import { LogoutSheet } from '../components/LogoutSheet';
 
 import { COMPANIONS } from '../constants/Companions';
 import { useTheme } from '../context/ThemeContext';
@@ -42,7 +44,6 @@ export const ProfileScreen = () => {
         console.error('[ProfileScreen] Navigation context missing!');
     }
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const [isLoggingOut, setIsLoggingOut] = useState(false);
     
     const insets = useSafeAreaInsets();
     const TAB_BAR_HEIGHT = 80 + insets.bottom;
@@ -108,17 +109,29 @@ export const ProfileScreen = () => {
                 isAnon: isAnonymous 
             });
 
-            const isProfileIncomplete = !profile.onboarding_completed || !profile.display_name;
+            const checkOnboardingStatus = async () => {
+                const storageKey = `profile_setup_seen_v2_${profile.id}`;
+                const hasSeen = await AsyncStorage.getItem(storageKey);
+                
+                if (hasSeen === 'true') {
+                     hasDismissedOnboarding.current = true;
+                     return;
+                }
 
-            if (isProfileIncomplete && !hasDismissedOnboarding.current) {
-                 if (profile.display_name) {
-                     setOnboardingStep(1);
-                     setShowOnboarding(true);
-                 } else {
-                     setOnboardingStep(0);
-                     setShowOnboarding(true);
-                 }
-            }
+                // Verify if profile setup is truly complete (has name) or if the flag is false
+                const isProfileIncomplete = !profile.onboarding_completed || !profile.display_name;
+
+                if (isProfileIncomplete && !hasDismissedOnboarding.current && !showOnboarding) {
+                     if (profile.display_name) {
+                         setOnboardingStep(1);
+                         setShowOnboarding(true);
+                     } else {
+                         setOnboardingStep(0);
+                         setShowOnboarding(true);
+                     }
+                }
+            };
+            checkOnboardingStatus();
         } else if (!profileLoading && isAnonymous) {
             // Fresh anonymous user has no profile record yet -> Start onboarding
             console.log('[ProfileScreen] No profile found (Anonymous), starting onboarding');
@@ -232,6 +245,8 @@ export const ProfileScreen = () => {
                  <ActivityGraph entries={rawStreakData} maxStreak={profile?.max_streak || streak} />
 
                  <Insights userId={userId || undefined} />
+                 
+                 <MemoryMix />
 
 
 
@@ -294,22 +309,7 @@ export const ProfileScreen = () => {
                     <Text className="text-lg font-q-bold text-red-400/60">Log Out</Text>
                 </TouchableOpacity>
 
-                <Modal visible={isLoggingOut} transparent={true} animationType="fade">
-                    <View className={`flex-1 justify-center items-center bg-black/40 ${isDarkMode ? 'dark' : ''}`}>
-                        <View className="bg-card p-10 rounded-[40px] items-center shadow-2xl mx-10">
-                            <MascotImage 
-                                source={MASCOTS.HELLO} 
-                                className="w-40 h-40 mb-2" 
-                                resizeMode="contain" 
-                            />
-                            <Text className="text-2xl font-q-bold text-text text-center">See you soon!</Text>
-                            <Text className="text-base font-q-medium text-muted mt-2 text-center px-4">Logging out...</Text>
-                            <View className="mt-6">
-                                <ActivityIndicator size="small" color="#FF9E7D" />
-                            </View>
-                        </View>
-                    </View>
-                </Modal>
+
 
                 <AppFooter />
             </ScrollView>
@@ -588,12 +588,21 @@ export const ProfileScreen = () => {
                 </View>
             </BottomSheet>
 
-            {/* Main Onboarding Flow */}
             <BottomSheet 
                 visible={showOnboarding} 
                 onClose={() => {
-                    setShowOnboarding(false);
-                    updateProfile({ onboarding_completed: true }).catch(console.warn);
+                    // If closing from Step 0 (Name), go to Step 1 (Reminder) as requested
+                    if (onboardingStep === 0) {
+                        setOnboardingStep(1);
+                    } else {
+                        // Fully close
+                        setShowOnboarding(false);
+                        updateProfile({ onboarding_completed: true }).catch(console.warn);
+                        if (profile?.id) {
+                            AsyncStorage.setItem(`profile_setup_seen_v2_${profile.id}`, 'true');
+                        }
+                        hasDismissedOnboarding.current = true;
+                    }
                 }}
             >
                 {onboardingStep === 0 ? (
@@ -635,11 +644,7 @@ export const ProfileScreen = () => {
                         <TouchableOpacity 
                             onPress={() => { 
                                 haptics.selection(); 
-                                hasDismissedOnboarding.current = true;
-                                // Optimistically update local state to stop the effect from re-triggering immediately
-                                if (profile) profile.onboarding_completed = true; 
-                                setShowOnboarding(false);
-                                updateProfile({ onboarding_completed: true }).catch(console.warn);
+                                setOnboardingStep(1);
                             }}
                             className="mt-4 py-2 active:scale-95 transition-transform"
                         >
@@ -673,6 +678,10 @@ export const ProfileScreen = () => {
                                         onboarding_completed: true 
                                     });
                                     setShowOnboarding(false);
+                                    if (profile?.id) {
+                                        AsyncStorage.setItem(`profile_setup_seen_v2_${profile.id}`, 'true');
+                                    }
+                                    hasDismissedOnboarding.current = true;
                                     haptics.success();
                                 } catch (e) {
                                     console.warn(e);
@@ -687,6 +696,10 @@ export const ProfileScreen = () => {
                                 haptics.selection(); 
                                 setShowOnboarding(false);
                                 updateProfile({ onboarding_completed: true }).catch(console.warn);
+                                if (profile?.id) {
+                                    AsyncStorage.setItem(`profile_setup_seen_v2_${profile.id}`, 'true');
+                                }
+                                hasDismissedOnboarding.current = true;
                             }}
                             className="mt-4 py-2 active:scale-95 transition-transform"
                         >
@@ -696,33 +709,11 @@ export const ProfileScreen = () => {
                 )}
             </BottomSheet>
 
-            <BottomSheet visible={isLogoutSheetVisible} onClose={() => setIsLogoutSheetVisible(false)}>
-                <View className="items-center w-full">
-                    <MascotImage source={MASCOTS.HELLO} className="w-32 h-32 mb-4" resizeMode="contain" />
-                    <Text className="text-2xl font-q-bold text-text text-center mb-4 px-6">Ready to sign out?</Text>
-                    <Text className="text-lg font-q-medium text-muted text-center mb-8 px-4 leading-6">
-                        We'll save your progress safely until you return.
-                    </Text>
-
-                    <Button
-                        variant="danger"
-                        label="Log Out"
-                        onPress={() => { 
-                            setIsLogoutSheetVisible(false);
-                            setIsLoggingOut(true);
-                            // Short timeout to ensure UI renders before the heavy async operation potentially blocks
-                            setTimeout(() => {
-                                logout();
-                            }, 50);
-                        }}
-                        haptic="heavy"
-                    />
-
-                    <TouchableOpacity onPress={() => { haptics.selection(); setIsLogoutSheetVisible(false); }} className="mt-4 py-2 active:scale-95 transition-transform">
-                        <Text className="text-muted font-q-bold text-base">Wait, I'll stay!</Text>
-                    </TouchableOpacity>
-                </View>
-            </BottomSheet>
+            <LogoutSheet 
+                visible={isLogoutSheetVisible} 
+                onClose={() => setIsLogoutSheetVisible(false)} 
+                isAnonymous={!!isAnonymous}
+            />
         </Layout>
     );
 };

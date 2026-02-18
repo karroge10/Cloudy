@@ -164,7 +164,7 @@ export const HomeScreen = () => {
             if (unlockedMascot && likelyStreak > currentMax) {
                 setPendingNudgeStreak(likelyStreak);
                 setMilestoneMascot(unlockedMascot);
-                console.log('[HomeScreen] Mascot Unlocked:', unlockedMascot.name, 'Streak:', likelyStreak);
+                // console.log('[HomeScreen] Mascot Unlocked:', unlockedMascot.name, 'Streak:', likelyStreak);
                 trackEvent('mascot_unlocked', { mascot: unlockedMascot.name });
             } else {
                 // 2. Check for Secondary Nudges (Setup, Day 3 prompts, etc.)
@@ -345,8 +345,8 @@ export const HomeScreen = () => {
                     maxLength={200}
                 />
                 
-                <View className="flex-row justify-between items-center pt-4 border-t border-gray-50">
-                    <Text className="text-muted font-q-medium">
+                <View className="flex-row justify-between items-center pt-4 border-t border-gray-200 dark:border-white/10">
+                    <Text className="text-gray-400 font-q-medium">
                         {charCount} / 200 symbols
                     </Text>
                     <TouchableOpacity 

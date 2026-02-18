@@ -22,6 +22,8 @@ import { MASCOTS } from '../constants/Assets';
 import { Button } from '../components/Button';
 import { BottomSheet } from '../components/BottomSheet';
 import { TimePicker } from '../components/TimePicker';
+import { LogoutSheet } from '../components/LogoutSheet';
+import { useAppLogout } from '../hooks/useAppLogout';
 
 export const SettingsScreen = () => {
     const navigation = useNavigation<any>();
@@ -52,24 +54,26 @@ export const SettingsScreen = () => {
     const displayReminderTime = reminderTime || '20:00';
     
     useEffect(() => {
-        if (isAnonymous) {
-            setHasPasswordLogin(true); 
-        } else {
-             const checkAuthStatus = async () => {
+        const checkStatus = async () => {
+            // Check biometrics for everyone (anonymous or not)
+            const supported = await security.isSupported();
+            setBioSupported(supported);
+
+            if (isAnonymous) {
+                setHasPasswordLogin(true); 
+            } else {
                 const { data: { user } } = await supabase.auth.getUser();
                 const providers = user?.app_metadata?.providers || [];
                 const hasEmailProvider = providers.includes('email');
                 setHasPasswordLogin(hasEmailProvider);
+            }
+        };
 
-                const supported = await security.isSupported();
-                setBioSupported(supported);
-             };
-             
-             const task = InteractionManager.runAfterInteractions(() => {
-                 checkAuthStatus();
-             });
-             return () => task.cancel();
-        }
+        const task = InteractionManager.runAfterInteractions(() => {
+            checkStatus();
+        });
+        
+        return () => task.cancel();
     }, [isAnonymous]);
 
     useEffect(() => {
@@ -82,36 +86,54 @@ export const SettingsScreen = () => {
         }
     }, [profile]);
 
-    const [isLoggingOut, setIsLoggingOut] = useState(false);
-
-    const handleLogout = async () => {
-        setIsLoggingOut(true);
-        // Short delay to allow UI to render modal
-        await new Promise(resolve => setTimeout(resolve, 50));
-        
-        try {
-            await AsyncStorage.removeItem('has_seen_first_entry');
-            await AsyncStorage.removeItem('user_streak_cache');
-            await AsyncStorage.removeItem('pending_merge_anonymous_id');
-            await AsyncStorage.removeItem('security_lock_enabled');
-
-            try {
-                await GoogleSignin.signOut();
-            } catch (e) {
-                // Ignore if not signed in with Google
-            }
-
-            const { error } = await supabase.auth.signOut();
-            if (error) throw error;
-            trackEvent('user_logged_out');
-            resetUser();
-
-        } catch (error: any) {
-            setIsLoggingOut(false);
-            const { title, message } = getFriendlyAuthErrorMessage(error);
-            showAlert(title, message, [{ text: 'Okay' }], 'error');
-        }
-    };
+    const [isLoggingOut, setIsLoggingOut] = useState(false); // Used ONLY for deleting account flow locally if needed, but wait... handleDeleteAccount calls handleLogout.
+    // Actually, handleLogout is now from hook.
+    // handleDeleteAccount calls handleLogout. If handleLogout is from hook, it handles the modal inside the hook?
+    // Wait, the hook returns { isLoggingOut, handleLogout }.
+    // If I use the hook's handleLogout, the hook's isLoggingOut state will change.
+    // But the LogoutSheet inside uses the hook too... NO.
+    // If I use LogoutSheet, it has its OWN useAppLogout hook call inside (as written in my implemented LogoutSheet).
+    // So if I call handleLogout from SettingsScreen (for DeleteAccount), I need access to the same state/logic?
+    // Actually, LogoutSheet is UI.
+    // If SettingsScreen needs to logout programmatically (delete account), it should use the hook itself.
+    
+    const { handleLogout } = useAppLogout();
+    
+    // We need 'setIsLoggingOut' for the DeleteAccount flow to show spinner? 
+    // The previous handleDeleteAccount called handleLogout() which set isLoggingOut=true.
+    // The hook's handleLogout sets its own isLoggingOut=true.
+    // But where is the Modal rendered for DeleteAccount flow?
+    // The Modal was previously rendered at the bottom of SettingsScreen based on local isLoggingOut.
+    // Now LogoutSheet renders a Modal based on ITS hook state.
+    // If I call handleLogout from the hook here in Settings, the state 'isLoggingOut' from the hook instance here in Settings will update.
+    // So I need to render the Modal here in Settings too IF I want the spinner to show during Delete Account.
+    // OR... I can just let it happen in background? No, we want spinner.
+    // Let's check useAppLogout implementation again. It returns state.
+    
+    // RETHINK: LogoutSheet component has `const { isLoggingOut, handleLogout } = useAppLogout();` inside it.
+    // If I render <LogoutSheet /> it has its own instance of the hook.
+    // If I use `const { handleLogout } = useAppLogout()` here for DeleteAccount, it is a DIFFERENT instance.
+    // So duplicate modals? No, because LogoutSheet modal is only visible if its instance isLoggingOut is true.
+    // So if I use hook here, I need to render a Modal here too?
+    // Yes.
+    // The user said "reuse the bottom sheet component".
+    // Maybe I should NOT put the hook inside the Component, but pass it in?
+    // But then ProfileScreen needs to set it up too.
+    // Keeping it simple: 
+    // SettingsScreen uses useAppLogout for handleDeleteAccount.
+    // LogoutSheet uses useAppLogout for the sheet buttons.
+    // So if user clicks "Logout" in sheet -> Sheet's hook runs -> Sheet's modal shows.
+    // If user clicks "Delete Account" -> Settings' hook runs -> Need Settings Modal.
+    // BUT SettingsScreen already has a Modal at the bottom.
+    // I should probably remove the inline Modal from SettingsScreen and rely on... wait.
+    // If I remove the inline Modal, create a `LogoutModal` component?
+    // The `LogoutSheet` includes the `Modal` inside it (Step 40).
+    // So if I use `LogoutSheet`, I get the modal for free for interactions *within* the sheet.
+    // But for `handleDeleteAccount`, I am outside the sheet.
+    // Solution: Just modify `SettingsScreen` to use the hook and render the Modal if needed, OR just duplicated the logic is minimal.
+    // Let's see: `handleDeleteAccount` calls `handleLogout`.
+    
+    const { isLoggingOut: isHookLoggingOut, handleLogout: hookHandleLogout } = useAppLogout();
 
     const handleDeleteAccount = async () => {
         try {
@@ -125,7 +147,7 @@ export const SettingsScreen = () => {
             if (profileError) throw profileError;
 
             trackEvent('user_deleted_account');
-            await handleLogout();
+            await hookHandleLogout();
 
             setIsDeleteSheetVisible(false);
 
@@ -474,68 +496,18 @@ export const SettingsScreen = () => {
                 </View>
             </BottomSheet>
 
-            <BottomSheet visible={isLogoutSheetVisible} onClose={() => setIsLogoutSheetVisible(false)}>
-                <View className="items-center w-full">
-                    {isAnonymous ? (
-                        <>
-                            <MascotImage source={MASCOTS.SAD} className="w-32 h-32 mb-4" resizeMode="contain" />
-                            <Text className="text-2xl font-q-bold text-text text-center mb-4 px-6">Wait! You'll lose everything!</Text>
-                            <Text className="text-lg font-q-medium text-muted text-center mb-8 px-4 leading-6">
-                                Your progress will not be saved and you'll lose access unless you create an account first.
-                            </Text>
-
-                            <Button
-                                label="Secure My Account"
-                                onPress={() => {
-                                    setIsLogoutSheetVisible(false);
-                                    navigation.navigate('SecureAccount', { initialMode: 'signup' });
-                                }}
-                                haptic="selection"
-                            />
-                            
-                            <TouchableOpacity 
-                                onPress={() => { 
-                                    haptics.heavy(); 
-                                    setIsLogoutSheetVisible(false);
-                                    handleLogout(); 
-                                }} 
-                                className="mt-4 py-2 active:scale-95 transition-transform"
-                            >
-                                <Text className="text-red-400 font-q-bold text-base">Log Out & Lose Data</Text>
-                            </TouchableOpacity>
-                        </>
-                    ) : (
-                        <>
-                            <MascotImage source={MASCOTS.HELLO} className="w-32 h-32 mb-4" resizeMode="contain" />
-                            <Text className="text-2xl font-q-bold text-text text-center mb-4 px-6">Ready to sign out?</Text>
-                            <Text className="text-lg font-q-medium text-muted text-center mb-8 px-4 leading-6">
-                                We'll save your progress safely until you return.
-                            </Text>
-
-                            <Button
-                                variant="danger"
-                                label="Log Out"
-                                onPress={() => { 
-                                    setIsLogoutSheetVisible(false);
-                                    handleLogout(); 
-                                }}
-                                haptic="heavy"
-                            />
-
-                            <TouchableOpacity onPress={() => { haptics.selection(); setIsLogoutSheetVisible(false); }} className="mt-4 py-2 active:scale-95 transition-transform">
-                                <Text className="text-muted font-q-bold text-base">Wait, I'll stay!</Text>
-                            </TouchableOpacity>
-                        </>
-                    )}
-                </View>
-            </BottomSheet>
+            <LogoutSheet
+                visible={isLogoutSheetVisible}
+                onClose={() => setIsLogoutSheetVisible(false)}
+                isAnonymous={!!isAnonymous}
+            />
 
             <FeedbackSheet
                 visible={isFeedbackSheetVisible}
                 onClose={() => setIsFeedbackSheetVisible(false)}
             />
 
-            <Modal visible={isLoggingOut} transparent={true} animationType="fade">
+            <Modal visible={isHookLoggingOut} transparent={true} animationType="fade">
                 <View className={`flex-1 justify-center items-center bg-black/40 ${isDarkMode ? 'dark' : ''}`}>
                     <View className="bg-card p-10 rounded-[40px] items-center shadow-2xl mx-10">
                         <MascotImage 

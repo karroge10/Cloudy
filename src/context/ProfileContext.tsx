@@ -127,9 +127,7 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
                     return;
                 }
 
-                if (session?.user?.is_anonymous) {
-                    console.log('[ProfileContext] Anon User Data Found:', data);
-                }
+                // Removed verbose anon log
 
                 const mappedProfile: Profile = {
                     id: currentUserId,
@@ -204,7 +202,10 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
                     setProfile(null);
                 }
             }
+            const duration = (Date.now() - fetchStartTime) / 1000;
+            console.log(`[ProfileContext] Profile loaded in ${duration.toFixed(3)}s`);
         } catch (error) {
+            console.error('[ProfileContext] Error loading profile:', error);
             setProfile(null);
         } finally {
             setLoading(false);

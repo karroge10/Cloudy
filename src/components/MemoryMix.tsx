@@ -37,53 +37,73 @@ export const MemoryMix = () => {
                 }}
                 activeOpacity={0.9}
             >
-                <View className="flex-row justify-between items-start">
-                    <View className="flex-1 mr-4">
-                        <View className="flex-row items-center mb-2">
-                            <Text className="text-lg font-q-bold text-text mr-2">Chef's Special</Text>
-                            {!isUnlocked && (
-                                <View className="bg-inactive/10 px-2 py-0.5 rounded-full flex-row items-center">
-                                    <Ionicons name="lock-closed" size={10} color={isDarkMode ? "#94A3B8" : "#64748B"} />
-                                    <Text className="text-[10px] font-q-bold text-muted ml-1 uppercase">30 Days</Text>
-                                </View>
-                            )}
-                        </View>
-                        
-                        <Text className="text-base font-q-medium text-muted leading-6">
-                            {isUnlocked 
-                                ? "Serve up a delicious mix of your past memories." 
-                                : "Cookie is preparing a special menu for 30-day masters."}
-                        </Text>
-                        
-                        {isUnlocked && (
+                {isUnlocked ? (
+                    <View className="flex-row justify-between items-start">
+                        <View className="flex-1 mr-4">
+                            <View className="flex-row items-center mb-2">
+                                <Text className="text-lg font-q-bold text-text mr-2">Chef's Special</Text>
+                            </View>
+                            
+                            <Text className="text-base font-q-medium text-muted leading-6">
+                                Serve up a delicious mix of your past memories.
+                            </Text>
+                            
                             <View className="flex-row items-center mt-4">
                                 <Text className="text-primary font-q-bold text-sm uppercase tracking-wider mr-1">Open Menu</Text>
                                 <Ionicons name="arrow-forward" size={14} color="#FF9E7D" />
                             </View>
-                        )}
+                        </View>
                         
-                        {!isUnlocked && (
-                             <View className="w-full max-w-[160px] mt-4">
-                                <View className="flex-row justify-between mb-2 px-1">
-                                    <Text className="text-[10px] font-q-bold text-muted uppercase tracking-tight">Progress</Text>
-                                    <Text className="text-[10px] font-q-bold text-primary">{Math.min(profile?.max_streak || 0, 30)} / 30</Text>
-                                </View>
-                                <View className="w-full h-1.5 bg-inactive/10 rounded-full overflow-hidden">
-                                    <View 
-                                        className="h-full bg-primary rounded-full" 
-                                        style={{ width: `${Math.min(((profile?.max_streak || 0) / 30) * 100, 100)}%` }} 
-                                    />
-                                </View>
-                            </View>
-                        )}
+                        <MascotImage 
+                            source={MASCOTS.CHEF} 
+                            className="w-24 h-24" 
+                            resizeMode="contain" 
+                        />
                     </View>
-                    
-                    <MascotImage 
-                        source={MASCOTS.CHEF} 
-                        className={`w-24 h-24 ${!isUnlocked ? 'opacity-50 grayscale' : ''}`} 
-                        resizeMode="contain" 
-                    />
-                </View>
+                ) : (
+                    <View className="items-center py-2 pb-6">
+                        <View className="flex-row justify-between items-center w-full mb-6">
+                            <Text className="text-lg font-q-bold text-text">Chef's Special</Text>
+                            <View className="bg-inactive/10 px-3 py-1 rounded-full flex-row items-center">
+                                <Ionicons name="lock-closed" size={10} color={isDarkMode ? "#94A3B8" : "#64748B"} />
+                                <Text className="text-[10px] font-q-bold text-muted ml-1 uppercase">Locked</Text>
+                            </View>
+                        </View>
+
+                        <View className="bg-inactive/5 p-4 rounded-3xl mb-4 relative">
+                            <MascotImage 
+                                source={MASCOTS.CHEF} 
+                                className="w-16 h-16 opacity-50 grayscale" 
+                                resizeMode="contain" 
+                            />
+                            <View className="absolute -right-2 -top-2 bg-card rounded-full p-1.5 border border-inactive/10">
+                                <Ionicons name="lock-closed" size={14} color={isDarkMode ? "#94A3B8" : "#64748B"} />
+                            </View>
+                        </View>
+                        
+                        <Text className="text-base font-q-bold text-text mb-2 text-center px-6">
+                            Reach 30 day streak to unlock.
+                        </Text>
+                        
+                        <View className="w-full max-w-[220px] mb-6">
+                            <View className="flex-row justify-between mb-2 px-1">
+                                <Text className="text-[10px] font-q-bold text-muted uppercase tracking-tight">Progress</Text>
+                                <Text className="text-[10px] font-q-bold text-primary font-q-bold">{Math.min(profile?.max_streak || 0, 30)} / 30 days</Text>
+                            </View>
+                            <View className="w-full h-2 bg-inactive/10 rounded-full overflow-hidden">
+                                <View 
+                                    className="h-full bg-primary rounded-full" 
+                                    style={{ width: `${Math.min(((profile?.max_streak || 0) / 30) * 100, 100)}%` }} 
+                                />
+                            </View>
+                        </View>
+
+                        <View className="flex-row items-center">
+                            <Text className="text-[11px] font-q-bold text-primary uppercase tracking-[0.15em]">Track Progress</Text>
+                            <Ionicons name="chevron-forward" size={12} color="#FF9E7D" style={{ marginLeft: 4 }} />
+                        </View>
+                    </View>
+                )}
             </TouchableOpacity>
         </View>
     );

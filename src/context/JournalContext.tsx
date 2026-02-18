@@ -82,6 +82,7 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
     }, [session?.user?.id]);
 
     const fetchMetadata = useCallback(async (currentUserId: string) => {
+        const start = Date.now();
         const { data, error } = await supabase
             .from('posts')
             .select('id, created_at')
@@ -91,12 +92,15 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
 
         if (!error && data && activeUserIdRef.current === currentUserId) {
             setMetadata(data);
+            const duration = (Date.now() - start) / 1000;
+            console.log(`[Journal] Metadata loaded in ${duration.toFixed(3)}s`);
         } else if (error) {
             console.warn(`[Journal] fetchMetadata error:`, error);
         }
     }, []);
 
     const fetchPage = useCallback(async (pageNum: number, currentUserId: string, clearExisting = false, mode: 'all' | 'favorites' = 'all') => {
+        const start = Date.now();
         if (!currentUserId) return;
 
         if (pageNum === 0) setLoading(true);
@@ -130,6 +134,8 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
             
             setEntries(prev => clearExisting ? decryptedData : [...prev, ...decryptedData]);
             setHasMore(data.length === PAGE_SIZE);
+            const duration = (Date.now() - start) / 1000;
+            console.log(`[Journal] Page ${pageNum} loaded in ${duration.toFixed(3)}s`);
         }
         
         if (activeUserIdRef.current === currentUserId) {
@@ -259,7 +265,7 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
     const streak = useMemo(() => {
         if (metadata.length === 0) return 0;
         const s = calculateStreak(metadata);
-        console.log('[JournalContext] Recalculated streak:', s, 'Metadata count:', metadata.length);
+        // console.log('[JournalContext] Recalculated streak:', s, 'Metadata count:', metadata.length);
         return s;
     }, [metadata]);
 

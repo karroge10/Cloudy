@@ -24,7 +24,7 @@ export const ReviewNudge = ({ visible, onClose }: ReviewNudgeProps) => {
             if (StoreReview && await StoreReview.hasAction()) {
                 await StoreReview.requestReview();
             } else {
-                console.log('StoreReview not supported or module missing');
+                // console.log('StoreReview not supported or module missing');
             }
         } catch (e) {
             console.warn('StoreReview error:', e);
