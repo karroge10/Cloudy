@@ -82,17 +82,24 @@ const RootNavigator = ({ session, isBioLocked, isColdStartWithSession, isAuthLoa
         // Stage 1: Logged Out
         if (!session) return 'auth';
 
-        // Stage 2: Transitional Loading (Avoid flickering by staying in current state)
-        if (profileLoading) {
-            if (viewMode === 'app' || viewMode === 'onboarding') return viewMode; 
-            // If we just logged in, stay in 'auth' stack (which shows local spinner) until profile is fetched
-            if (viewMode === 'auth') return 'auth';
-            return 'loading';
+        // Stage 2: Session exists, checking Profile
+        // If we have a session but no profile yet, and we are NOT anon (or even if we are), 
+        // we should wait for profile to load before deciding 'app' or 'onboarding'.
+        // The previous logic allowed falling through to 'onboarding' if profile was undefined.
+        if (profileLoading && !profile) {
+             // If we are already in 'app' (e.g. slight refresh), stay there to avoid flash
+             if (viewMode === 'app') return 'app';
+             return 'loading';
         }
 
         // Stage 3: Ready
+        // If we have a profile and onboarding is explicitly true
         if (profile?.onboarding_completed) return 'app';
 
+        // If we have a session but profile says onboarding NOT completed, go to Onboarding
+        // If profile is still null here (shouldn't be if profileLoading is false), default to onboarding safely?
+        // Actually if profile is null but loading is false, it means profile fetch failed or user has no profile row.
+        // In that case, we probably want to treat them as new -> Onboarding (which creates profile)
         return 'onboarding';
     })();
 

@@ -28,7 +28,7 @@ const STRUGGLES = ['Anxiety', 'Stress', 'Sleep', 'Focus', 'Motivation', 'N/A'];
 
 export const ProfileScreen = () => {
     const { streak, rawStreakData, refreshEntries } = useJournal();
-    const { profile, loading: profileLoading, updateProfile, isAnonymous, userId } = useProfile();
+    const { profile, loading: profileLoading, updateProfile, isAnonymous, userId, logout } = useProfile();
     const { trackEvent } = useAnalytics();
     let navigation: any;
     try {
@@ -116,7 +116,7 @@ export const ProfileScreen = () => {
                               {profileLoading ? (
                                  <Skeleton width={120} height={24} style={{ marginBottom: 4 }} borderRadius={12} />
                               ) : (
-                                 <Text className="text-xl font-q-bold text-muted">Hi, {displayName || 'Friend'}! 👋</Text>
+                                 <Text className="text-xl font-q-bold text-muted">Hi, {displayName || 'Friend'}!</Text>
                               )}
                          </TouchableOpacity>
                         
@@ -198,6 +198,16 @@ export const ProfileScreen = () => {
                         </TouchableOpacity>
                     </View>
                 </View>
+
+                <TouchableOpacity 
+                    onPress={() => {
+                        haptics.heavy();
+                        logout();
+                    }}
+                    className="mt-4 items-center py-4 active:scale-95 transition-transform"
+                >
+                    <Text className="text-lg font-q-bold text-red-400/60">Log Out</Text>
+                </TouchableOpacity>
 
                 <AppFooter />
             </ScrollView>
@@ -448,7 +458,6 @@ export const ProfileScreen = () => {
                             }}
                         />
                         <TouchableOpacity 
-                            onPress={() => { haptics.selection(); setIsMascotSheetVisible(false); }} 
                             className="mt-4 py-2 items-center active:scale-95 transition-transform"
                         >
                              <Text className="text-muted font-q-bold text-base">Maybe later</Text>
@@ -456,6 +465,8 @@ export const ProfileScreen = () => {
                     </View>
                 </View>
             </BottomSheet>
+
+
 
         </Layout>
     );

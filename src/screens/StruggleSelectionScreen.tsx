@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, ScrollView, BackHandler } from 'react-native';
 import { Button } from '../components/Button';
 import { SelectionPill } from '../components/SelectionPill';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { MASCOTS } from '../constants/Assets';
 import { TopNav } from '../components/TopNav';
 import { MascotImage } from '../components/MascotImage';
@@ -27,6 +27,22 @@ export const StruggleSelectionScreen = () => {
         }
     };
 
+    useFocusEffect(
+        React.useCallback(() => {
+          const onBackPress = () => {
+            if (navigation.canGoBack()) {
+                navigation.goBack();
+                return true;
+            }
+            return false;
+          };
+    
+          const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    
+          return () => subscription.remove();
+        }, [navigation])
+      );
+
     const canContinue = selected.length > 0;
 
     return (
@@ -35,7 +51,11 @@ export const StruggleSelectionScreen = () => {
                 <TopNav showBack={true} />
             </View>
 
-            <View className="flex-1 px-6 justify-between pb-10">
+            <ScrollView 
+                contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
+                showsVerticalScrollIndicator={false}
+            >
+            <View className="flex-1 px-6 justify-between">
                 <View>
                     {/* Main Content Area */}
                     <View className="items-center mb-6">
@@ -50,7 +70,7 @@ export const StruggleSelectionScreen = () => {
                     </View>
                 </View>
                 
-                <View className="flex-1 justify-center">
+                <View className="flex-1 justify-center mb-8">
                      <View className="w-full flex-row flex-wrap justify-center gap-3">
                         {STRUGGLES.map((struggle) => (
                             <SelectionPill
@@ -84,6 +104,7 @@ export const StruggleSelectionScreen = () => {
 
                 </View>
             </View>
+            </ScrollView>
         </Layout>
     );
 };

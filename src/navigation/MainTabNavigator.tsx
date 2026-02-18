@@ -1,6 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { haptics } from '../utils/haptics';
 import { HomeScreen } from '../screens/HomeScreen';
@@ -11,8 +12,10 @@ const Tab = createBottomTabNavigator();
 const { width } = Dimensions.get('window');
 
 const CustomTabBar = ({ state, descriptors, navigation }: any) => {
+  const insets = useSafeAreaInsets();
+  
   return (
-    <View style={styles.tabBar}>
+    <View style={[styles.tabBar, { height: 80 + insets.bottom, paddingBottom: insets.bottom }]}>
       {state.routes.map((route: any, index: number) => {
         const { options } = descriptors[route.key];
         const label =
@@ -108,9 +111,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 40,
     borderTopRightRadius: 40,
-    height: 100,
+    // Height will be overridden dynamically or we can set a minHeight
+    // height: 100, // Removed fixed height
     paddingHorizontal: 20,
-    paddingBottom: 15,
+    // Padding bottom will be handled by safe area insets
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -130,6 +134,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
+    height: 60, // Fixed height for the clickable area inside the bar
   },
   tabLabel: {
     marginTop: 4,

@@ -1,0 +1,11 @@
+1) Sometimes reopening the app after some inactivity time (preview build) it shows me loading screen (or splash screen idk whats it called, with mascot and cloudy - your tiny companion or whatever but for some reason half of text is cut off and mascot is not loaded in yet), then takes me to welcome screen for half a second and then to Home finally. I am logged in so i assume sometimes maybe cache gets reset or something and app waits for supabase to return  user info or something? In that case it should keep showing the loading screen until user data loads and not just assume user is undefined even though we are still waiting to retrieve user.
+
+2) Bottom handlebar like on iphone or pixel works fine but if user uses old phone UI with buttons for back and home screen and stuff content becomes hidden behind it because that menu it's bigger than just tiny handlebar.
+
+3) Time Issue: In reminder settings we use 24 hours format but for posts we use PM/AM format. We should use 24 hour format everywhere. Later we can add support for time formats and setting in user profile or in settings (of we can do it now if you think it wont take time). We have to account for every single place in app where time is displayed.
+
+4) I think logout should be in profile, It's a bit hard to find. Or maybe in both profile and setting? What do you think?
+
+5) On some phones (friend tested on samsung s21. on pixel 7 i could not reproduce the bugs for some reason) the buttons like Lack of Focus and Sleep Issues on struggles screen overlap with the 4 dots below, that shouldn't happen. Also on his phone he encountered an error where sometimes hitting the back button (either on his phone or in UI of the app) it takes him to his phone home screen outside the app instead of previous screen. I could not replicate the issue on my end but we have to look into it.
+
+6) "Add password login" button gets added to settings items upon opening the screen. It should be preloaded like all other things on screen. And what happens if user already has email and password on his account? Maybe replace button with like change password or something? But we have emails off on supabase so idk how it's gonna work

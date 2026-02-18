@@ -30,6 +30,7 @@ interface ProfileContextType {
     loading: boolean;
     refreshProfile: () => Promise<void>;
     updateProfile: (updates: Partial<Profile>) => Promise<boolean>;
+    logout: () => Promise<void>;
 }
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
@@ -366,6 +367,16 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
     // but the session check is enough for basic visual isolation. 
     // Actually, let's just check if it's the right session essentially.
 
+    const logout = async () => {
+        try {
+            await supabase.auth.signOut();
+            setProfile(null);
+            // Session update should be handled by onAuthStateChange in App.tsx
+        } catch (error) {
+            console.error('Error logging out:', error);
+        }
+    };
+
     return (
         <ProfileContext.Provider value={{ 
             profile: dataMatchesUser ? profile : null, 
@@ -373,7 +384,8 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
             userId: userId || session?.user?.id || null, 
             loading: loading || !dataMatchesUser, 
             refreshProfile: fetchProfile, 
-            updateProfile 
+            updateProfile,
+            logout 
         }}>
             {children}
         </ProfileContext.Provider>

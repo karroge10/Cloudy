@@ -143,7 +143,7 @@ const TimelineItem = ({
                             <View className="flex-row items-center bg-[#FF9E7D10] px-3 py-1 rounded-full">
                                 <Ionicons name="time-outline" size={14} color="#FF9E7D" />
                                 <Text className="text-primary font-q-semibold ml-2 text-xs">
-                                    {new Date(item.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                                    {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
                                 </Text>
                             </View>
                             <View className="flex-row items-center space-x-2">

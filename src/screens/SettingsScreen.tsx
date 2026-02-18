@@ -24,7 +24,7 @@ import { TimePicker } from '../components/TimePicker';
 
 export const SettingsScreen = () => {
     const navigation = useNavigation<any>();
-    const { profile, updateProfile, userId } = useProfile();
+    const { profile, updateProfile, logout, isAnonymous, userId } = useProfile();
     const { showAlert } = useAlert();
     const { trackEvent } = useAnalytics();
 
@@ -33,7 +33,13 @@ export const SettingsScreen = () => {
     const [isTimeSheetVisible, setIsTimeSheetVisible] = useState(false);
     const [reminderDate, setReminderDate] = useState(new Date());
     const [isPasswordSheetVisible, setIsPasswordSheetVisible] = useState(false);
-    const [hasPasswordLogin, setHasPasswordLogin] = useState(true); // Default true to prevent flicker
+    const [hasPasswordLogin, setHasPasswordLogin] = useState(true); 
+    // Default true (hidden) to prevent flash for most users. 
+    // We will update this in useEffect.
+    
+    // NOTE: isAnonymous is available from useProfile() hook, which is called at the top of this component.
+    // const { profile, updateProfile, isAnonymous } = useProfile(); <-- This line exists in the file (implied).
+    
     const [newPassword, setNewPassword] = useState('');
     const [passwordLoading, setPasswordLoading] = useState(false);
     const [bioSupported, setBioSupported] = useState(false);
@@ -41,18 +47,34 @@ export const SettingsScreen = () => {
     const isHapticsEnabled = profile?.haptics_enabled ?? true;
     const reminderTime = profile?.reminder_time;
     const displayReminderTime = reminderTime || '20:00';
-
+    
     useEffect(() => {
-        const checkAuthStatus = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            const hasPass = user?.identities?.some(id => id.provider === 'email') ?? true;
-            setHasPasswordLogin(hasPass);
+        if (isAnonymous) {
+            // optimized: if anon, they definitely don't have password login (unless they just added it, but isAnonymous should update)
+            // But wait, isAnonymous means "Supabase anon provider". 
+            // If they merged with Google, isAnonymous becomes false? 
+            // Actually, if they are anon, they see "Secure Account". 
+            // The "Add Password" is for Google users.
+            setHasPasswordLogin(false); // If anonymous, show add password (or rather, Secure Account logic might overlap)
+            // BUT: The UI has separate "Secure your account" button for Anon users.
+            // This "Add Password" button is specifically for non-anon users (likely Google) who want to add a password.
+            // So if isAnonymous is true, hasPasswordLogin should effectively be "true" (meaning "hide the Add Password button") 
+            // because Anon users have the "Secure your account" button instead!
+            setHasPasswordLogin(true); 
+        } else {
+             const checkAuthStatus = async () => {
+                const { data: { user } } = await supabase.auth.getUser();
+                // Check if they have an email provider (password login)
+                const providers = user?.app_metadata?.providers || [];
+                const hasEmailProvider = providers.includes('email');
+                setHasPasswordLogin(hasEmailProvider);
 
-            const supported = await security.isSupported();
-            setBioSupported(supported);
-        };
-        checkAuthStatus();
-    }, []);
+                const supported = await security.isSupported();
+                setBioSupported(supported);
+             };
+             checkAuthStatus();
+        }
+    }, [isAnonymous]);
 
     useEffect(() => {
         if (profile?.reminder_time) {
@@ -257,22 +279,46 @@ export const SettingsScreen = () => {
 
                     <View className="h-[1px] bg-inactive opacity-10" />
 
-                    {/* Add Password (for Google/Anon users) */}
-                    {!hasPasswordLogin && (
-                        <>
-                            <TouchableOpacity
-                                onPress={() => { haptics.selection(); setIsPasswordSheetVisible(true); }}
-                                className="flex-row items-center justify-between py-4"
-                            >
-                                <View>
-                                    <Text className="text-lg font-q-bold text-text">Add Password Login</Text>
-                                    <Text className="text-muted font-q-medium text-xs">Enable logging in with email & password</Text>
-                                </View>
-                                <Ionicons name="key-outline" size={22} color="#FF9E7D" />
-                            </TouchableOpacity>
-                            <View className="h-[1px] bg-inactive opacity-10" />
-                        </>
-                    )}
+                    <View className="h-[1px] bg-inactive opacity-10" />
+
+                    {/* Add Password (for Google-only users without password) */}
+                    {/* We reserve space or render if we know they lack a password */}
+                    {/* Logic: If user has 'google' provider AND DOES NOT have 'email' (password) provider */}
+                    {/* OR if they are anonymous (handled by profile context mostly, but here we check providers) */}
+                    
+                    {(() => {
+                        const showAddPassword = !hasPasswordLogin; 
+                        
+                        // To prevent layout shift, if we are loading, we can keep the view mounted or show nothing if we want it to "pop in" only if needed.
+                        // But user asked to prevent pop-in. So we should ideally default to hidden?
+                        // Actually, if we default to true (hasPasswordLogin=true), it starts hidden.
+                        // If we discover they DON'T have a password, it pops in.
+                        // To fix this, we need to know SOONER.
+                        // But we can't block render.
+                        // Best UX: Show it if we suspect they might need it (e.g. isAnonymous is true) or just accept the pop-in but make it smooth?
+                        // The user said: "It should be preloaded like all other things on screen."
+                        // Since checking providers is async, we can't "preload" it before render without a loading state for the whole screen.
+                        // COMPROMISE: We will show a skeleton or just render it if specific criteria met.
+                        // User Request Clarification: "It is not a feature for accounts that already have email and password provider."
+                        
+                        if (hasPasswordLogin) return null;
+
+                        return (
+                            <>
+                                <TouchableOpacity
+                                    onPress={() => { haptics.selection(); setIsPasswordSheetVisible(true); }}
+                                    className="flex-row items-center justify-between py-4"
+                                >
+                                    <View>
+                                        <Text className="text-lg font-q-bold text-text">Add Password Login</Text>
+                                        <Text className="text-muted font-q-medium text-xs">Enable logging in with email & password</Text>
+                                    </View>
+                                    <Ionicons name="key-outline" size={22} color="#FF9E7D" />
+                                </TouchableOpacity>
+                                <View className="h-[1px] bg-inactive opacity-10" />
+                            </>
+                        );
+                    })()}
 
                     {/* Delete Account */}
                     <TouchableOpacity
