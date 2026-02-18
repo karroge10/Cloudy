@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useProfile } from '../context/ProfileContext';
 import { useJournal } from '../context/JournalContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { haptics } from '../utils/haptics';
 import { TopNav } from '../components/TopNav';
 import { ProfileNudge } from '../components/ProfileNudge';
@@ -38,6 +39,9 @@ export const ProfileScreen = () => {
     }
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
+    
+    const insets = useSafeAreaInsets();
+    const TAB_BAR_HEIGHT = 80 + insets.bottom;
     
     // Local state for sheets
     const [isNameSheetVisible, setIsNameSheetVisible] = useState(false);
@@ -100,7 +104,7 @@ export const ProfileScreen = () => {
 
             <ScrollView 
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 160 }}
+                contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: TAB_BAR_HEIGHT + 24 }}
                 refreshControl={
                     <RefreshControl
                         refreshing={isRefreshing}

@@ -15,7 +15,7 @@ const CustomTabBar = ({ state, descriptors, navigation }: any) => {
   const insets = useSafeAreaInsets();
   
   return (
-    <View style={[styles.tabBar, { height: 80 + insets.bottom, paddingBottom: insets.bottom }]}>
+    <View style={[styles.tabBar, { height: 80 + insets.bottom, bottom: 0, paddingBottom: insets.bottom, alignItems: 'flex-start' }]}>
       {state.routes.map((route: any, index: number) => {
         const { options } = descriptors[route.key];
         const label =
@@ -113,10 +113,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 40,
     borderTopRightRadius: 40,
-    // Height will be overridden dynamically or we can set a minHeight
-    // height: 100, // Removed fixed height
+    // Height will be overridden dynamically
+    // height: 100, 
     paddingHorizontal: 20,
-    // Padding bottom will be handled by safe area insets
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -128,15 +127,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     alignItems: 'center',
     position: 'absolute',
-    bottom: 0,
     left: 0,
     right: 0,
+    bottom: 0,
   },
   tabItem: {
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
-    height: 60, // Fixed height for the clickable area inside the bar
+    height: 80, 
   },
   tabLabel: {
     marginTop: 4,

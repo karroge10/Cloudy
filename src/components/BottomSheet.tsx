@@ -11,6 +11,7 @@ import {
     Keyboard,
     Platform
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { haptics } from '../utils/haptics';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -30,6 +31,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
 }) => {
     const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
     const keyboardOffset = useRef(new Animated.Value(0)).current;
+    const insets = useSafeAreaInsets();
 
     useEffect(() => {
         const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -207,7 +209,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
                             )}
 
                             {/* Content area */}
-                            <View className="px-8 pb-12 pt-4">
+                            <View className="px-8 pt-4" style={{ paddingBottom: Math.max(insets.bottom, 24) + 12 }}>
                                 {children}
                             </View>
                         </View>

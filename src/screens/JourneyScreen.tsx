@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { View, Text, TouchableOpacity, useWindowDimensions, ActivityIndicator, RefreshControl, Platform, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { FlashList, ViewToken } from '@shopify/flash-list';
+import { FlashList, ViewToken, FlashListRef } from '@shopify/flash-list';
 import { StatusBar } from 'expo-status-bar';
 import { haptics } from '../utils/haptics';
 import Animated, { 
@@ -20,6 +20,7 @@ import { Layout } from '../components/Layout';
 import { BottomSheet } from '../components/BottomSheet';
 import { MASCOTS } from '../constants/Assets';
 import { Image } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useJournal, JournalEntry } from '../context/JournalContext';
 import { ProfileNudge } from '../components/ProfileNudge';
 import { useAlert } from '../context/AlertContext';
@@ -229,8 +230,12 @@ export const JourneyScreen = () => {
     } = useJournal();
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [showCalendar, setShowCalendar] = useState(false);
+
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
     const skipResetRef = useRef(false);
+
+    const insets = useSafeAreaInsets();
+    const TAB_BAR_HEIGHT = 80 + insets.bottom;
 
     useFocusEffect(
         useCallback(() => {
@@ -286,7 +291,7 @@ export const JourneyScreen = () => {
     const [centeredId, setCenteredId] = useState<string | null>(null);
 
     // FlashList ref for layout animations
-    const listRef = useRef<any>(null);
+    const listRef = useRef<FlashListRef<JournalEntry>>(null);
 
     const viewabilityConfig = useMemo(() => ({
         itemVisiblePercentThreshold: 50,
@@ -497,17 +502,15 @@ export const JourneyScreen = () => {
                 <TopNav title="Your Journey" />
             </View>
 
-            {/* @ts-ignore */}
-            <FlashList
+            <FlashList<JournalEntry>
                 ref={listRef}
                 data={filteredEntries}
                 renderItem={renderItem}
                 keyExtractor={item => item.id}
-                estimatedItemSize={ITEM_HEIGHT}
                 ListHeaderComponent={ListHeader}
                 ListEmptyComponent={ListEmpty}
                 ListFooterComponent={ListFooter}
-                contentContainerStyle={{ paddingBottom: 120, paddingHorizontal: 24 }}
+                contentContainerStyle={{ paddingBottom: TAB_BAR_HEIGHT + 24, paddingHorizontal: 24 }}
                 showsVerticalScrollIndicator={false}
                 
                 // Pull to refresh

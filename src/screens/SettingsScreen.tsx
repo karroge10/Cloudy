@@ -320,6 +320,23 @@ export const SettingsScreen = () => {
                         );
                     })()}
 
+                    {/* Secure Account (Anonymous users) */}
+                    {isAnonymous && (
+                        <>
+                            <TouchableOpacity
+                                onPress={() => { haptics.selection(); navigation.navigate('SecureAccount'); }}
+                                className="flex-row items-center justify-between py-4"
+                            >
+                                <View>
+                                    <Text className="text-lg font-q-bold text-text">Secure Your Journey</Text>
+                                    <Text className="text-muted font-q-medium text-xs">Create an account to save your progress</Text>
+                                </View>
+                                <Ionicons name="sparkles-outline" size={22} color="#FF9E7D" />
+                            </TouchableOpacity>
+                            <View className="h-[1px] bg-inactive opacity-10" />
+                        </>
+                    )}
+
                     {/* Delete Account */}
                     <TouchableOpacity
                         onPress={() => { haptics.selection(); setIsDeleteSheetVisible(true); }}

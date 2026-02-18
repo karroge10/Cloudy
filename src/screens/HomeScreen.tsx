@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Layout } from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import { BottomSheet } from '../components/BottomSheet';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useJournal } from '../context/JournalContext';
 import { useProfile } from '../context/ProfileContext';
@@ -42,6 +43,9 @@ export const HomeScreen = () => {
     
     // Animation for mascot
     const scaleAnim = useRef(new Animated.Value(1)).current;
+    
+    const insets = useSafeAreaInsets();
+    const TAB_BAR_HEIGHT = 80 + insets.bottom;
 
     const today = new Date();
     const formattedDate = today.toLocaleDateString('en-US', {
@@ -240,7 +244,7 @@ export const HomeScreen = () => {
         <Layout isTabScreen={true} noScroll={true} useSafePadding={false}>
             <ScrollView 
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingTop: 16, paddingBottom: 110 }}
+                contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingTop: 16, paddingBottom: TAB_BAR_HEIGHT + 24 }}
                 refreshControl={
                     <RefreshControl
                         refreshing={isRefreshing}
