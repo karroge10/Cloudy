@@ -79,7 +79,7 @@ const ScrollItem = memo(({
             >
                 <Text 
                     style={styles.itemText}
-                    className="font-q-bold text-3xl"
+                    className="font-q-bold text-3xl text-text"
                 >
                     {item}
                 </Text>
@@ -128,7 +128,7 @@ const ScrollWheel = ({ data, initialValue, onSelect, label }: ScrollWheelProps) 
         <View className="items-center">
             <View 
                 style={styles.wheelContainer}
-                className="bg-white rounded-[32px] border-2 border-primary/20 shadow-sm overflow-hidden"
+                className="bg-card rounded-[32px] border-2 border-primary/20 shadow-sm overflow-hidden"
             >
                 {/* Horizontal Center Guide */}
                 <View 
@@ -225,9 +225,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     itemText: {
-        // Fallback font family if font-q-bold fails
         fontFamily: Platform.OS === 'ios' ? 'Quicksand-Bold' : 'Quicksand_700Bold',
-        color: '#333333',
     },
     highlightBar: {
         height: ITEM_HEIGHT,

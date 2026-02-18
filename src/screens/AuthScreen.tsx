@@ -251,7 +251,7 @@ export const AuthScreen = () => {
                         <View className="mb-3">
                             <Text className="text-lg font-q-bold text-muted mb-2 ml-1">Email</Text>
                             <TextInput
-                                className="bg-white/60 px-6 py-4 rounded-3xl font-q-bold text-lg text-text border-2 border-inactive/10"
+                                className="bg-card px-6 py-4 rounded-3xl font-q-bold text-lg text-text border-2 border-inactive/10"
                                 placeholder="hello@cloudy.app"
                                 placeholderTextColor="#CBD5E1"
                                 onChangeText={setEmail}
@@ -264,7 +264,7 @@ export const AuthScreen = () => {
                         <View className="mb-4">
                             <Text className="text-lg font-q-bold text-muted mb-2 ml-1">Password</Text>
                             <TextInput
-                                className="bg-white/60 px-6 py-4 rounded-3xl font-q-bold text-lg text-text border-2 border-inactive/10"
+                                className="bg-card px-6 py-4 rounded-3xl font-q-bold text-lg text-text border-2 border-inactive/10"
                                 placeholder="••••••••"
                                 placeholderTextColor="#CBD5E1"
                                 onChangeText={setPassword}
@@ -301,7 +301,7 @@ export const AuthScreen = () => {
                     </View>
 
                     <TouchableOpacity
-                        className="bg-white/80 py-4 rounded-full border-2 border-inactive/10 shadow-sm min-h-[58px] justify-center"
+                        className="bg-card py-4 rounded-full border-2 border-inactive/10 shadow-sm min-h-[58px] justify-center"
                         onPress={signInWithGoogle}
                         disabled={loading}
                     >

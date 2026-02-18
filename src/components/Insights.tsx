@@ -261,7 +261,13 @@ export const Insights = ({ userId }: InsightsProps) => {
         <TouchableOpacity 
             className="bg-card rounded-[32px] p-6 shadow-xl mb-8 border border-inactive/5"
             style={{ shadowColor: isDarkMode ? '#000' : '#0000000D', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}
-            onPress={() => { haptics.selection(); setIsSheetVisible(true); }}
+            onPress={() => { 
+                haptics.selection(); 
+                if (data) {
+                    // @ts-ignore
+                    navigation.navigate('Statistics', { data });
+                }
+            }}
             activeOpacity={0.9}
         >
             <View className="flex-row justify-between items-center mb-6">
@@ -312,156 +318,7 @@ export const Insights = ({ userId }: InsightsProps) => {
                 </View>
             )}
         </TouchableOpacity>
-
-        <BottomSheet visible={isSheetVisible} onClose={() => setIsSheetVisible(false)}>
-            <View className="items-center w-full mb-8">
-                <MascotImage source={MASCOTS.ANALYTICS} className="w-40 h-40 mb-4" resizeMode="contain" />
-                <Text className="text-2xl font-q-bold text-text text-center px-4">All Time Deep Dive</Text>
-            </View>
-
-            <ScrollView className="max-h-[500px]" showsVerticalScrollIndicator={false}>
-                
-                <View className="px-2 mb-6">
-                    {/* Active Days */}
-                    <View className="w-full bg-card border border-inactive/10 rounded-[24px] p-5 mb-4 flex-row items-center justify-between shadow-sm">
-                         <View className="flex-row items-center">
-                             <View className="bg-primary/10 p-3 rounded-full mr-4">
-                                <Ionicons name="calendar-outline" size={20} color="#FF9E7D" />
-                             </View>
-                             <View>
-                                 <Text className="text-base font-q-bold text-text">Active Days</Text>
-                                 <Text className="text-sm text-muted font-q-medium">
-                                     Total days journaled
-                                 </Text>
-                             </View>
-                         </View>
-                         <View className="bg-primary/10 px-3 py-1 rounded-full">
-                            <Text className="text-primary font-q-bold text-sm">
-                                {data.activeDays} Days
-                            </Text>
-                         </View>
-                    </View>
-
-                    {/* Total Entries */}
-                    <View className="w-full bg-card border border-inactive/10 rounded-[24px] p-5 mb-4 flex-row items-center justify-between shadow-sm">
-                         <View className="flex-row items-center">
-                             <View className="bg-primary/10 p-3 rounded-full mr-4">
-                                <Ionicons name="documents-outline" size={20} color="#FF9E7D" />
-                             </View>
-                             <View>
-                                 <Text className="text-base font-q-bold text-text">Total Entries</Text>
-                                 <Text className="text-sm text-muted font-q-medium">
-                                     Memories captured
-                                 </Text>
-                             </View>
-                         </View>
-                         <View className="bg-primary/10 px-3 py-1 rounded-full">
-                            <Text className="text-primary font-q-bold text-sm">
-                                {data.totalEntries} Entries
-                            </Text>
-                         </View>
-                    </View>
-
-                    {/* Avg Length */}
-                    <View className="w-full bg-card border border-inactive/10 rounded-[24px] p-5 mb-4 flex-row items-center justify-between shadow-sm">
-                         <View className="flex-row items-center">
-                             <View className="bg-primary/10 p-3 rounded-full mr-4">
-                                <Ionicons name="text-outline" size={20} color="#FF9E7D" />
-                             </View>
-                             <View>
-                                 <Text className="text-base font-q-bold text-text">Average Length</Text>
-                                 <Text className="text-sm text-muted font-q-medium">
-                                     Words per entry
-                                 </Text>
-                             </View>
-                         </View>
-                         <View className="bg-primary/10 px-3 py-1 rounded-full">
-                            <Text className="text-primary font-q-bold text-sm">
-                                {data.avgWordsPerEntry} Words
-                            </Text>
-                         </View>
-                    </View>
-
-                    {/* Max Length */}
-                    <View className="w-full bg-card border border-inactive/10 rounded-[24px] p-5 mb-4 flex-row items-center justify-between shadow-sm">
-                         <View className="flex-row items-center">
-                             <View className="bg-primary/10 p-3 rounded-full mr-4">
-                                <Ionicons name="trophy-outline" size={20} color="#FF9E7D" />
-                             </View>
-                             <View>
-                                 <Text className="text-base font-q-bold text-text">Longest Entry</Text>
-                                 <Text className="text-sm text-muted font-q-medium">
-                                     Most words in one go
-                                 </Text>
-                             </View>
-                         </View>
-                         <View className="bg-primary/10 px-3 py-1 rounded-full">
-                            <Text className="text-primary font-q-bold text-sm">
-                                {data.longestEntryWords} Words
-                            </Text>
-                         </View>
-                    </View>
-
-                    {/* Time Invested */}
-                    <View className="w-full bg-card border border-inactive/10 rounded-[24px] p-5 mb-4 flex-row items-center justify-between shadow-sm">
-                         <View className="flex-row items-center">
-                             <View className="bg-primary/10 p-3 rounded-full mr-4">
-                                <Ionicons name="hourglass-outline" size={20} color="#FF9E7D" />
-                             </View>
-                             <View>
-                                 <Text className="text-base font-q-bold text-text">Time Invested</Text>
-                                 <Text className="text-sm text-muted font-q-medium">
-                                     Estimated writing time
-                                 </Text>
-                             </View>
-                         </View>
-                         <View className="bg-primary/10 px-3 py-1 rounded-full">
-                            <Text className="text-primary font-q-bold text-sm">
-                                {data.totalTimeSpentMinutes}m
-                            </Text>
-                         </View>
-                    </View>
-
-                    {/* Productivity */}
-                    <View className="w-full bg-card border border-inactive/10 rounded-[24px] p-5 mb-4 flex-row items-center justify-between shadow-sm">
-                         <View className="flex-row items-center">
-                             <View className="bg-primary/10 p-3 rounded-full mr-4">
-                                <Ionicons name="sunny-outline" size={20} color="#FF9E7D" />
-                             </View>
-                             <View>
-                                 <Text className="text-base font-q-bold text-text">Most Productive</Text>
-                                 <Text className="text-sm text-muted font-q-medium">
-                                     {
-                                        data.timeOfDay.morning >= data.timeOfDay.afternoon && data.timeOfDay.morning >= data.timeOfDay.evening ? 'Morning' :
-                                        data.timeOfDay.afternoon >= data.timeOfDay.morning && data.timeOfDay.afternoon >= data.timeOfDay.evening ? 'Afternoon' : 'Evening'
-                                     }
-                                 </Text>
-                             </View>
-                         </View>
-                         <View className="bg-primary/10 px-3 py-1 rounded-full">
-                            <Text className="text-primary font-q-bold text-sm">
-                                {Math.max(data.timeOfDay.morning, data.timeOfDay.afternoon, data.timeOfDay.evening)} Entries
-                            </Text>
-                         </View>
-                    </View>
-                </View>
-
-                {/* Top Themes Section */}
-                {data.topWords.length > 0 && (
-                    <View className="px-2 mb-12">
-                         <Text className="text-base font-q-bold text-text mb-4 ml-2">Top Themes</Text>
-                         <View className="flex-row flex-wrap gap-3">
-                             {data.topWords.map((item, index) => (
-                                 <View key={index} className="bg-card border border-inactive/20 px-4 py-3 rounded-2xl flex-row items-center shadow-sm">
-                                     <Text className="text-base font-q-medium text-text mr-2 capitalize">{item.word}</Text>
-                                     <Text className="text-xs font-q-bold text-primary/60">{item.count}</Text>
-                                 </View>
-                             ))}
-                         </View>
-                    </View>
-                )}
-            </ScrollView>
-        </BottomSheet>
         </>
     );
 };
+

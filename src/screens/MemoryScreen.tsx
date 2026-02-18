@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { 
     View, Text, TouchableOpacity, Share, ScrollView, 
-    ActivityIndicator, FlatList, Dimensions, 
-    NativeSyntheticEvent, NativeScrollEvent, Image,
-    useWindowDimensions, ListRenderItem
+    FlatList, 
+    useWindowDimensions, ListRenderItem, Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -12,6 +11,7 @@ import { Layout } from '../components/Layout';
 import { TopNav } from '../components/TopNav';
 import { haptics } from '../utils/haptics';
 import { useJournal, JournalEntry } from '../context/JournalContext';
+import { useTheme } from '../context/ThemeContext';
 import { MascotImage } from '../components/MascotImage';
 import { BottomSheet } from '../components/BottomSheet';
 import { Button } from '../components/Button';
@@ -45,14 +45,16 @@ const MemoryItem = React.memo(({
     onDelete, 
     cardWidth, 
     screenWidth,
-    getPrompt 
+    getPrompt,
+    isDarkMode 
 }: { 
     item: JournalEntry, 
     onToggleFavorite: (item: JournalEntry) => void, 
     onDelete: (id: string) => void,
     cardWidth: number,
     screenWidth: number,
-    getPrompt: (item: JournalEntry) => string
+    getPrompt: (item: JournalEntry) => string,
+    isDarkMode: boolean
 }) => {
     const now = new Date();
     const entryDate = new Date(item.created_at);
@@ -76,7 +78,7 @@ const MemoryItem = React.memo(({
                 style={{ height: 380, width: cardWidth }}
             >
                 <View style={{ flex: 1 }}>
-                    <View className="absolute -top-2 -left-2">
+                    <View className="absolute -top-4 -left-4">
                         <Text className="text-[#FF9E7D15] text-7xl font-q-bold">"</Text>
                     </View>
                     
@@ -93,7 +95,7 @@ const MemoryItem = React.memo(({
                     <View className="flex-row justify-between items-center pt-4 border-t border-primary/10 mt-2">
                         <View className="flex-row items-center bg-[#FF9E7D10] px-4 py-2 rounded-full">
                             <Ionicons name="time-outline" size={16} color="#FF9E7D" />
-                            <Text className="text-primary font-q-semibold ml-2 text-sm">
+                            <Text className="text-[#FF9E7D] font-q-semibold ml-2 text-sm">
                                 {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
                             </Text>
                         </View>
@@ -106,8 +108,8 @@ const MemoryItem = React.memo(({
                                     <Ionicons 
                                         name={item.is_favorite ? "heart" : "heart-outline"} 
                                         size={22} 
-                                        color={item.is_favorite ? "#FF9E7D" : "#333"} 
-                                        style={{ opacity: item.is_favorite ? 1 : 0.2 }}
+                                        color={item.is_favorite ? "#FF9E7D" : (isDarkMode ? "#E5E7EB" : "#333333")} 
+                                        style={{ opacity: item.is_favorite ? 1 : 0.4 }}
                                     />
                                 </Animated.View>
                             </TouchableOpacity>
@@ -120,8 +122,8 @@ const MemoryItem = React.memo(({
                                     <Ionicons 
                                         name="trash-outline" 
                                         size={22} 
-                                        color="#333" 
-                                        style={{ opacity: 0.2 }} 
+                                        color={isDarkMode ? "#E5E7EB" : "#333333"} 
+                                        style={{ opacity: 0.4 }} 
                                     />
                                 </TouchableOpacity>
                             )}
@@ -136,12 +138,14 @@ const MemoryItem = React.memo(({
            prev.item.is_favorite === next.item.is_favorite &&
            prev.item.text === next.item.text &&
            prev.cardWidth === next.cardWidth &&
-           prev.screenWidth === next.screenWidth;
+           prev.screenWidth === next.screenWidth &&
+           prev.isDarkMode === next.isDarkMode;
 });
 
 export const MemoryScreen = () => {
     const { width: SCREEN_WIDTH } = useWindowDimensions();
     const CARD_WIDTH = SCREEN_WIDTH - 48;
+    const { isDarkMode } = useTheme();
 
     const getNavigation = () => {
         try {
@@ -288,8 +292,9 @@ export const MemoryScreen = () => {
             cardWidth={CARD_WIDTH}
             screenWidth={SCREEN_WIDTH}
             getPrompt={getPromptForEntry}
+            isDarkMode={isDarkMode}
         />
-    ), [handleToggleFavorite, onDelete, CARD_WIDTH, SCREEN_WIDTH, getPromptForEntry]);
+    ), [handleToggleFavorite, onDelete, CARD_WIDTH, SCREEN_WIDTH, getPromptForEntry, isDarkMode]);
 
     if (!journalEntries || journalEntries.length === 0) {
         return (
@@ -322,7 +327,7 @@ export const MemoryScreen = () => {
                                 onPress={() => handleShare(activeEntry)} 
                                 className="p-2 -mr-2 items-center justify-center w-12 h-12 active:scale-90 transition-transform"
                             >
-                                <Ionicons name="share-outline" size={28} color="#333333" />
+                                <Ionicons name="share-outline" size={28} color={isDarkMode ? "#E5E7EB" : "#333333"} />
                             </TouchableOpacity>
                         }
                         onBack={() => navigation.goBack()}
@@ -338,7 +343,7 @@ export const MemoryScreen = () => {
                     <AnimatedFlatList
                         ref={listRef}
                         data={journalEntries}
-                        renderItem={renderItem}
+                        renderItem={renderItem as any}
                         keyExtractor={(item: any) => item.id}
                         horizontal
                         pagingEnabled
@@ -371,6 +376,7 @@ export const MemoryScreen = () => {
                         })}
                     />
                 </View>
+
 
                 <View className="flex-row items-center justify-between px-8 pb-12 w-full">
                     <TouchableOpacity 

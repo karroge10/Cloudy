@@ -449,7 +449,7 @@ export const SettingsScreen = () => {
 
                     <View className="w-full mb-6">
                         <TextInput
-                            className="bg-white/60 px-6 py-4 rounded-3xl font-q-bold text-lg text-text border-2 border-inactive/10 w-full"
+                            className="bg-card px-6 py-4 rounded-3xl font-q-bold text-lg text-text border-2 border-inactive/10 w-full"
                             placeholder="Set a secure password"
                             placeholderTextColor="#CBD5E1"
                             onChangeText={setNewPassword}

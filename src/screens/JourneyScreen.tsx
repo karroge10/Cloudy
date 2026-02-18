@@ -27,6 +27,7 @@ import { useAlert } from '../context/AlertContext';
 import { Button } from '../components/Button';
 import { useProfile } from '../context/ProfileContext';
 import { CalendarView } from '../components/CalendarView';
+import { useTheme } from '../context/ThemeContext';
 
 const ITEM_HEIGHT = 190;
 
@@ -45,7 +46,8 @@ const TimelineItem = ({
     onDelete,
     isDeletingProp,
     onDeleteAnimationComplete,
-    onPress
+    onPress,
+    isDarkMode
 }: { 
     item: JournalEntry; 
     index: number;
@@ -55,6 +57,7 @@ const TimelineItem = ({
     isDeletingProp: boolean;
     onDeleteAnimationComplete: (id: string) => void;
     onPress: () => void;
+    isDarkMode: boolean;
 }) => {
     const trashScale = useSharedValue(1);
     const itemOpacity = useSharedValue(1);
@@ -104,7 +107,7 @@ const TimelineItem = ({
                     
                     <View 
                         className="w-16 h-16 rounded-full items-center justify-center shadow-sm bg-card"
-                        style={{ shadowColor: '#00000010', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 2 }}
+                        style={{ shadowColor: isDarkMode ? '#00000040' : '#00000010', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 2 }}
                     >
                         <View className="items-center justify-center">
                             <Text className="text-[10px] font-q-bold text-text">
@@ -125,7 +128,7 @@ const TimelineItem = ({
                         activeOpacity={0.9}
                         onPress={onPress}
                         className="bg-card rounded-[40px] p-6 shadow-[#0000000D] shadow-xl flex-1 justify-between relative overflow-hidden"
-                        style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}
+                        style={{ shadowColor: isDarkMode ? '#000' : '#0000000D', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}
                     >
                         <View className="absolute -top-3 -left-3 opacity-30">
                              <Text className="text-[#FF9E7D] text-8xl font-q-bold opacity-10 leading-none">"</Text>
@@ -155,7 +158,7 @@ const TimelineItem = ({
                                     <Ionicons 
                                         name={item.is_favorite ? "heart" : "heart-outline"} 
                                         size={22} 
-                                        color={item.is_favorite ? "#FF9E7D" : "#333"} 
+                                        color={item.is_favorite ? "#FF9E7D" : isDarkMode ? "#E5E7EB" : "#333"} 
                                         style={{ opacity: item.is_favorite ? 1 : 0.2 }}
                                     />
                             </TouchableOpacity>
@@ -183,7 +186,7 @@ const TimelineItem = ({
                                                     <ActivityIndicator size="small" color="#FF9E7D" />
                                                 </View>
                                             ) : (
-                                                <Ionicons name="trash-outline" size={22} color="#333" style={{ opacity: 0.2 }} />
+                                                <Ionicons name="trash-outline" size={22} color={isDarkMode ? "#E5E7EB" : "#333"} style={{ opacity: 0.2 }} />
                                             )}
                                         </Animated.View>
                                     </TouchableOpacity>
@@ -206,13 +209,15 @@ const MemoizedTimelineItem = React.memo(TimelineItem, (prev, next) => {
         prev.item.is_favorite === next.item.is_favorite &&
         prev.isDeletingProp === next.isDeletingProp &&
         prev.index === next.index &&
-        prev.totalCount === next.totalCount
+        prev.totalCount === next.totalCount &&
+        prev.isDarkMode === next.isDarkMode
     );
 });
 
 export const JourneyScreen = () => {
     const { showAlert } = useAlert();
     const navigation = useNavigation();
+    const { isDarkMode } = useTheme();
     const { profile, isAnonymous, loading: profileLoading } = useProfile();
     const { 
         entries, 
@@ -377,6 +382,7 @@ export const JourneyScreen = () => {
             isDeletingProp={animatingIds.has(item.id)}
             onDeleteAnimationComplete={handleAnimationComplete}
             onPress={() => handleEntryPress(item.id)}
+            isDarkMode={isDarkMode}
         />
     );
 
@@ -497,7 +503,7 @@ export const JourneyScreen = () => {
 
 
         <Layout noScroll={true} isTabScreen={true} useSafePadding={false}>
-            <StatusBar style="dark" backgroundColor={showCalendar ? 'rgba(0,0,0,0.4)' : 'transparent'} translucent />
+            <StatusBar style="auto" backgroundColor={showCalendar ? 'rgba(0,0,0,0.4)' : 'transparent'} translucent />
             <View className="px-6 pt-4">
                 <TopNav title="Your Journey" />
             </View>

@@ -48,6 +48,7 @@ import { LegalScreen } from './src/screens/LegalScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { ProgressScreen } from './src/screens/ProgressScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen'; // Added ProfileScreen import
+import { StatisticsScreen } from './src/screens/StatisticsScreen';
 
 const AppContent = () => {
   useNotifications(true); // Pass flag to ignore hook errors if needed, but we'll use ref now
@@ -145,6 +146,7 @@ const RootNavigator = ({ session, isBioLocked, isColdStartWithSession, isAuthLoa
               <Stack.Screen name="Progress" component={ProgressScreen} />
               {/* Unique name to prevent navigation focus leakage from the Login screen */}
               <Stack.Screen name="SecureAccount" component={AuthScreen} />
+              <Stack.Screen name="Statistics" component={StatisticsScreen} />
             </>
         ) : viewMode === 'loading' ? (
             <Stack.Screen name="InitialLoading" component={() => <View style={{ flex: 1, backgroundColor: isDarkMode ? '#111427' : '#FFF9F0' }} />} />
@@ -185,7 +187,7 @@ const AppNavigator = ({
   const theme = getCloudyTheme(isDarkMode);
 
   return (
-    <View style={{ flex: 1, backgroundColor: isDarkMode ? '#111427' : (session && isBioLocked ? '#111427' : '#FFF9F0') }}>
+    <View className={`flex-1 ${isDarkMode ? 'dark' : ''}`} style={{ backgroundColor: isDarkMode ? '#111427' : (session && isBioLocked ? '#111427' : '#FFF9F0') }}>
       <NavigationContainer 
         theme={theme} 
         ref={navigationRef}

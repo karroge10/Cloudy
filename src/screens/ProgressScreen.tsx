@@ -20,9 +20,8 @@ export const ProgressScreen = () => {
     const { profile, loading: profileLoading } = useProfile();
     const [refreshing, setRefreshing] = useState(false);
 
-    const PROFILE_MAX_STREAK = 110; 
     const maxStreak = profile?.max_streak || streak;
-    const effectiveStreak = Math.max(streak, PROFILE_MAX_STREAK);
+    const effectiveStreak = maxStreak;
 
     // Calculate unlock dates efficiently
     const companionDetails = React.useMemo(() => {
@@ -68,7 +67,7 @@ export const ProgressScreen = () => {
     const daysUntilNextLevel = nextCompanion ? nextCompanion.requiredStreak - streak : null;
 
     return (
-        <Layout noScroll={true} useSafePadding={false}>
+        <Layout noScroll={true} useSafePadding={false} edges={['top', 'left', 'right']}>
             <View className="px-6 pt-4">
                 <TopNav
                     title="Progress"
@@ -86,7 +85,7 @@ export const ProgressScreen = () => {
             >
                 {/* Header Section */}
                 <View className="items-center mt-4 mb-10">
-                    <View className="bg-primary/10 p-6 rounded-[40px] mb-4">
+                    <View className="bg-card p-6 rounded-[40px] mb-4 shadow-sm border border-secondary/20">
                         <MascotImage source={MASCOTS.STAR} className="w-32 h-32" resizeMode="contain" />
                     </View>
                     <Text className="text-3xl font-q-bold text-text mb-2">
@@ -124,7 +123,7 @@ export const ProgressScreen = () => {
                                 key={companion.id}
                                 className={`p-5 rounded-[40px] border-2 ${isUnlocked
                                         ? 'bg-card border-secondary shadow-xl shadow-secondary/10'
-                                        : 'bg-card/60 border-dashed border-inactive'
+                                        : 'bg-card border-dashed border-inactive/30 opacity-80'
                                     }`}
                                 style={isUnlocked ? { shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 8 } : {}}
                             >
@@ -168,8 +167,8 @@ export const ProgressScreen = () => {
 
                                 {/* Reward Section - Beautiful Integrated Pill */}
                                 {companion.id !== 'SUNNY' && (
-                                    <View className={`rounded-[28px] p-5 flex-row items-center ${isUnlocked ? 'bg-secondary' : 'bg-inactive/5'}`}>
-                                        <View className={`w-12 h-12 rounded-2xl items-center justify-center ${isUnlocked ? 'bg-white' : 'bg-inactive/10'}`}>
+                                    <View className={`rounded-[28px] p-5 flex-row items-center ${isUnlocked ? 'bg-secondary' : 'bg-secondary/30'}`}>
+                                        <View className={`w-12 h-12 rounded-2xl items-center justify-center ${isUnlocked ? 'bg-card' : 'bg-card/50'}`}>
                                             <Ionicons 
                                                 name={isUnlocked ? "gift" : "gift-outline"} 
                                                 size={22} 

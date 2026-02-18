@@ -32,8 +32,6 @@ export const ProfileScreen = () => {
     const { streak, rawStreakData, refreshEntries } = useJournal();
     const { profile, loading: profileLoading, updateProfile, isAnonymous, userId, logout } = useProfile();
     const { isDarkMode } = useTheme();
-    // TEMPORARY: Hardcoding 110 for Hero UI testing
-    const PROFILE_MAX_STREAK = 110; 
     const { trackEvent } = useAnalytics();
     let navigation: any;
     try {
@@ -88,7 +86,7 @@ export const ProfileScreen = () => {
         setIsRefreshing(false);
     };
 
-    const currentRank = [...COMPANIONS].reverse().find(c => PROFILE_MAX_STREAK >= c.requiredStreak)?.trait || 'Beginner';
+    const currentRank = [...COMPANIONS].reverse().find(c => (profile?.max_streak || 0) >= c.requiredStreak)?.trait || 'Beginner';
 
     return (
         <Layout noScroll={true} isTabScreen={true} useSafePadding={false}>
@@ -173,7 +171,7 @@ export const ProfileScreen = () => {
                      </TouchableOpacity>
                  </View>
 
-                 <ActivityGraph entries={rawStreakData} maxStreak={Math.max(streak, PROFILE_MAX_STREAK)} />
+                 <ActivityGraph entries={rawStreakData} maxStreak={profile?.max_streak || streak} />
 
                  <Insights userId={userId || undefined} />
 
@@ -478,7 +476,7 @@ export const ProfileScreen = () => {
 
                     <View className="flex-row flex-wrap justify-between w-full mb-4">
                         {COMPANIONS.map((companion) => {
-                            const effectiveStreak = Math.max(streak, PROFILE_MAX_STREAK);
+                            const effectiveStreak = Math.max(streak, profile?.max_streak || 0);
                             const isLocked = effectiveStreak < companion.requiredStreak;
                             return (
                                 <MascotCard 

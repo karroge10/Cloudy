@@ -64,8 +64,8 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
             onRequestClose={onClose}
         >
             <View className="flex-1 justify-center items-center bg-black/40 px-6">
-                <View className="bg-[#FFF9F0] w-full max-w-sm rounded-[32px] p-6 items-center shadow-xl border-4 border-white">
-                    <View className="mb-4 bg-white p-4 rounded-full shadow-sm">
+                <View className="bg-background w-full max-w-sm rounded-[32px] p-6 items-center shadow-xl border-4 border-card/20">
+                    <View className="mb-4 bg-card p-4 rounded-full shadow-sm">
                         <Ionicons name={getIconName()} size={40} color={getIconColor()} />
                     </View>
                     

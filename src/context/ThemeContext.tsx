@@ -22,7 +22,10 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     // Calculate effective max streak (profile sync + current session peak)
     const effectiveMaxStreak = Math.max(profile?.max_streak ?? 0, streak ?? 0);
     
-    const [isDarkMode, setIsDarkMode] = useState(colorScheme === 'dark');
+    // Derive isDarkMode directly from colorScheme source of truth
+    const isDarkMode = colorScheme === 'dark';
+    
+    console.log('[ThemeContext] Render: colorScheme=', colorScheme, 'isDarkMode=', isDarkMode, 'streak=', effectiveMaxStreak);
 
     const dreamyRequirement = COMPANIONS.find(c => c.id === 'DREAMY')?.requiredStreak ?? 30;
     const isThemeUnlocked = effectiveMaxStreak >= dreamyRequirement;
@@ -30,14 +33,26 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     useEffect(() => {
         const loadTheme = async () => {
             const savedTheme = await AsyncStorage.getItem('app_theme_preference');
+            console.log('[ThemeContext] Loading theme:', savedTheme, 'Current:', colorScheme);
+            
             if (savedTheme) {
                 // Only allow dark mode if unlocked OR if it's already dark (to allow turning it off)
                 const shouldBeDark = savedTheme === 'dark' && isThemeUnlocked;
-                setColorScheme(shouldBeDark ? 'dark' : 'light');
-                setIsDarkMode(shouldBeDark);
+                if (shouldBeDark && colorScheme !== 'dark') {
+                    console.log('[ThemeContext] Applying saved DARK theme');
+                    setColorScheme('dark');
+                } else if (!shouldBeDark && colorScheme !== 'light') {
+                    console.log('[ThemeContext] Applying saved LIGHT theme');
+                    setColorScheme('light');
+                } else {
+                    console.log('[ThemeContext] Saved theme matches current (or locked)');
+                }
             } else {
-                setColorScheme('light');
-                setIsDarkMode(false);
+                // Default to light
+                if (colorScheme !== 'light') {
+                    console.log('[ThemeContext] Defaulting to LIGHT');
+                    setColorScheme('light');
+                }
             }
         };
         loadTheme();
@@ -46,22 +61,22 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     // Force light mode only if it's dark AND locked
     useEffect(() => {
         if (!isThemeUnlocked && isDarkMode) {
-            // We don't force it off here automatically if the user is in the middle of something,
-            // but for safety we should. However, the user said they couldn't turn it off.
-            // If we force it off here, it solves the "stuck" problem.
+            console.log('[ThemeContext] Forcing light mode (locked)');
             setColorScheme('light');
-            setIsDarkMode(false);
             AsyncStorage.setItem('app_theme_preference', 'light');
         }
-    }, [isThemeUnlocked]);
+    }, [isThemeUnlocked, isDarkMode]);
 
     const toggleTheme = async () => {
         // Only prevent turning it ON if locked. Always allow turning it OFF.
-        if (!isThemeUnlocked && !isDarkMode) return;
+        if (!isThemeUnlocked && !isDarkMode) {
+             console.log('[ThemeContext] Blocked toggle: Locked');
+             return;
+        }
 
         const newScheme = isDarkMode ? 'light' : 'dark';
+        console.log('[ThemeContext] Toggling theme to:', newScheme);
         setColorScheme(newScheme);
-        setIsDarkMode(newScheme === 'dark');
         await AsyncStorage.setItem('app_theme_preference', newScheme);
     };
 

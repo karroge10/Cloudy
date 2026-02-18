@@ -7,7 +7,7 @@
     "description": "A mindful space for your daily memories and gratitude.",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "backgroundColor": "#FFF9F0",
     "newArchEnabled": true,
     "splash": {
