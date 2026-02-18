@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, InteractionManager } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { Skeleton } from './Skeleton';
@@ -210,7 +210,11 @@ export const Insights = ({ userId }: InsightsProps) => {
         };
 
         // Run fetch logic
-        fetchInsights();
+        const task = InteractionManager.runAfterInteractions(() => {
+            fetchInsights();
+        });
+
+        return () => task.cancel();
     }, [userId, cachedEntries, rawStreakData, cacheKey]);
 
     if (loading) {

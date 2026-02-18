@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, Keyboard, Animated, Pressable, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, Keyboard, Animated, Pressable, ScrollView, RefreshControl, InteractionManager } from 'react-native';
 import { MASCOTS } from '../constants/Assets';
 import { Ionicons } from '@expo/vector-icons';
 import { Layout } from '../components/Layout';
@@ -79,10 +79,6 @@ export const HomeScreen = () => {
                  const latestEntry = sortedData[0];
 
                  if (latestEntry) {
-                     // logic: If the latest entry is different from the one we last showed the sheet for,
-                     // it means we haven't acknowledged THIS streak loss yet.
-                     // Even if I post today, streak becomes 1. last_loss_sheet_shown_for_entry_date stays old.
-                     // If I lose streak again, streak becomes 0. Latest entry is new. Mismatch! -> Show.
                      if (latestEntry.created_at !== lastShownEntryDate) {
                         setShowStreakLostSheet(true);
                         await AsyncStorage.setItem('last_loss_sheet_shown_for_entry_date', latestEntry.created_at);
@@ -91,7 +87,12 @@ export const HomeScreen = () => {
                  }
              }
         };
-        checkStreakLoss();
+
+        const task = InteractionManager.runAfterInteractions(() => {
+            checkStreakLoss();
+        });
+        
+        return () => task.cancel();
     }, [streak, journalLoading, profile?.max_streak, rawStreakData]);
 
     const handleSave = async () => {

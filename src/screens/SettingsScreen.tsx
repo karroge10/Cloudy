@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Switch, ScrollView, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, Switch, ScrollView, TextInput, Modal, ActivityIndicator, InteractionManager } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Layout } from '../components/Layout';
@@ -50,21 +50,10 @@ export const SettingsScreen = () => {
     
     useEffect(() => {
         if (isAnonymous) {
-            // optimized: if anon, they definitely don't have password login (unless they just added it, but isAnonymous should update)
-            // But wait, isAnonymous means "Supabase anon provider". 
-            // If they merged with Google, isAnonymous becomes false? 
-            // Actually, if they are anon, they see "Secure Account". 
-            // The "Add Password" is for Google users.
-            setHasPasswordLogin(false); // If anonymous, show add password (or rather, Secure Account logic might overlap)
-            // BUT: The UI has separate "Secure your account" button for Anon users.
-            // This "Add Password" button is specifically for non-anon users (likely Google) who want to add a password.
-            // So if isAnonymous is true, hasPasswordLogin should effectively be "true" (meaning "hide the Add Password button") 
-            // because Anon users have the "Secure your account" button instead!
             setHasPasswordLogin(true); 
         } else {
              const checkAuthStatus = async () => {
                 const { data: { user } } = await supabase.auth.getUser();
-                // Check if they have an email provider (password login)
                 const providers = user?.app_metadata?.providers || [];
                 const hasEmailProvider = providers.includes('email');
                 setHasPasswordLogin(hasEmailProvider);
@@ -72,7 +61,11 @@ export const SettingsScreen = () => {
                 const supported = await security.isSupported();
                 setBioSupported(supported);
              };
-             checkAuthStatus();
+             
+             const task = InteractionManager.runAfterInteractions(() => {
+                 checkAuthStatus();
+             });
+             return () => task.cancel();
         }
     }, [isAnonymous]);
 
@@ -86,7 +79,13 @@ export const SettingsScreen = () => {
         }
     }, [profile]);
 
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
+
     const handleLogout = async () => {
+        setIsLoggingOut(true);
+        // Short delay to allow UI to render modal
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
         try {
             await AsyncStorage.removeItem('has_seen_first_entry');
             await AsyncStorage.removeItem('user_streak_cache');
@@ -105,6 +104,7 @@ export const SettingsScreen = () => {
             resetUser();
 
         } catch (error: any) {
+            setIsLoggingOut(false);
             const { title, message } = getFriendlyAuthErrorMessage(error);
             showAlert(title, message, [{ text: 'Okay' }], 'error');
         }
@@ -421,6 +421,23 @@ export const SettingsScreen = () => {
                 visible={isFeedbackSheetVisible}
                 onClose={() => setIsFeedbackSheetVisible(false)}
             />
+
+            <Modal visible={isLoggingOut} transparent={true} animationType="fade">
+                <View className="flex-1 justify-center items-center bg-black/40">
+                    <View className="bg-card p-10 rounded-[40px] items-center shadow-2xl mx-10">
+                        <MascotImage 
+                            source={MASCOTS.HELLO} 
+                            className="w-40 h-40 mb-2" 
+                            resizeMode="contain" 
+                        />
+                        <Text className="text-2xl font-q-bold text-text text-center">See you soon!</Text>
+                        <Text className="text-base font-q-medium text-muted mt-2 text-center px-4">Logging out...</Text>
+                        <View className="mt-6">
+                            <ActivityIndicator size="small" color="#FF9E7D" />
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </Layout>
     );
 };

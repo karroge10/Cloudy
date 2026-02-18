@@ -37,7 +37,9 @@ const CustomTabBar = ({ state, descriptors, navigation }: any) => {
           haptics.selection();
 
           if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name, route.params);
+            requestAnimationFrame(() => {
+                navigation.navigate(route.name, route.params);
+            });
           }
         };
 

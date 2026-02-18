@@ -69,38 +69,64 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
 
     const panResponder = useRef(
         PanResponder.create({
-            // Don't claim touch immediately - let children (buttons) receive taps first
-            onStartShouldSetPanResponder: () => false,
+            onStartShouldSetPanResponder: (e) => {
+                const isHandle = e.nativeEvent.locationY < 80;
+                // Only claim immediately on handle to avoid blocking buttons on start
+                return isHandle;
+            },
             onStartShouldSetPanResponderCapture: () => false,
             
-            // Claim touch when movement starts (for dragging)
             onMoveShouldSetPanResponder: (_, gestureState) => {
-                return Math.abs(gestureState.dy) > 5;
+                const absDy = Math.abs(gestureState.dy);
+                const absDx = Math.abs(gestureState.dx);
+                // Be more permissive: if moving down even slightly, check if it's vertical
+                const isVertical = absDy > absDx;
+                const isSignificant = absDy > 10 && isVertical;
+                
+                if (isSignificant) {
+                    return true;
+                }
+                return false;
             },
             
-            // Capture from children when clearly swiping down to dismiss
-            onMoveShouldSetPanResponderCapture: (_, gestureState) => {
-                return gestureState.dy > 10 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
+            onMoveShouldSetPanResponderCapture: (e, gestureState) => {
+                const isHandle = e.nativeEvent.locationY < 80;
+                const isDragDown = gestureState.dy > 5;
+
+                // Handle priority: capture immediately on drag down
+                if (isHandle && isDragDown) {
+                    return true;
+                }
+
+                // Body priority: capture if dragging down significantly (15px) 
+                // and it's clearly a vertical gesture (to not block horizontal scroll if any)
+                if (gestureState.dy > 15 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx) * 1.5) {
+                    return true;
+                }
+                
+                return false;
             },
 
             onPanResponderGrant: () => {
-                // Touch started
+                // Granted logic here if needed
             },
-            onPanResponderMove: (_, gestureState) => {
+            onPanResponderMove: (e, gestureState) => {
                 if (gestureState.dy > 0) {
                     translateY.setValue(gestureState.dy);
                 }
             },
             onPanResponderRelease: (_, gestureState) => {
-                if (gestureState.dy > 120 || gestureState.vy > 0.5) {
+                if (gestureState.dy > 100 || (gestureState.dy > 20 && gestureState.vy > 0.5)) {
                     haptics.selection();
                     closeModal();
                 } else {
                     Animated.spring(translateY, {
                         toValue: 0,
                         useNativeDriver: true,
-                        damping: 20,
-                        stiffness: 150,
+                        damping: 25, // Increased damping for faster settling
+                        stiffness: 250, // Increased stiffness 
+                        restDisplacementThreshold: 0.1,
+                        restSpeedThreshold: 0.1,
                     }).start();
                 }
             },
@@ -108,21 +134,21 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
                 Animated.spring(translateY, {
                     toValue: 0,
                     useNativeDriver: true,
-                    damping: 20,
-                    stiffness: 150,
+                    damping: 25,
+                    stiffness: 250,
                 }).start();
             },
-            onPanResponderTerminationRequest: () => false,
+            onPanResponderTerminationRequest: () => true,
         })
     ).current;
 
     useEffect(() => {
         if (visible) {
-            Animated.spring(translateY, {
+            // Use timing for opening to be 100% sure it finishes fast and doesn't have a long spring-tail delay
+            Animated.timing(translateY, {
                 toValue: 0,
+                duration: 250,
                 useNativeDriver: true,
-                damping: 20,
-                stiffness: 150,
             }).start();
         } else {
             translateY.setValue(SCREEN_HEIGHT);
@@ -164,30 +190,32 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
                     }}
                     className="bg-background rounded-t-[44px] shadow-2xl"
                 >
-                    {/* Entire container is now the swipe area */}
-                    <View pointerEvents="box-none">
-                        {/* Visual Handle Bar */}
-                        <View className="items-center pt-4 pb-2 w-full">
-                            <View className="w-16 h-1.5 bg-text/10 rounded-full" />
-                        </View>
-
-                        {title && (
-                            <View className="px-8 pt-4 pb-2">
-                                <Text className="text-2xl font-q-bold text-text">
-                                    {title}
-                                </Text>
+                    {/* Wrap everything in a touch consumer to prevent fall-through to backdrop */}
+                    <TouchableWithoutFeedback onPress={() => { /* Consumes touch */ }}>
+                        <View>
+                            {/* Visual Handle Bar */}
+                            <View className="items-center pt-5 pb-5 w-full">
+                                <View className="w-16 h-1.5 bg-text/10 rounded-full" />
                             </View>
-                        )}
 
-                        {/* Content area */}
-                        <View className="px-8 pb-12 pt-4" pointerEvents="box-none">
-                            {children}
+                            {title && (
+                                <View className="px-8 pt-4 pb-2">
+                                    <Text className="text-2xl font-q-bold text-text">
+                                        {title}
+                                    </Text>
+                                </View>
+                            )}
+
+                            {/* Content area */}
+                            <View className="px-8 pb-12 pt-4">
+                                {children}
+                            </View>
                         </View>
-                    </View>
+                    </TouchableWithoutFeedback>
 
                     {/* Bottom Filler: covers the gap when the sheet slides up for the keyboard */}
                     <View 
-                        className="absolute top-[98%] left-0 right-0" 
+                        className="absolute top-[100%] left-0 right-0 bg-background" 
                         style={{ height: SCREEN_HEIGHT }}
                     />
                 </Animated.View>

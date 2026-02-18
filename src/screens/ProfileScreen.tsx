@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, RefreshControl, Modal, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useProfile } from '../context/ProfileContext';
@@ -37,6 +37,7 @@ export const ProfileScreen = () => {
         console.error('[ProfileScreen] Navigation context missing!');
     }
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
     
     // Local state for sheets
     const [isNameSheetVisible, setIsNameSheetVisible] = useState(false);
@@ -85,7 +86,12 @@ export const ProfileScreen = () => {
                 <TopNav 
                     title="Profile" 
                     rightElement={
-                        <TouchableOpacity onPress={() => { haptics.selection(); navigation.navigate('Settings'); }}>
+                        <TouchableOpacity onPress={() => { 
+                            haptics.selection(); 
+                            requestAnimationFrame(() => {
+                                navigation.navigate('Settings'); 
+                            });
+                        }}>
                              <Ionicons name="settings-outline" size={24} color="#333333" />
                         </TouchableOpacity>
                     }
@@ -202,12 +208,33 @@ export const ProfileScreen = () => {
                 <TouchableOpacity 
                     onPress={() => {
                         haptics.heavy();
-                        logout();
+                        setIsLoggingOut(true);
+                        // Short timeout to ensure UI renders before the heavy async operation potentially blocks
+                        setTimeout(() => {
+                            logout();
+                        }, 50);
                     }}
                     className="mt-4 items-center py-4 active:scale-95 transition-transform"
                 >
                     <Text className="text-lg font-q-bold text-red-400/60">Log Out</Text>
                 </TouchableOpacity>
+
+                <Modal visible={isLoggingOut} transparent={true} animationType="fade">
+                    <View className="flex-1 justify-center items-center bg-black/40">
+                        <View className="bg-card p-10 rounded-[40px] items-center shadow-2xl mx-10">
+                            <MascotImage 
+                                source={MASCOTS.HELLO} 
+                                className="w-40 h-40 mb-2" 
+                                resizeMode="contain" 
+                            />
+                            <Text className="text-2xl font-q-bold text-text text-center">See you soon!</Text>
+                            <Text className="text-base font-q-medium text-muted mt-2 text-center px-4">Logging out...</Text>
+                            <View className="mt-6">
+                                <ActivityIndicator size="small" color="#FF9E7D" />
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
 
                 <AppFooter />
             </ScrollView>
