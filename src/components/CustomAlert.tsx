@@ -2,6 +2,7 @@ import { Modal, Text, View, TouchableOpacity, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { haptics } from '../utils/haptics';
 import { useEffect } from 'react';
+import { useTheme } from '../context/ThemeContext';
 
 
 const { width } = Dimensions.get('window');
@@ -29,6 +30,7 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
     onClose,
     type = 'info'
 }) => {
+    const { isDarkMode } = useTheme();
     
     useEffect(() => {
         if (visible) {
@@ -63,7 +65,7 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
             animationType="fade"
             onRequestClose={onClose}
         >
-            <View className="flex-1 justify-center items-center bg-black/40 px-6">
+            <View className={`flex-1 justify-center items-center bg-black/40 px-6 ${isDarkMode ? 'dark' : ''}`}>
                 <View className="bg-background w-full max-w-sm rounded-[32px] p-6 items-center shadow-xl border-4 border-card/20">
                     <View className="mb-4 bg-card p-4 rounded-full shadow-sm">
                         <Ionicons name={getIconName()} size={40} color={getIconColor()} />

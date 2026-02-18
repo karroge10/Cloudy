@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { haptics } from '../utils/haptics';
+import { useTheme } from '../context/ThemeContext';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -29,6 +30,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
     title, 
     children 
 }) => {
+    const { isDarkMode } = useTheme();
     const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
     const keyboardOffset = useRef(new Animated.Value(0)).current;
     const insets = useSafeAreaInsets();
@@ -175,7 +177,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
             animationType="none"
             onRequestClose={closeModal}
         >
-            <View className="flex-1 justify-end">
+            <View className={`flex-1 justify-end ${isDarkMode ? 'dark' : ''}`}>
                 <TouchableWithoutFeedback onPress={() => { haptics.selection(); closeModal(); }}>
                     <Animated.View 
                         style={{ opacity: backdropOpacity }} 

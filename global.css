@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 255 249 240; /* #FFF9F0 */
+  --primary: 255 158 125;   /* #FF9E7D */
+  --card: 255 255 255;      /* #FFFFFF */
+  --text: 51 51 51;         /* #333333 */
+  --muted: 127 127 127;     /* #7F7F7F */
+  --inactive: 224 224 224;  /* #E0E0E0 */
+  --secondary: 255 241 219; /* #fff1db */
+  --tip-bg: 255 255 249;    /* #fffff9 */
+}
+
+.dark {
+  --background: 17 20 39;   /* #111427 */
+  --primary: 255 158 125;   /* #FF9E7D */
+  --card: 26 29 53;         /* #1a1d35 */
+  --text: 229 231 235;      /* #E5E7EB */
+  --muted: 203 213 225;     /* #CBD5E1 */
+  --inactive: 45 50 80;     /* #2D3250 */
+  --secondary: 22 26 51;    /* #161a33 */
+  --tip-bg: 26 29 53;       /* #1a1d35 */
+}

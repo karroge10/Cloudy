@@ -23,6 +23,8 @@ import { Layout } from '../components/Layout';
 
 import { COMPANIONS } from '../constants/Companions';
 import { useTheme } from '../context/ThemeContext';
+import { TimePicker } from '../components/TimePicker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const GENDERS = ['Female', 'Male', 'Non-binary', 'Prefer not to say'];
 const GOALS = ['Mental Clarity', 'Memory keeping', 'Self-discipline', 'Creativity', 'Gratitude'];
@@ -53,6 +55,7 @@ export const ProfileScreen = () => {
     const [isCountrySheetVisible, setIsCountrySheetVisible] = useState(false);
     const [isGoalSheetVisible, setIsGoalSheetVisible] = useState(false);
     const [isStruggleSheetVisible, setIsStruggleSheetVisible] = useState(false);
+    const [isLogoutSheetVisible, setIsLogoutSheetVisible] = useState(false);
 
     // Temp states for editing
     const [tempName, setTempName] = useState('');
@@ -63,11 +66,27 @@ export const ProfileScreen = () => {
     const [selectedStruggles, setSelectedStruggles] = useState<string[]>([]);
     const [tempMascotName, setTempMascotName] = useState('');
 
+    // Onboarding flow states
+    const [showOnboarding, setShowOnboarding] = useState(false);
+    const [onboardingStep, setOnboardingStep] = useState(0); // 0: Name, 1: Reminder
+    const [tempReminderTime, setTempReminderTime] = useState(new Date(new Date().setHours(20, 0, 0, 0)));
+    const [isSavingOnboarding, setIsSavingOnboarding] = useState(false);
+
     const displayName = profile?.display_name;
     const currentMascotName = profile?.mascot_name || 'cloudy';
-    const currentMascot = COMPANIONS.find(c => c.name === currentMascotName) || COMPANIONS[0];
+    // Handle 'cloudy' manually since it's no longer in COMPANIONS list
+    const currentMascot = currentMascotName.toLowerCase() === 'cloudy' 
+        ? { asset: MASCOTS.WRITE, name: 'Cloudy' } 
+        : (COMPANIONS.find(c => c.name === currentMascotName) || COMPANIONS[0]);
 
     useEffect(() => {
+        console.log('[ProfileScreen] Profile effect triggered:', { 
+            hasProfile: !!profile, 
+            loading: profileLoading, 
+            displayName: profile?.display_name,
+            onboardingCompleted: profile?.onboarding_completed
+        });
+
         if (profile) {
             setTempName(profile.display_name || '');
             setTempAge(profile.age ? profile.age.toString() : '');
@@ -75,9 +94,20 @@ export const ProfileScreen = () => {
             setTempCountry(profile.country || '');
             setSelectedGoals(profile.goals || []);
             setSelectedStruggles(profile.struggles || []);
-            setTempMascotName(profile.mascot_name || COMPANIONS[0].name);
+            setTempMascotName(profile.mascot_name || 'Cloudy');
+
+            // Auto-trigger onboarding if name is missing
+            // We check !display_name as the primary driver for anonymous users, 
+            // as onboarding_completed might be true from stale records.
+            if (!profile.display_name && isAnonymous) {
+                console.log('[ProfileScreen] Triggering onboarding: Name missing for anon user');
+                setShowOnboarding(true);
+            }
+        } else if (!profileLoading && isAnonymous) {
+            // Fresh anonymous user with no profile yet
+            setShowOnboarding(true);
         }
-    }, [profile]);
+    }, [profile, profileLoading, isAnonymous]);
 
     const onRefresh = async () => {
         setIsRefreshing(true);
@@ -131,7 +161,11 @@ export const ProfileScreen = () => {
                                  <Skeleton width={120} height={24} style={{ marginBottom: 4 }} borderRadius={12} />
                               ) : (
                                  <View className="flex-row items-center flex-wrap">
-                                    <Text className="text-xl font-q-bold text-muted mr-3">Hi, {displayName || 'Friend'}!</Text>
+                                    <Text className="text-xl font-q-bold text-muted mr-1">Hi, {displayName || 'Friend'}!</Text>
+                                    
+                                    {currentRank === 'HERO' && (
+                                        <Ionicons name="checkmark-circle" size={20} color="#FFD700" style={{ marginRight: 8 }} />
+                                    )}
                                     
                                     {currentRank === 'HERO' ? (
                                         <View className={`${isDarkMode ? 'bg-[#FFD700]/20' : 'bg-black'} px-3 py-1 rounded-full border border-[#FFD700] flex-row items-center shadow-sm`}>
@@ -159,7 +193,13 @@ export const ProfileScreen = () => {
                              </View>
                          )}
                      </View>
-                     <TouchableOpacity onPress={() => { haptics.selection(); setIsMascotSheetVisible(true); }} className="active:scale-95 transition-transform">
+                     <TouchableOpacity onPress={() => { haptics.selection(); setIsMascotSheetVisible(true); }} className="active:scale-95 transition-transform items-center justify-center">
+                         {currentRank === 'HERO' && (
+                             <View 
+                                className="absolute w-28 h-28 rounded-full bg-[#FFD700]" 
+                                style={{ opacity: 0.2, transform: [{ scale: 1.2 }] }} 
+                             />
+                         )}
                          <MascotImage 
                              source={currentMascot.asset} 
                              className="w-32 h-32" 
@@ -229,11 +269,7 @@ export const ProfileScreen = () => {
                 <TouchableOpacity 
                     onPress={() => {
                         haptics.heavy();
-                        setIsLoggingOut(true);
-                        // Short timeout to ensure UI renders before the heavy async operation potentially blocks
-                        setTimeout(() => {
-                            logout();
-                        }, 50);
+                        setIsLogoutSheetVisible(true);
                     }}
                     className="mt-4 items-center py-4 active:scale-95 transition-transform"
                 >
@@ -241,7 +277,7 @@ export const ProfileScreen = () => {
                 </TouchableOpacity>
 
                 <Modal visible={isLoggingOut} transparent={true} animationType="fade">
-                    <View className="flex-1 justify-center items-center bg-black/40">
+                    <View className={`flex-1 justify-center items-center bg-black/40 ${isDarkMode ? 'dark' : ''}`}>
                         <View className="bg-card p-10 rounded-[40px] items-center shadow-2xl mx-10">
                             <MascotImage 
                                 source={MASCOTS.HELLO} 
@@ -458,7 +494,7 @@ export const ProfileScreen = () => {
                 </View>
             </BottomSheet>
 
-             <BottomSheet visible={isMascotSheetVisible} onClose={() => setIsMascotSheetVisible(false)}>
+            <BottomSheet visible={isMascotSheetVisible} onClose={() => setIsMascotSheetVisible(false)}>
                 <View className="items-center w-full">
                     <MascotImage source={MASCOTS.HUG} className="w-40 h-40 mb-4" resizeMode="contain" />
                     <Text className="text-2xl font-q-bold text-text text-center mb-1 px-4">Choose your companion</Text>
@@ -475,49 +511,197 @@ export const ProfileScreen = () => {
                     </TouchableOpacity>
 
                     <View className="flex-row flex-wrap justify-between w-full mb-4">
-                        {COMPANIONS.map((companion) => {
+                        {(() => {
                             const effectiveStreak = Math.max(streak, profile?.max_streak || 0);
-                            const isLocked = effectiveStreak < companion.requiredStreak;
+                            const hasAnyUnlocked = COMPANIONS.some(c => effectiveStreak >= c.requiredStreak);
+                            
                             return (
-                                <MascotCard 
-                                    key={companion.id}
-                                    name={companion.name}
-                                    asset={companion.asset}
-                                    isSelected={tempMascotName === companion.name}
-                                    isLocked={isLocked}
-                                    requiredStreak={companion.requiredStreak}
-                                    unlockPerk={companion.unlockPerk}
-                                    onPress={() => {
-                                        if (!isLocked) {
-                                            setTempMascotName(companion.name);
-                                            haptics.selection();
-                                        }
-                                    }}
-                                />
+                                <>
+                                    {COMPANIONS.map((companion) => {
+                                        const isLocked = effectiveStreak < companion.requiredStreak;
+                                        return (
+                                            <MascotCard 
+                                                key={companion.id}
+                                                name={companion.name}
+                                                asset={companion.asset}
+                                                isSelected={tempMascotName === companion.name}
+                                                isLocked={isLocked}
+                                                requiredStreak={companion.requiredStreak}
+                                                unlockPerk={companion.unlockPerk}
+                                                onPress={() => {
+                                                    if (!isLocked) {
+                                                        setTempMascotName(companion.name);
+                                                        haptics.selection();
+                                                    } else {
+                                                        haptics.error();
+                                                    }
+                                                }}
+                                            />
+                                        );
+                                    })}
+                                    
+                                    <View className="w-full mt-4">
+                                        {hasAnyUnlocked && (
+                                            <Button 
+                                                label="Save"
+                                                onPress={() => {
+                                                    const selected = COMPANIONS.find(c => c.name === tempMascotName);
+                                                    if (selected && effectiveStreak < selected.requiredStreak) {
+                                                        haptics.error();
+                                                        return;
+                                                    }
+                                                    updateProfile({ mascot_name: tempMascotName });
+                                                    setIsMascotSheetVisible(false);
+                                                    haptics.success();
+                                                }}
+                                            />
+                                        )}
+                                        <TouchableOpacity 
+                                            onPress={() => { haptics.selection(); setIsMascotSheetVisible(false); }}
+                                            className="mt-4 py-2 items-center active:scale-95 transition-transform"
+                                        >
+                                            <Text className="text-muted font-q-bold text-base">Maybe later</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </>
                             );
-                        })}
-                    </View>
-                    <View className="w-full">
-                        <Button 
-                            label="Save"
-                            onPress={() => {
-                                updateProfile({ mascot_name: tempMascotName });
-                                setIsMascotSheetVisible(false);
-                                haptics.success();
-                            }}
-                        />
-                        <TouchableOpacity 
-                            onPress={() => { haptics.selection(); setIsMascotSheetVisible(false); }}
-                            className="mt-4 py-2 items-center active:scale-95 transition-transform"
-                        >
-                             <Text className="text-muted font-q-bold text-base">Maybe later</Text>
-                        </TouchableOpacity>
+                        })()}
                     </View>
                 </View>
             </BottomSheet>
 
+            {/* Main Onboarding Flow */}
+            <BottomSheet 
+                visible={showOnboarding} 
+                onClose={() => {
+                    setShowOnboarding(false);
+                    updateProfile({ onboarding_completed: true }).catch(console.warn);
+                }}
+            >
+                {onboardingStep === 0 ? (
+                    <View className="items-center w-full">
+                        <MascotImage source={MASCOTS.THINK} className="w-40 h-40 mb-4" resizeMode="contain" />
+                        <Text className="text-xl font-q-bold text-primary text-center mb-1">A fresh start!</Text>
+                        <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">
+                            What should Cloudy call you?
+                        </Text>
+                        
+                        <TextInput
+                            className="w-full bg-card px-6 py-5 rounded-[24px] font-q-bold text-lg text-text border-2 border-secondary mb-8"
+                            placeholder="Your Name"
+                            placeholderTextColor={isDarkMode ? "#64748B" : "#CBD5E1"}
+                            onChangeText={setTempName}
+                            value={tempName}
+                            autoCapitalize="words"
+                            autoFocus={true}
+                        />
 
+                        <Button 
+                            label="Continue"
+                            loading={isSavingOnboarding}
+                            onPress={async () => {
+                                if (!tempName.trim()) return;
+                                setIsSavingOnboarding(true);
+                                try {
+                                    await updateProfile({ display_name: tempName.trim() });
+                                    setOnboardingStep(1);
+                                    haptics.success();
+                                } catch (e) {
+                                    console.warn(e);
+                                } finally {
+                                    setIsSavingOnboarding(false);
+                                }
+                            }}
+                        />
 
+                        <TouchableOpacity 
+                            onPress={() => { 
+                                haptics.selection(); 
+                                setShowOnboarding(false);
+                                updateProfile({ onboarding_completed: true }).catch(console.warn);
+                            }}
+                            className="mt-4 py-2 active:scale-95 transition-transform"
+                        >
+                            <Text className="text-muted font-q-bold text-base">Maybe later</Text>
+                        </TouchableOpacity>
+                    </View>
+                ) : (
+                    <View className="items-center w-full">
+                        <MascotImage source={MASCOTS.WATCH} className="w-40 h-40 mb-4" resizeMode="contain" />
+                        <Text className="text-xl font-q-bold text-primary text-center mb-1 px-4">
+                            {tempName ? `Nice to meet you, ${tempName}!` : "Nice to meet you!"}
+                        </Text>
+                        <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">
+                            When should I remind you to reflect?
+                        </Text>
+
+                        <View className="w-full mb-8">
+                            <TimePicker value={tempReminderTime} onChange={setTempReminderTime} />
+                        </View>
+
+                        <Button 
+                            label="Set Reminder"
+                            loading={isSavingOnboarding}
+                            onPress={async () => {
+                                setIsSavingOnboarding(true);
+                                try {
+                                    const h = tempReminderTime.getHours().toString().padStart(2, '0');
+                                    const m = tempReminderTime.getMinutes().toString().padStart(2, '0');
+                                    await updateProfile({ 
+                                        reminder_time: `${h}:${m}`,
+                                        onboarding_completed: true 
+                                    });
+                                    setShowOnboarding(false);
+                                    haptics.success();
+                                } catch (e) {
+                                    console.warn(e);
+                                } finally {
+                                    setIsSavingOnboarding(false);
+                                }
+                            }}
+                        />
+
+                        <TouchableOpacity 
+                            onPress={() => { 
+                                haptics.selection(); 
+                                setShowOnboarding(false);
+                                updateProfile({ onboarding_completed: true }).catch(console.warn);
+                            }}
+                            className="mt-4 py-2 active:scale-95 transition-transform"
+                        >
+                            <Text className="text-muted font-q-bold text-base">No thanks, I'll remember</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+            </BottomSheet>
+
+            <BottomSheet visible={isLogoutSheetVisible} onClose={() => setIsLogoutSheetVisible(false)}>
+                <View className="items-center w-full">
+                    <MascotImage source={MASCOTS.HELLO} className="w-32 h-32 mb-4" resizeMode="contain" />
+                    <Text className="text-2xl font-q-bold text-text text-center mb-4 px-6">Ready to sign out?</Text>
+                    <Text className="text-lg font-q-medium text-muted text-center mb-8 px-4 leading-6">
+                        We'll save your progress safely until you return.
+                    </Text>
+
+                    <Button
+                        variant="danger"
+                        label="Log Out"
+                        onPress={() => { 
+                            setIsLogoutSheetVisible(false);
+                            setIsLoggingOut(true);
+                            // Short timeout to ensure UI renders before the heavy async operation potentially blocks
+                            setTimeout(() => {
+                                logout();
+                            }, 50);
+                        }}
+                        haptic="heavy"
+                    />
+
+                    <TouchableOpacity onPress={() => { haptics.selection(); setIsLogoutSheetVisible(false); }} className="mt-4 py-2 active:scale-95 transition-transform">
+                        <Text className="text-muted font-q-bold text-base">Wait, I'll stay!</Text>
+                    </TouchableOpacity>
+                </View>
+            </BottomSheet>
         </Layout>
     );
 };

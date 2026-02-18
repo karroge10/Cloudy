@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MASCOTS } from '../constants/Assets';
 import { MascotImage } from './MascotImage';
+import { useTheme } from '../context/ThemeContext';
 
 /**
  * LockScreen: A premium security gate that protects the user's journal.
@@ -30,6 +31,7 @@ export const LockScreen = ({
     isColdStart?: boolean
 }) => {
     const { profile, loading } = useProfile();
+    const { isDarkMode } = useTheme();
     const [isLocked, setIsLocked] = useState(initialLocked);
     const [isAuthenticating, setIsAuthenticating] = useState(false);
     
@@ -154,7 +156,7 @@ export const LockScreen = ({
     return (
         <View style={styles.container}>
             <LinearGradient 
-                colors={['#FFF9F0', '#fff1db']} 
+                colors={isDarkMode ? ['#111427', '#1a1d35'] : ['#FFF9F0', '#fff1db']} 
                 style={styles.overlay}
             >
                 <View style={styles.content}>
@@ -164,8 +166,8 @@ export const LockScreen = ({
                         resizeMode="contain" 
                     />
                     
-                    <Text style={styles.title}>Cloudy is Secure</Text>
-                    <Text style={styles.subtitle}>Unlock to continue your journey</Text>
+                    <Text style={[styles.title, { color: isDarkMode ? '#E5E7EB' : '#2D3436' }]}>Cloudy is Secure</Text>
+                    <Text style={[styles.subtitle, { color: isDarkMode ? '#CBD5E1' : '#636E72' }]}>Unlock to continue your journey</Text>
                     
                     <TouchableOpacity 
                         style={styles.button}

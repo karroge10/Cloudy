@@ -63,8 +63,8 @@ export const ProgressScreen = () => {
     const currentLevel = unlockedCompanions.length;
 
     // Find next companion for "days until" message
-    const nextCompanion = COMPANIONS.find(c => streak < c.requiredStreak);
-    const daysUntilNextLevel = nextCompanion ? nextCompanion.requiredStreak - streak : null;
+    const nextCompanion = COMPANIONS.find(c => effectiveStreak < c.requiredStreak);
+    const daysUntilNextLevel = nextCompanion ? nextCompanion.requiredStreak - effectiveStreak : null;
 
     return (
         <Layout noScroll={true} useSafePadding={false} edges={['top', 'left', 'right']}>
@@ -117,6 +117,8 @@ export const ProgressScreen = () => {
                         const isNext = effectiveStreak < companion.requiredStreak && (index === 0 || effectiveStreak >= COMPANIONS[index - 1].requiredStreak);
                         const progress = Math.min(1, effectiveStreak / companion.requiredStreak);
                         const detail = companionDetails[companion.id];
+                        // Calculate which active day this was (approx)
+                        const dayIndex = Math.max(0, companion.requiredStreak - 1);
 
                         return (
                             <View
@@ -127,7 +129,7 @@ export const ProgressScreen = () => {
                                     }`}
                                 style={isUnlocked ? { shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 8 } : {}}
                             >
-                                <View className="flex-row items-center mb-4">
+                                <View className="flex-row items-center mb-1">
                                     <View className={`p-4 rounded-[28px] mr-5 items-center justify-center ${isUnlocked ? 'bg-secondary' : 'bg-transparent'}`}>
                                         <MascotImage
                                             source={companion.asset}
@@ -166,8 +168,8 @@ export const ProgressScreen = () => {
                                 </View>
 
                                 {/* Reward Section - Beautiful Integrated Pill */}
-                                {companion.id !== 'SUNNY' && (
-                                    <View className={`rounded-[28px] p-5 flex-row items-center ${isUnlocked ? 'bg-secondary' : 'bg-secondary/30'}`}>
+                                {companion.id !== 'SUNNY' && companion.id !== 'CLOUDY' && (
+                                    <View className={`rounded-[28px] p-3 flex-row items-center mb-2 ${isUnlocked ? 'bg-secondary' : 'bg-secondary/30'}`}>
                                         <View className={`w-12 h-12 rounded-2xl items-center justify-center ${isUnlocked ? 'bg-card' : 'bg-card/50'}`}>
                                             <Ionicons 
                                                 name={isUnlocked ? "gift" : "gift-outline"} 
@@ -191,14 +193,14 @@ export const ProgressScreen = () => {
 
                                 {/* Progress Indicator */}
                                 {!isUnlocked && (
-                                    <View className="mt-6 pt-6 border-t border-primary/5">
+                                    <View className="mt-2 pt-2 border-t border-primary/5 px-2 mb-2">
                                         <View className="flex-row justify-between items-center mb-3">
                                             <Text className="font-q-bold text-xs text-muted/60 uppercase tracking-wider">Progress</Text>
-                                            <Text className="font-q-bold text-xs text-primary">{streak}/{companion.requiredStreak} Days</Text>
+                                            <Text className="font-q-bold text-xs text-primary">{effectiveStreak}/{companion.requiredStreak} Days</Text>
                                         </View>
                                         <View className="h-2 bg-primary/10 rounded-full overflow-hidden">
                                             <View
-                                                style={{ width: `${Math.min(1, streak / companion.requiredStreak) * 100}%` }}
+                                                style={{ width: `${Math.min(1, effectiveStreak / companion.requiredStreak) * 100}%` }}
                                                 className="h-full bg-primary"
                                             />
                                         </View>
@@ -209,7 +211,7 @@ export const ProgressScreen = () => {
                                     <View className="mt-6 flex-row items-center justify-center">
                                         <Ionicons name="checkmark-circle" size={14} color="#FF9E7D" />
                                         <Text className="font-q-bold text-[11px] text-primary/60 uppercase tracking-widest ml-2">
-                                            Unlocked on {detail.unlockDate}
+                                            Unlocked on {detail.unlockDate} • Day {dayIndex + 1}
                                         </Text>
                                     </View>
                                 )}

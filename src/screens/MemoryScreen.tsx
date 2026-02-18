@@ -164,19 +164,31 @@ export const MemoryScreen = () => {
     const [isDeleting, setIsDeleting] = useState(false);
     const listRef = useRef<FlatList>(null);
     
-    const journalEntries = useMemo(() => 
-        entries.filter(e => !e.deleted_at), 
-    [entries]);
+    const isMixMode = route.params?.filter === 'mix';
+
+    const journalEntries = useMemo(() => {
+        const filtered = entries.filter(e => !e.deleted_at);
+        if (isMixMode) {
+            // Fisher-Yates shuffle
+            const array = [...filtered];
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+        return filtered;
+    }, [entries, isMixMode]);
 
     const totalCount = rawStreakData.length;
 
     const initialIndex = useMemo(() => {
         const entryId = route.params?.entryId;
-        if (entryId && journalEntries.length > 0) {
+        if (entryId && journalEntries.length > 0 && !isMixMode) {
             return journalEntries.findIndex(e => e.id === entryId);
         }
         return 0;
-    }, [route.params?.entryId, journalEntries]);
+    }, [route.params?.entryId, journalEntries, isMixMode]);
 
     useEffect(() => {
         if (initialIndex !== -1 && journalEntries.length > 0) {
@@ -321,7 +333,7 @@ export const MemoryScreen = () => {
                 <View className="px-6 pt-4">
                     <TopNav 
                         title={displayDate}
-                        subtitle="MEMORY INSPECTOR"
+                        subtitle={isMixMode ? "CHEF'S SPECIAL" : "MEMORY INSPECTOR"}
                         rightElement={
                             <TouchableOpacity 
                                 onPress={() => handleShare(activeEntry)} 
@@ -337,7 +349,7 @@ export const MemoryScreen = () => {
 
                 <View className="flex-1">
                     <Animated.View style={[{ height: 256, justifyContent: 'center', alignItems: 'center' }, mascotAnimatedStyle]}>
-                        <MascotImage source={MASCOTS.INSPECT} className="w-56 h-56" resizeMode="contain" />
+                        <MascotImage source={isMixMode ? MASCOTS.CHEF : MASCOTS.INSPECT} className="w-56 h-56" resizeMode="contain" />
                     </Animated.View>
 
                     <AnimatedFlatList

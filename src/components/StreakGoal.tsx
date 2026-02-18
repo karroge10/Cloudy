@@ -38,7 +38,7 @@ export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, maxStreak = 0, c
     const nextMilestoneValue = nextCompanion ? nextCompanion.requiredStreak : (milestones.find(m => m > effectiveStreak) || milestones[milestones.length - 1]);
 
     // Progress calculation remains based on CURRENT streak because you have to climb back up
-    const targetProgress = isLoading ? 0 : Math.min(streak / nextMilestoneValue, 1);
+    const targetProgress = Math.min(streak / nextMilestoneValue, 1);
     const daysLeft = nextMilestoneValue - streak;
 
     useEffect(() => {

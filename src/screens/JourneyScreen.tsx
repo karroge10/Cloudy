@@ -158,8 +158,8 @@ const TimelineItem = ({
                                     <Ionicons 
                                         name={item.is_favorite ? "heart" : "heart-outline"} 
                                         size={22} 
-                                        color={item.is_favorite ? "#FF9E7D" : isDarkMode ? "#E5E7EB" : "#333"} 
-                                        style={{ opacity: item.is_favorite ? 1 : 0.2 }}
+                                        color={item.is_favorite ? "#FF9E7D" : (isDarkMode ? "#E5E7EB" : "#333333")} 
+                                        style={{ opacity: item.is_favorite ? 1 : 0.4 }}
                                     />
                             </TouchableOpacity>
                             
@@ -186,7 +186,7 @@ const TimelineItem = ({
                                                     <ActivityIndicator size="small" color="#FF9E7D" />
                                                 </View>
                                             ) : (
-                                                <Ionicons name="trash-outline" size={22} color={isDarkMode ? "#E5E7EB" : "#333"} style={{ opacity: 0.2 }} />
+                                                <Ionicons name="trash-outline" size={22} color={isDarkMode ? "#E5E7EB" : "#333333"} style={{ opacity: 0.4 }} />
                                             )}
                                         </Animated.View>
                                     </TouchableOpacity>
@@ -441,7 +441,8 @@ export const JourneyScreen = () => {
                         <Ionicons 
                             name={selectedDate ? "calendar" : "calendar-outline"} 
                             size={20} 
-                            color={selectedDate ? "#FF9E7D" : "#333"} 
+                            color={selectedDate ? "#FF9E7D" : isDarkMode ? "#E5E7EB" : "#333"} 
+
                         />
                         {selectedDate && (
                             <View className="absolute -top-1 -right-1 bg-primary rounded-full w-5 h-5 items-center justify-center border-2 border-background">

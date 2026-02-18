@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, InteractionManager } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, InteractionManager, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
@@ -44,7 +44,6 @@ export const Insights = ({ userId }: InsightsProps) => {
     const [isSheetVisible, setIsSheetVisible] = useState(false);
 
     // Unique key for caching all-time stats
-    // We append the total entries count to the key to invalidate cache when new entries are added
     const cacheKey = useMemo(() => {
         if (!userId) return null;
         return `insights_all_time_${userId}_${rawStreakData.length}`;
@@ -224,7 +223,7 @@ export const Insights = ({ userId }: InsightsProps) => {
 
     const { profile } = useProfile();
     const { isDarkMode } = useTheme();
-    const isUnlocked = (profile?.max_streak || 0) >= 14;
+    const isUnlocked = (profile?.max_streak || 0) >= 7;
 
     if (loading) {
         return (
@@ -244,82 +243,123 @@ export const Insights = ({ userId }: InsightsProps) => {
         );
     }
 
-    if (!isUnlocked) {
-        return (
-            <LockedFeature 
-                featureName="Insights" 
-                requiredStreak={14} 
-                currentStreak={profile?.max_streak || 0}
-                mascotAsset={MASCOTS.DOCTOR}
-                icon="bar-chart-outline"
-            />
-        );
-    }
-
-    if (!data) return null;
+    if (!data && isUnlocked) return null;
 
     return (
-        <>
-        <TouchableOpacity 
-            className="bg-card rounded-[32px] p-6 shadow-xl mb-8 border border-inactive/5"
-            style={{ shadowColor: isDarkMode ? '#000' : '#0000000D', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}
-            onPress={() => { 
-                haptics.selection(); 
-                if (data) {
-                    navigation.navigate('Statistics', { data });
-                }
-            }}
-            activeOpacity={0.9}
-        >
-            <View className="flex-row justify-between items-center mb-6">
-                <Text className="text-lg font-q-bold text-text">Insights</Text>
-                <View className="flex-row items-center">
-                    <Text className="text-sm font-q-medium text-muted mr-1">All Time</Text>
-                    <Ionicons name="chevron-forward" size={14} color={isDarkMode ? "#CBD5E1" : "#94A3B8"} />
+        <View className="mb-8">
+            <TouchableOpacity 
+                className="bg-card rounded-[32px] p-6 shadow-xl border border-inactive/5 overflow-hidden"
+                style={{ 
+                    shadowColor: isDarkMode ? '#000' : '#0000000D', 
+                    shadowOffset: { width: 0, height: 0 }, 
+                    shadowOpacity: 1, 
+                    shadowRadius: 15, 
+                    elevation: 4 
+                }}
+                onPress={() => { 
+                    haptics.selection(); 
+                    if (!isUnlocked) {
+                        navigation.navigate('Progress');
+                        return;
+                    }
+                    if (data) {
+                        navigation.navigate('Statistics', { data });
+                    }
+                }}
+                activeOpacity={0.9}
+            >
+                {/* Header - Stays consistent or changes slightly */}
+                <View className="flex-row justify-between items-center mb-6">
+                    <Text className="text-lg font-q-bold text-text">Insights</Text>
+                    {isUnlocked ? (
+                        <View className="flex-row items-center">
+                            <Text className="text-sm font-q-medium text-muted mr-1">All Time</Text>
+                            <Ionicons name="chevron-forward" size={14} color={isDarkMode ? "#CBD5E1" : "#94A3B8"} />
+                        </View>
+                    ) : (
+                        <View className="bg-inactive/10 px-3 py-1 rounded-full flex-row items-center">
+                            <Ionicons name="lock-closed" size={10} color={isDarkMode ? "#94A3B8" : "#64748B"} />
+                            <Text className="text-[10px] font-q-bold text-muted ml-1 uppercase">Locked</Text>
+                        </View>
+                    )}
                 </View>
-            </View>
 
-            <View className="flex-row justify-between mb-6">
-                <View className="items-center flex-1">
-                    <Text className="text-3xl font-q-bold text-primary mb-1">{data.totalEntries}</Text>
-                    <Text className="text-xs font-q-medium text-muted">Entries</Text>
-                </View>
-                <View className="w-[1px] bg-inactive/20 mx-4" />
-                <View className="items-center flex-1">
-                    <Text className="text-3xl font-q-bold text-primary mb-1">{data.totalWords}</Text>
-                    <Text className="text-xs font-q-medium text-muted">Words</Text>
-                </View>
-                <View className="w-[1px] bg-inactive/20 mx-4" />
-                <View className="items-center flex-1">
-                    <Text className="text-3xl font-q-bold text-primary mb-1">{data.avgWordsPerEntry}</Text>
-                    <Text className="text-xs font-q-medium text-muted">Words / Entry</Text>
-                </View>
-            </View>
-
-            {data.topWords.length > 0 && (
-                <View>
-                    <Text className="text-xs font-q-bold text-muted mb-3 uppercase tracking-wider">Top Themes</Text>
-                    <ScrollView 
-                        horizontal 
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={{ gap: 8 }}
-                        className="flex-row"
-                    >
-                        {data.topWords.map((item) => (
-                            <View 
-                                key={item.word} 
-                                className="bg-primary/10 px-4 py-2 rounded-full"
-                            >
-                                <Text className="text-primary font-q-semibold text-sm">
-                                    {item.word} <Text className="text-xs text-primary/60">×{item.count}</Text>
-                                </Text>
+                {isUnlocked && data ? (
+                    <View>
+                        <View className="flex-row justify-between mb-6">
+                            <View className="items-center flex-1">
+                                <Text className="text-3xl font-q-bold text-primary mb-1">{data.totalEntries}</Text>
+                                <Text className="text-xs font-q-medium text-muted">Entries</Text>
                             </View>
-                        ))}
-                    </ScrollView>
-                </View>
-            )}
-        </TouchableOpacity>
-        </>
+                            <View className="w-[1px] bg-inactive/20 mx-4" />
+                            <View className="items-center flex-1">
+                                <Text className="text-3xl font-q-bold text-primary mb-1">{data.totalWords}</Text>
+                                <Text className="text-xs font-q-medium text-muted">Words</Text>
+                            </View>
+                            <View className="w-[1px] bg-inactive/20 mx-4" />
+                            <View className="items-center flex-1">
+                                <Text className="text-3xl font-q-bold text-primary mb-1">{data.avgWordsPerEntry}</Text>
+                                <Text className="text-xs font-q-medium text-muted">Words / Entry</Text>
+                            </View>
+                        </View>
+
+                        {data.topWords.length > 0 && (
+                            <View>
+                                <Text className="text-xs font-q-bold text-muted mb-3 uppercase tracking-wider">Top Themes</Text>
+                                <ScrollView 
+                                    horizontal 
+                                    showsHorizontalScrollIndicator={false}
+                                    contentContainerStyle={{ gap: 8 }}
+                                    className="flex-row"
+                                >
+                                    {data.topWords.map((item) => (
+                                        <View 
+                                            key={item.word} 
+                                            className="bg-primary/10 px-4 py-2 rounded-full"
+                                        >
+                                            <Text className="text-primary font-q-semibold text-sm">
+                                                {item.word} <Text className="text-xs text-primary/60">×{item.count}</Text>
+                                            </Text>
+                                        </View>
+                                    ))}
+                                </ScrollView>
+                            </View>
+                        )}
+                    </View>
+                ) : (
+                    <View className="items-center py-2 pb-6">
+                        <View className="bg-inactive/5 p-4 rounded-3xl mb-4">
+                            <Ionicons name="stats-chart" size={32} color={isDarkMode ? "#334155" : "#E2E8F0"} />
+                            <View className="absolute -right-1 -top-1 bg-card rounded-full p-1 border border-inactive/10">
+                                <Ionicons name="lock-closed" size={12} color={isDarkMode ? "#94A3B8" : "#64748B"} />
+                            </View>
+                        </View>
+                        
+                        <Text className="text-base font-q-bold text-text mb-2 text-center px-6">
+                            Reach 7 day streak to unlock.
+                        </Text>
+                        
+                        <View className="w-full max-w-[220px] mb-6">
+                            <View className="flex-row justify-between mb-2 px-1">
+                                <Text className="text-[10px] font-q-bold text-muted uppercase tracking-tight">Progress</Text>
+                                <Text className="text-[10px] font-q-bold text-primary font-q-bold">{Math.min(profile?.max_streak || 0, 7)} / 7 days</Text>
+                            </View>
+                            <View className="w-full h-2 bg-inactive/10 rounded-full overflow-hidden">
+                                <View 
+                                    className="h-full bg-primary rounded-full" 
+                                    style={{ width: `${Math.min(((profile?.max_streak || 0) / 7) * 100, 100)}%` }} 
+                                />
+                            </View>
+                        </View>
+
+                        <View className="flex-row items-center">
+                            <Text className="text-[11px] font-q-bold text-primary uppercase tracking-[0.15em]">Track Progress</Text>
+                            <Ionicons name="chevron-forward" size={12} color="#FF9E7D" style={{ marginLeft: 4 }} />
+                        </View>
+                    </View>
+                )}
+            </TouchableOpacity>
+        </View>
     );
 };
 

@@ -21,6 +21,7 @@ import { Button } from '../components/Button';
 import { COMPANIONS } from '../constants/Companions';
 import { ReviewNudge } from '../components/ReviewNudge';
 import { StreakLostSheet } from '../components/StreakLostSheet';
+import { MilestoneSheet } from '../components/MilestoneSheet';
 
 export const HomeScreen = () => {
     const { showAlert } = useAlert();
@@ -40,6 +41,10 @@ export const HomeScreen = () => {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [tempDisplayName, setTempDisplayName] = useState('');
     const [tempReminderTime, setTempReminderTime] = useState(new Date(new Date().setHours(20, 0, 0, 0))); // Default 8 PM
+    const [milestoneMascot, setMilestoneMascot] = useState<typeof COMPANIONS[number] | null>(null);
+    const [pendingNudgeStreak, setPendingNudgeStreak] = useState<number | null>(null);
+    const [showMotivationSheet, setShowMotivationSheet] = useState(false);
+    const [motivationContent, setMotivationContent] = useState({ title: '', body: '' });
     
     // Animation for mascot
     const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -68,6 +73,7 @@ export const HomeScreen = () => {
                 useNativeDriver: true,
             })
         ]).start();
+        navigation.navigate('Profile');
     };
 
     // Check for streak loss on mount/updates
@@ -99,6 +105,43 @@ export const HomeScreen = () => {
         return () => task.cancel();
     }, [streak, journalLoading, profile?.max_streak, rawStreakData]);
 
+    const checkSecondaryNudges = async (likelyStreak: number) => {
+        // Priority 1: Day 2 Streak Motivation
+        if (likelyStreak === 2) {
+            const goalsStr = profile?.goals?.length ? profile.goals.slice(0, 2).join(' & ') : 'your goals';
+            const strugglesStr = profile?.struggles?.length ? profile.struggles[0] : 'stress';
+            
+            setMotivationContent({
+                title: "Keep the momentum!",
+                body: `You're doing amazing! Sticking with this for even just 2 minutes a day helps ${strugglesStr} fade away and brings you closer to ${goalsStr}. Stick with it to unlock more friends and rewards!`
+            });
+            setShowMotivationSheet(true);
+            trackEvent('motivation_sheet_shown');
+        } 
+        // Priority 2: Account Linking (Conversion) triggered on 3rd entry for anonymous users
+        else if (isAnonymous && likelyStreak === 3) {  
+            trackEvent('conversion_nudge_shown', { streak: likelyStreak });
+            setShowStreakNudge(true);
+        } 
+        // Priority 3: App Review triggered on 3rd entry for non-anon users
+        else if (likelyStreak === 3) {
+            const hasShownReview = await AsyncStorage.getItem('has_shown_review_nudge');
+            if (!hasShownReview) {
+                trackEvent('review_nudge_shown');
+                setShowReviewNudge(true);
+                await AsyncStorage.setItem('has_shown_review_nudge', 'true');
+            } else {
+                setText('');
+            }
+        } else {
+            // First entry or subsequent entries with no nudge
+            if (likelyStreak === 1) {
+                await AsyncStorage.setItem('has_seen_first_entry', 'true');
+            }
+            setText('');
+        }
+    };
+
     const handleSave = async () => {
         if (!text.trim()) {
             showAlert('Empty Entry', 'Please write something to save.', [{ text: 'Okay' }], 'info');
@@ -110,38 +153,21 @@ export const HomeScreen = () => {
             haptics.heavy();
             await addEntry(text.trim());
             haptics.success();
-
-
-            
             Keyboard.dismiss();
             
-            // Use isAnonymous from profile context instead of fetching from Supabase
-            const isAnon = isAnonymous;
-
             const likelyStreak = streak + 1; 
-            const hasSeenFirstEntry = await AsyncStorage.getItem('has_seen_first_entry');
 
-            if (!hasSeenFirstEntry && !profile?.display_name) {
-                // First time entry and no name set yet
-                trackEvent('setup_sheet_shown');
-                setShowSetupSheet(true);
-            } else if (isAnon && likelyStreak === 3) {  
-                // Suggest linking account on 3rd entry
-                trackEvent('conversion_nudge_shown', { streak: likelyStreak });
-                setShowStreakNudge(true);
-            } else if (likelyStreak === 3) {
-                // Moment of Delight: Show Review Nudge on 3rd day for non-anon users
-                // Or if they just linked their account it might trigger here later
-                const hasShownReview = await AsyncStorage.getItem('has_shown_review_nudge');
-                if (!hasShownReview) {
-                    trackEvent('review_nudge_shown');
-                    setShowReviewNudge(true);
-                    await AsyncStorage.setItem('has_shown_review_nudge', 'true');
-                } else {
-                    setText('');
-                }
+            // 1. Check for Milestone Unlock (Highest Priority)
+            const unlockedMascot = COMPANIONS.find(c => c.requiredStreak === likelyStreak);
+            const currentMax = profile?.max_streak || 0;
+
+            if (unlockedMascot && likelyStreak > currentMax) {
+                setPendingNudgeStreak(likelyStreak);
+                setMilestoneMascot(unlockedMascot);
+                trackEvent('mascot_unlocked', { mascot: unlockedMascot.name });
             } else {
-                 setText('');
+                // 2. Check for Secondary Nudges (Setup, Day 3 prompts, etc.)
+                checkSecondaryNudges(likelyStreak);
             }
         } catch (error: any) {
             showAlert('Error', error.message || 'Could not save your entry.', [{ text: 'Okay' }], 'error');
@@ -381,7 +407,9 @@ export const HomeScreen = () => {
                 ) : (
                     <View className="items-center w-full">
                         <MascotImage source={MASCOTS.WATCH} className="w-40 h-40 mb-4" resizeMode="contain" />
-                        <Text className="text-xl font-q-bold text-primary text-center mb-1 px-4">Nice to meet you, {tempDisplayName}!</Text>
+                        <Text className="text-xl font-q-bold text-primary text-center mb-1 px-4">
+                            {tempDisplayName ? `Nice to meet you, ${tempDisplayName}!` : "Nice to meet you!"}
+                        </Text>
                         <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">
                             When should I remind you to reflect?
                         </Text>
@@ -455,6 +483,52 @@ export const HomeScreen = () => {
             <StreakLostSheet 
                 visible={showStreakLostSheet}
                 onClose={() => setShowStreakLostSheet(false)}
+            />
+            <BottomSheet 
+                visible={showMotivationSheet} 
+                onClose={() => {
+                    setShowMotivationSheet(false);
+                    setText('');
+                }}
+            >
+                <View className="items-center w-full">
+                    <MascotImage source={MASCOTS.HUG} className="w-40 h-40 mb-4" resizeMode="contain" />
+                    <Text className="text-xl font-q-bold text-primary text-center mb-1">{motivationContent.title}</Text>
+                    <Text className="text-2xl font-q-bold text-text text-center mb-8 px-6">
+                        {motivationContent.body}
+                    </Text>
+
+                    <Button 
+                        label="Keep it up!"
+                        onPress={() => {
+                            haptics.medium();
+                            setShowMotivationSheet(false);
+                            setText('');
+                        }}
+                    />
+                </View>
+            </BottomSheet>
+
+            <MilestoneSheet 
+                visible={!!milestoneMascot}
+                mascotName={milestoneMascot?.name || ''}
+                description={milestoneMascot?.description || ''}
+                perk={milestoneMascot?.unlockPerk || ''}
+                perkDescription={milestoneMascot?.unlockPerkDescription || ''}
+                mascotAsset={milestoneMascot?.asset}
+                onClose={() => {
+                    const streakToNudge = pendingNudgeStreak;
+                    setMilestoneMascot(null);
+                    setPendingNudgeStreak(null);
+                    if (streakToNudge) {
+                        checkSecondaryNudges(streakToNudge);
+                    }
+                }}
+                onViewProgress={() => {
+                    setMilestoneMascot(null);
+                    setPendingNudgeStreak(null);
+                    navigation.navigate('Progress');
+                }}
             />
         </Layout>
     );

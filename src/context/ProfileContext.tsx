@@ -72,7 +72,7 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
             return;
         }
 
-        setLoading(true);
+        if (!profile) setLoading(true);
         const fetchStartTime = Date.now();
 
         try {
@@ -270,7 +270,7 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
                     display_name: updates.display_name || null,
                     haptics_enabled: updates.haptics_enabled ?? true,
                     security_lock_enabled: updates.security_lock_enabled ?? false,
-                    onboarding_completed: updates.onboarding_completed ?? true, // Default true for existing auth users
+                    onboarding_completed: updates.onboarding_completed ?? (currentUser.is_anonymous ? false : true),
                     reminder_time: updates.reminder_time || null,
                     age: updates.age || null,
                     gender: updates.gender || null,

@@ -335,10 +335,10 @@ export default function App() {
   return (
     <PostHogProvider client={posthog} autocapture={false}>
       <SafeAreaProvider>
-        <AlertProvider>
-          <ProfileProvider session={session}>
-            <JournalProvider session={session}>
-              <ThemeProvider>
+        <ProfileProvider session={session}>
+          <ThemeProvider>
+            <AlertProvider>
+              <JournalProvider session={session}>
                 <AppNavigator 
                   session={session} 
                   isAuthLoading={isAuthLoading} 
@@ -349,10 +349,10 @@ export default function App() {
                   setShowAnimatedSplash={setShowAnimatedSplash}
                   showPrivacyOverlay={showPrivacyOverlay}
                 />
-              </ThemeProvider>
-            </JournalProvider>
-          </ProfileProvider>
-        </AlertProvider>
+              </JournalProvider>
+            </AlertProvider>
+          </ThemeProvider>
+        </ProfileProvider>
       </SafeAreaProvider>
     </PostHogProvider>
   );

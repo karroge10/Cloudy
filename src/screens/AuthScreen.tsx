@@ -13,6 +13,7 @@ import { haptics } from '../utils/haptics';
 import { useAlert } from '../context/AlertContext';
 import { Button } from '../components/Button';
 import { getFriendlyAuthErrorMessage } from '../utils/authErrors';
+import { useTheme } from '../context/ThemeContext';
 
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { identifyUser } from '../lib/posthog';
@@ -28,6 +29,7 @@ GoogleSignin.configure({
 export const AuthScreen = () => {
     const { showAlert } = useAlert();
     const { trackEvent } = useAnalytics();
+    const { isDarkMode } = useTheme();
     const [email, setEmail] = useState('');
 
     const [password, setPassword] = useState('');
@@ -294,25 +296,30 @@ export const AuthScreen = () => {
                     </View>
 
                     {/* Google Sign In Divider */}
-                    <View className="flex-row items-center mb-4 px-4 opacity-30">
-                        <View className="flex-1 h-[1px] bg-gray-400" />
-                        <Text className="mx-4 text-gray-500 font-q-bold text-sm">OR</Text>
-                        <View className="flex-1 h-[1px] bg-gray-400" />
+                    <View className="flex-row items-center mb-6 px-4">
+                        <View style={{ flex: 1, height: 1, backgroundColor: isDarkMode ? '#475569' : '#E5E7EB' }} />
+                        <Text className="mx-4 font-q-bold text-sm" style={{ color: isDarkMode ? '#94A3B8' : '#64748B' }}>OR</Text>
+                        <View style={{ flex: 1, height: 1, backgroundColor: isDarkMode ? '#475569' : '#E5E7EB' }} />
                     </View>
 
                     <TouchableOpacity
-                        className="bg-card py-4 rounded-full border-2 border-inactive/10 shadow-sm min-h-[58px] justify-center"
+                        className="bg-card py-4 rounded-full border-2 min-h-[58px] justify-center"
+                        style={{ 
+                            borderColor: isDarkMode ? '#475569' : '#E5E7EB',
+                            elevation: 0,
+                            shadowOpacity: 0
+                        }}
                         onPress={signInWithGoogle}
                         disabled={loading}
                     >
                         <View className="flex-row items-center justify-center">
                             <View className={`flex-row items-center justify-center ${loading ? "opacity-0" : "opacity-100"}`}>
-                                <Ionicons name="logo-google" size={20} color="#64748B" />
-                                <Text className="text-[#64748B] font-q-bold text-lg ml-2">Continue with Google</Text>
+                                <Ionicons name="logo-google" size={20} color={isDarkMode ? "#E5E7EB" : "#64748B"} />
+                                <Text className={`font-q-bold text-lg ml-2 ${isDarkMode ? 'text-text' : 'text-[#64748B]'}`}>Continue with Google</Text>
                             </View>
                             {loading && (
                                 <View className="absolute inset-0 items-center justify-center">
-                                    <ActivityIndicator color="#64748B" size="small" />
+                                    <ActivityIndicator color={isDarkMode ? "#E5E7EB" : "#64748B"} size="small" />
                                 </View>
                             )}
                         </View>

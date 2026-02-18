@@ -32,6 +32,7 @@ export const SettingsScreen = () => {
 
     const [isFeedbackSheetVisible, setIsFeedbackSheetVisible] = useState(false);
     const [isDeleteSheetVisible, setIsDeleteSheetVisible] = useState(false);
+    const [isLogoutSheetVisible, setIsLogoutSheetVisible] = useState(false);
     const [isTimeSheetVisible, setIsTimeSheetVisible] = useState(false);
     const [reminderDate, setReminderDate] = useState(new Date());
     const [isPasswordSheetVisible, setIsPasswordSheetVisible] = useState(false);
@@ -378,7 +379,7 @@ export const SettingsScreen = () => {
                 </View>
 
                 {/* Log Out */}
-                <TouchableOpacity onPress={() => { haptics.heavy(); handleLogout(); }} className="mt-4 items-center py-4 active:scale-95 transition-transform">
+                <TouchableOpacity onPress={() => { haptics.heavy(); setIsLogoutSheetVisible(true); }} className="mt-4 items-center py-4 active:scale-95 transition-transform">
                     <Text className="text-lg font-q-bold text-red-400/60">Log Out</Text>
                 </TouchableOpacity>
 
@@ -453,14 +454,79 @@ export const SettingsScreen = () => {
                     </Text>
 
                     <Button
-                        label="Yes, Delete Everything"
-                        onPress={() => { haptics.heavy(); handleDeleteAccount(); }}
-                        haptic="heavy"
+                        label="Wait, I'll stay!"
+                        onPress={() => { 
+                            haptics.selection(); 
+                            setIsDeleteSheetVisible(false); 
+                        }}
+                        haptic="selection"
                     />
 
-                    <TouchableOpacity onPress={() => { haptics.selection(); setIsDeleteSheetVisible(false); }} className="mt-4 py-2 active:scale-95 transition-transform">
-                        <Text className="text-muted font-q-bold text-base">Wait, I'll stay!</Text>
+                    <TouchableOpacity 
+                        onPress={() => { 
+                            haptics.heavy(); 
+                            handleDeleteAccount(); 
+                        }} 
+                        className="mt-4 py-2 active:scale-95 transition-transform"
+                    >
+                        <Text className="text-red-400 font-q-bold text-base">Yes, Delete Everything</Text>
                     </TouchableOpacity>
+                </View>
+            </BottomSheet>
+
+            <BottomSheet visible={isLogoutSheetVisible} onClose={() => setIsLogoutSheetVisible(false)}>
+                <View className="items-center w-full">
+                    {isAnonymous ? (
+                        <>
+                            <MascotImage source={MASCOTS.SAD} className="w-32 h-32 mb-4" resizeMode="contain" />
+                            <Text className="text-2xl font-q-bold text-text text-center mb-4 px-6">Wait! You'll lose everything!</Text>
+                            <Text className="text-lg font-q-medium text-muted text-center mb-8 px-4 leading-6">
+                                Your progress will not be saved and you'll lose access unless you create an account first.
+                            </Text>
+
+                            <Button
+                                label="Secure My Account"
+                                onPress={() => {
+                                    setIsLogoutSheetVisible(false);
+                                    navigation.navigate('SecureAccount', { initialMode: 'signup' });
+                                }}
+                                haptic="selection"
+                            />
+                            
+                            <TouchableOpacity 
+                                onPress={() => { 
+                                    haptics.heavy(); 
+                                    setIsLogoutSheetVisible(false);
+                                    handleLogout(); 
+                                }} 
+                                className="mt-4 py-2 active:scale-95 transition-transform"
+                            >
+                                <Text className="text-red-400 font-q-bold text-base">Log Out & Lose Data</Text>
+                            </TouchableOpacity>
+                        </>
+                    ) : (
+                        <>
+                            <MascotImage source={MASCOTS.HELLO} className="w-32 h-32 mb-4" resizeMode="contain" />
+                            <Text className="text-2xl font-q-bold text-text text-center mb-4 px-6">Ready to sign out?</Text>
+                            <Text className="text-lg font-q-medium text-muted text-center mb-8 px-4 leading-6">
+                                We'll save your progress safely until you return.
+                            </Text>
+
+                            <Button
+                                variant="danger"
+                                label="Log Out"
+                                onPress={() => { 
+                                    setIsLogoutSheetVisible(false);
+                                    handleLogout(); 
+                                }}
+                                haptic="heavy"
+                            />
+
+                            <TouchableOpacity onPress={() => { haptics.selection(); setIsLogoutSheetVisible(false); }} className="mt-4 py-2 active:scale-95 transition-transform">
+                                <Text className="text-muted font-q-bold text-base">Wait, I'll stay!</Text>
+                            </TouchableOpacity>
+                        </>
+                    )}
                 </View>
             </BottomSheet>
 
@@ -470,7 +536,7 @@ export const SettingsScreen = () => {
             />
 
             <Modal visible={isLoggingOut} transparent={true} animationType="fade">
-                <View className="flex-1 justify-center items-center bg-black/40">
+                <View className={`flex-1 justify-center items-center bg-black/40 ${isDarkMode ? 'dark' : ''}`}>
                     <View className="bg-card p-10 rounded-[40px] items-center shadow-2xl mx-10">
                         <MascotImage 
                             source={MASCOTS.HELLO} 
