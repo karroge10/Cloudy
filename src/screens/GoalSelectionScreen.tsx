@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, ScrollView, useWindowDimensions } from 'react-native';
 import { Button } from '../components/Button';
 import { SelectionPill } from '../components/SelectionPill';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -13,8 +13,11 @@ import { useAnalytics } from '../hooks/useAnalytics';
 
 export const GoalSelectionScreen = () => {
     const navigation = useNavigation();
+    const { height } = useWindowDimensions();
     const route = useRoute();
     const { trackEvent } = useAnalytics();
+
+    const mascotSize = height < 750 ? 'w-48 h-48' : height < 850 ? 'w-64 h-64' : 'w-72 h-72';
 
     const { struggles } = route.params as { struggles: string[] } || { struggles: [] };
 
@@ -31,12 +34,16 @@ export const GoalSelectionScreen = () => {
     const canContinue = selected.length > 0;
 
     return (
-        <Layout useSafePadding={false}>
+        <Layout useSafePadding={false} noScroll={true}>
             <View className="px-6 pt-4">
                 <TopNav showBack={true} />
             </View>
 
-            <View className="flex-1 px-6 justify-between pb-10">
+            <ScrollView 
+                contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
+                showsVerticalScrollIndicator={false}
+            >
+            <View className="flex-1 px-6 justify-between">
                 <View>
                     {/* Main Content Area */}
                     <View className="items-center mb-6">
@@ -45,13 +52,13 @@ export const GoalSelectionScreen = () => {
                         </Text>
                         <MascotImage
                             source={MASCOTS.ZEN}
-                            className="w-56 h-56"
+                            className={mascotSize}
                             resizeMode="contain"
                         />
                     </View>
                 </View>
 
-                <View className="flex-1 justify-center">
+                <View className="flex-1 justify-center mb-8">
                      <View className="w-full flex-row flex-wrap justify-center gap-3">
                         {GOALS.map((goal) => (
                             <SelectionPill
@@ -84,6 +91,7 @@ export const GoalSelectionScreen = () => {
 
                 </View>
             </View>
+            </ScrollView>
         </Layout>
     );
 };

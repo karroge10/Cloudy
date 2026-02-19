@@ -33,7 +33,7 @@ export const StruggleSelectionScreen = () => {
     const canContinue = selected.length > 0;
 
     return (
-        <Layout useSafePadding={false}>
+        <Layout useSafePadding={false} noScroll={true}>
             <View className="px-6 pt-4">
                 <TopNav showBack={true} />
             </View>

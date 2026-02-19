@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView, useWindowDimensions } from 'react-native';
 import { Button } from '../components/Button';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { MASCOTS } from '../constants/Assets';
@@ -20,9 +20,12 @@ import { useProfile } from '../context/ProfileContext';
 export const SummaryScreen = () => {
     const { showAlert } = useAlert();
     const navigation = useNavigation();
+    const { height } = useWindowDimensions();
     const route = useRoute();
     const { trackEvent } = useAnalytics();
     const { updateProfile } = useProfile();
+
+    const mascotSize = height < 750 ? 'w-48 h-48' : height < 850 ? 'w-64 h-64' : 'w-72 h-72';
 
     const [loading, setLoading] = useState(false);
     const { struggles, goals } = route.params as { struggles: string[], goals: string[] } || { struggles: [], goals: [] };
@@ -75,12 +78,16 @@ export const SummaryScreen = () => {
     };
 
     return (
-        <Layout useSafePadding={false}>
+        <Layout useSafePadding={false} noScroll={true}>
             <View className="px-6 pt-4">
                  <TopNav showBack={true} />
             </View>
 
-            <View className="flex-1 px-6 justify-between pb-10">
+            <ScrollView 
+                contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
+                showsVerticalScrollIndicator={false}
+            >
+            <View className="flex-1 px-6 justify-between">
                 <View>
                     {/* Main Content Area */}
                     <View className="items-center mb-6">
@@ -90,7 +97,7 @@ export const SummaryScreen = () => {
 
                         <MascotImage
                             source={MASCOTS.SHINE}
-                            className="w-56 h-56 mb-6"
+                            className={`${mascotSize} mb-6`}
                             resizeMode="contain"
                         />
 
@@ -115,6 +122,7 @@ export const SummaryScreen = () => {
                     />
                 </View>
             </View>
+            </ScrollView>
         </Layout>
     );
 };
