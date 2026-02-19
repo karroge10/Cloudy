@@ -24,10 +24,10 @@ class SecurityService {
      * Attempts to authenticate the user.
      * @returns {Promise<boolean>} True if successful, false otherwise.
      */
-    async authenticate(): Promise<boolean> {
+    async authenticate(promptMessage?: string): Promise<boolean> {
         try {
             const results = await LocalAuthentication.authenticateAsync({
-                promptMessage: Platform.OS === 'ios' ? 'Unlock your Cloud' : 'Authenticate to open Cloudy',
+                promptMessage: promptMessage || (Platform.OS === 'ios' ? 'Unlock your Cloud' : 'Authenticate to open Cloudy'),
                 fallbackLabel: 'Enter Passcode',
                 disableDeviceFallback: false,
                 cancelLabel: 'Cancel',

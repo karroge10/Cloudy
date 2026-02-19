@@ -1,13 +1,34 @@
-import React from 'react';
-import { View, Image } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Image, InteractionManager } from 'react-native';
 import { MASCOTS } from '../constants/Assets';
 
 /**
- * This component renders all mascot images at 0 size and opacity.
- * This forces the OS/Native side to decode the image bitmaps into memory
- * before they are ever shown to the user. 
+ * This component renders mascot images at 0 size and opacity.
+ * This forces the OS/Native side to decode the image bitmaps into memory.
+ * 
+ * FIX: We now stagger this process to avoid locking the UI thread 
+ * during the critical first paint.
  */
 export const AssetWarmup = () => {
+    const [warmupPhase, setWarmupPhase] = useState<'critical' | 'remaining' | 'none'>('none');
+
+    useEffect(() => {
+        // Start critical warmup immediately
+        setWarmupPhase('critical');
+
+        // Delay remaining assets until the UI is idle
+        const task = InteractionManager.runAfterInteractions(() => {
+            setWarmupPhase('remaining');
+        });
+
+        return () => task.cancel();
+    }, []);
+
+    const criticalMascots = [MASCOTS.WRITE, MASCOTS.LOCK];
+    const remainingMascots = Object.values(MASCOTS).filter(m => !criticalMascots.includes(m));
+
+    if (warmupPhase === 'none') return null;
+
     return (
         <View 
             style={{ 
@@ -19,9 +40,19 @@ export const AssetWarmup = () => {
             }} 
             pointerEvents="none"
         >
-            {Object.values(MASCOTS).map((asset, index) => (
+            {/* Phase 1: Critical (Immediate) */}
+            {criticalMascots.map((asset, index) => (
                 <Image 
-                    key={index} 
+                    key={`critical-${index}`} 
+                    source={asset} 
+                    fadeDuration={0}
+                />
+            ))}
+
+            {/* Phase 2: Remaining (Staggered/Delayed) */}
+            {warmupPhase === 'remaining' && remainingMascots.map((asset, index) => (
+                <Image 
+                    key={`remaining-${index}`} 
                     source={asset} 
                     fadeDuration={0}
                 />
@@ -29,3 +60,4 @@ export const AssetWarmup = () => {
         </View>
     );
 };
+

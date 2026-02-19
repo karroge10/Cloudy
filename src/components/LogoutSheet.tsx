@@ -61,17 +61,23 @@ export const LogoutSheet = ({ visible, onClose, isAnonymous }: LogoutSheetProps)
                             </Text>
 
                             <Button
-                                variant="danger"
-                                label="Log Out"
+                                label="Wait, I'll stay!"
                                 onPress={() => { 
+                                    haptics.selection();
                                     onClose();
-                                    handleLogout(); 
                                 }}
-                                haptic="heavy"
+                                haptic="selection"
                             />
 
-                            <TouchableOpacity onPress={() => { haptics.selection(); onClose(); }} className="mt-4 py-2 active:scale-95 transition-transform">
-                                <Text className="text-muted font-q-bold text-base">Wait, I'll stay!</Text>
+                            <TouchableOpacity 
+                                onPress={() => { 
+                                    haptics.heavy(); 
+                                    onClose();
+                                    handleLogout(); 
+                                }} 
+                                className="mt-4 py-2 active:scale-95 transition-transform"
+                            >
+                                <Text className="text-red-400 font-q-bold text-base">Log Out</Text>
                             </TouchableOpacity>
                         </>
                     )}

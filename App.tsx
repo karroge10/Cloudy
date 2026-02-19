@@ -41,7 +41,7 @@ import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { AlertProvider } from './src/context/AlertContext';
 import { useNotifications } from './src/hooks/useNotifications';
 import { LockScreen } from './src/components/LockScreen';
-import { preloadAssets } from './src/utils/assetLoader';
+import { preloadCriticalAssets, preloadBackgroundAssets } from './src/utils/assetLoader';
 import { AssetWarmup } from './src/components/AssetWarmup';
 import { CustomSplashScreen } from './src/components/CustomSplashScreen';
 import { LegalScreen } from './src/screens/LegalScreen';
@@ -49,6 +49,7 @@ import { SettingsScreen } from './src/screens/SettingsScreen';
 import { ProgressScreen } from './src/screens/ProgressScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen'; // Added ProfileScreen import
 import { StatisticsScreen } from './src/screens/StatisticsScreen';
+import { MemoryMixScreen } from './src/screens/MemoryMixScreen';
 
 const AppContent = () => {
   useNotifications(true); // Pass flag to ignore hook errors if needed, but we'll use ref now
@@ -147,6 +148,7 @@ const RootNavigator = ({ session, isBioLocked, isColdStartWithSession, isAuthLoa
               {/* Unique name to prevent navigation focus leakage from the Login screen */}
               <Stack.Screen name="SecureAccount" component={AuthScreen} />
               <Stack.Screen name="Statistics" component={StatisticsScreen} />
+              <Stack.Screen name="MemoryMix" component={MemoryMixScreen} />
             </>
         ) : viewMode === 'loading' ? (
             <Stack.Screen name="InitialLoading">
@@ -252,20 +254,49 @@ export default function App() {
   const [assetsLoaded, setAssetsLoaded] = useState(false);
   const isColdStartWithSession = useRef<boolean | null>(null);
 
-  useEffect(() => {
-    AsyncStorage.getItem('security_lock_enabled').then(val => {
-      setIsBioLocked(val === 'true');
-    });
+    // Parallel INITIALIZATION
+    useEffect(() => {
+        const init = async () => {
+            const start = Date.now();
+            
+            try {
+                // Run non-dependent tasks in parallel
+                const [lockVal, sessionResult] = await Promise.all([
+                    AsyncStorage.getItem('security_lock_enabled'),
+                    supabase.auth.getSession(),
+                    preloadCriticalAssets()
+                ]);
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (isColdStartWithSession.current === null) {
-        isColdStartWithSession.current = !!session;
-      }
-      setSession(session);
-      setIsAuthLoading(false);
-    });
+                // Handle Auth session
+                const { data: { session: initialSession } } = sessionResult;
+                if (isColdStartWithSession.current === null) {
+                    isColdStartWithSession.current = !!initialSession;
+                }
+                setSession(initialSession);
+                setIsAuthLoading(false);
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+                // Handle Bio Lock state
+                setIsBioLocked(lockVal === 'true');
+                
+                // Signal critical path complete
+                setAssetsLoaded(true);
+
+                const duration = (Date.now() - start) / 1000;
+                console.log(`[App] Critical init complete in ${duration.toFixed(3)}s`);
+
+                // STAGE 2: Background tasks
+                preloadBackgroundAssets();
+                posthog.capture('app_session_start');
+            } catch (error) {
+                console.error('[App] Init error:', error);
+                setIsAuthLoading(false);
+                setAssetsLoaded(true); // Fallback to let user in
+            }
+        };
+
+        init();
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session);
       setIsAuthLoading(false);
       
@@ -283,19 +314,6 @@ export default function App() {
         }
       }
     });
-
-    const loadCriticalAssets = async () => {
-      try {
-        await preloadAssets();
-        setAssetsLoaded(true);
-      } catch (e) {
-        console.warn('Failed to preload assets', e);
-        setAssetsLoaded(true);
-      }
-    };
-    loadCriticalAssets();
-
-    posthog.capture('app_session_start');
 
     return () => {
         subscription.unsubscribe();

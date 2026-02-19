@@ -30,7 +30,7 @@ export const MemoryMix = () => {
                 onPress={() => { 
                     haptics.selection(); 
                     if (isUnlocked) {
-                        navigation.navigate('Memory', { filter: 'mix' });
+                        navigation.navigate('MemoryMix');
                     } else {
                         navigation.navigate('Progress');
                     }
@@ -41,15 +41,15 @@ export const MemoryMix = () => {
                     <View className="flex-row justify-between items-start">
                         <View className="flex-1 mr-4">
                             <View className="flex-row items-center mb-2">
-                                <Text className="text-lg font-q-bold text-text mr-2">Chef's Special</Text>
+                                <Text className="text-lg font-q-bold text-text mr-2">Memory Mix</Text>
                             </View>
                             
                             <Text className="text-base font-q-medium text-muted leading-6">
-                                Serve up a delicious mix of your past memories.
+                                A curated blend of your past, served daily.
                             </Text>
                             
                             <View className="flex-row items-center mt-4">
-                                <Text className="text-primary font-q-bold text-sm uppercase tracking-wider mr-1">Open Menu</Text>
+                                <Text className="text-primary font-q-bold text-sm uppercase tracking-wider mr-1">Enter Mix</Text>
                                 <Ionicons name="arrow-forward" size={14} color="#FF9E7D" />
                             </View>
                         </View>
@@ -63,7 +63,7 @@ export const MemoryMix = () => {
                 ) : (
                     <View className="items-center py-2 pb-6">
                         <View className="flex-row justify-between items-center w-full mb-6">
-                            <Text className="text-lg font-q-bold text-text">Chef's Special</Text>
+                            <Text className="text-lg font-q-bold text-text">Memory Mix</Text>
                             <View className="bg-inactive/10 px-3 py-1 rounded-full flex-row items-center">
                                 <Ionicons name="lock-closed" size={10} color={isDarkMode ? "#94A3B8" : "#64748B"} />
                                 <Text className="text-[10px] font-q-bold text-muted ml-1 uppercase">Locked</Text>

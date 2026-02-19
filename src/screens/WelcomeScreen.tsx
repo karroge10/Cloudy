@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { View, Text, TouchableOpacity, Animated, Pressable } from 'react-native';
+import { View, Text, TouchableOpacity, Animated, Pressable, useWindowDimensions } from 'react-native';
 import { Button } from '../components/Button';
 import { useNavigation } from '@react-navigation/native';
 import { MASCOTS } from '../constants/Assets';
@@ -11,7 +11,10 @@ import { Layout } from '../components/Layout';
 
 export const WelcomeScreen = () => {
     const navigation = useNavigation();
+    const { height } = useWindowDimensions();
     const scaleAnim = useRef(new Animated.Value(1)).current;
+
+    const mascotSize = height < 750 ? 'w-48 h-48' : height < 850 ? 'w-56 h-56' : 'w-64 h-64';
 
     const handleMascotPress = () => {
         haptics.selection();
@@ -42,7 +45,7 @@ export const WelcomeScreen = () => {
                         <MascotImage
                             isAnimated
                             source={MASCOTS.WRITE}
-                            className="w-64 h-64 mb-8"
+                            className={`${mascotSize} mb-8`}
                             resizeMode="contain"
                             style={{ transform: [{ scale: scaleAnim }] }}
                         />

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, BackHandler } from 'react-native';
+import { View, Text, ScrollView, useWindowDimensions } from 'react-native';
 import { Button } from '../components/Button';
 import { SelectionPill } from '../components/SelectionPill';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { MASCOTS } from '../constants/Assets';
 import { TopNav } from '../components/TopNav';
 import { MascotImage } from '../components/MascotImage';
@@ -15,8 +15,11 @@ import { useAnalytics } from '../hooks/useAnalytics';
 
 export const StruggleSelectionScreen = () => {
     const navigation = useNavigation();
+    const { height } = useWindowDimensions();
     const { trackEvent } = useAnalytics();
     const [selected, setSelected] = useState<string[]>([]);
+
+    const mascotSize = height < 750 ? 'w-48 h-48' : height < 850 ? 'w-64 h-64' : 'w-72 h-72';
 
 
     const toggleSelection = (item: string) => {
@@ -26,22 +29,6 @@ export const StruggleSelectionScreen = () => {
             setSelected([...selected, item]);
         }
     };
-
-    useFocusEffect(
-        React.useCallback(() => {
-          const onBackPress = () => {
-            if (navigation.canGoBack()) {
-                navigation.goBack();
-                return true;
-            }
-            return false;
-          };
-    
-          const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-    
-          return () => subscription.remove();
-        }, [navigation])
-      );
 
     const canContinue = selected.length > 0;
 
@@ -64,7 +51,7 @@ export const StruggleSelectionScreen = () => {
                         </Text>
                         <MascotImage
                             source={MASCOTS.SAD}
-                            className="w-72 h-72"
+                            className={mascotSize}
                             resizeMode="contain"
                         />
                     </View>

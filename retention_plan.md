@@ -135,6 +135,6 @@ To verify this plan works, we will track the following events:
 To make these rewards "real," we will use the `max_streak` field as the source of truth.
 *   **Insights:** Gated in `Insights.tsx` via `max_streak >= 7` (Brainy).
 *   **Streak Freeze:** Automated in `useJournal` via `max_streak >= 14` (Dreamy).
-*   **Memory Mix:** Gated in `MemoryMix.tsx` via `max_streak >= 30` (Cookie).
+*   **Memory Mix:** Dedicated dashboard (MemoryMixScreen) via `max_streak >= 30` (Cookie). Featuring Daily Specials, First Courses, and unique history stats.
 *   **Icons:** Gated in `IconSettings` via `max_streak >= 60` (Groovy).
 *   **Verification:** Conditional badge in `ProfileScreen` via `max_streak >= 90` (Sparky).

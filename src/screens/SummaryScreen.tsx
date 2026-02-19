@@ -90,7 +90,7 @@ export const SummaryScreen = () => {
 
                         <MascotImage
                             source={MASCOTS.SHINE}
-                            className="w-72 h-72 mb-6"
+                            className="w-56 h-56 mb-6"
                             resizeMode="contain"
                         />
 

@@ -45,7 +45,7 @@ export const GoalSelectionScreen = () => {
                         </Text>
                         <MascotImage
                             source={MASCOTS.ZEN}
-                            className="w-72 h-72"
+                            className="w-56 h-56"
                             resizeMode="contain"
                         />
                     </View>

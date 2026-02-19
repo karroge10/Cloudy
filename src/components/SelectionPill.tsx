@@ -16,11 +16,11 @@ export const SelectionPill: React.FC<SelectionPillProps> = ({ label, selected, o
     // Inactive: Transparent with dark grey border
     // Active: Peach (primary) with white content.
 
-    const containerBase = "flex-row items-center justify-between px-5 py-2.5 rounded-full border-2 transition-all duration-200 active:scale-95 transition-transform";
+    const containerBase = "flex-row items-center justify-between px-5 py-2 rounded-full border-2 transition-all duration-200 active:scale-95 transition-transform";
     const containerSelected = "bg-primary border-primary";
     const containerInactive = "bg-card border-inactive/20";
 
-    const textBase = "text-xl font-q-semibold"; 
+    const textBase = "text-lg font-q-semibold"; 
     const textSelected = "text-white";
     const textInactive = "text-text";
 

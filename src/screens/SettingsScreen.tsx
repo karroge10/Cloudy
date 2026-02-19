@@ -286,8 +286,10 @@ export const SettingsScreen = () => {
                         <Switch
                             trackColor={{ false: '#E0E0E0', true: '#FF9E7D' }}
                             thumbColor="#FFFFFF"
-                            onValueChange={(val) => {
+                            onValueChange={async (val) => {
                                 haptics.selection();
+                                
+                                // 1. Check support if enabling
                                 if (val && !bioSupported) {
                                     showAlert(
                                         'Not Supported',
@@ -297,8 +299,20 @@ export const SettingsScreen = () => {
                                     );
                                     return;
                                 }
-                                updateProfile({ security_lock_enabled: val });
+
+                                // 2. Authenticate to confirm change
+                                const prompt = val ? 'Authenticate to Enable Lock' : 'Authenticate to Disable Lock';
+                                const authenticated = await security.authenticate(prompt);
+
+                                if (authenticated) {
+                                    updateProfile({ security_lock_enabled: val });
+                                    haptics.success();
+                                } else {
+                                    haptics.error();
+                                    // Switch will naturally revert since we didn't update profile
+                                }
                             }}
+
                             value={profile?.security_lock_enabled ?? false}
                         />
                     </View>
