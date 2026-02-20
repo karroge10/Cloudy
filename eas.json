@@ -5,7 +5,12 @@
         "buildType": "apk"
       },
       "env": {
-        "APP_VARIANT": "preview"
+        "APP_VARIANT": "preview",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://cuzgcihrdvouwreudmyq.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1emdjaWhyZHZvdXdyZXVkbXlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4NjAyMzcsImV4cCI6MjA4NjQzNjIzN30._KmHSO99kUtgq7YutCV7--qPonkTBOSdGLM32gR9ZM8",
+        "EXPO_PUBLIC_POSTHOG_API_KEY": "phc_tykDrHCqmBWyzTdzsrui9De9q45isA17Zev5qigCsP6",
+        "EXPO_PUBLIC_POSTHOG_HOST": "https://eu.i.posthog.com",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "110002315879-19osagf9f4s3spnpns5jckcdc5dq0g5r.apps.googleusercontent.com"
       }
     },
     "production": {

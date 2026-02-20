@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, Switch, ScrollView, TextInput, Modal, ActivityIndicator, InteractionManager } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -41,6 +41,21 @@ export const SettingsScreen = () => {
     const [isPasswordSheetVisible, setIsPasswordSheetVisible] = useState(false);
     const [hasPasswordLogin, setHasPasswordLogin] = useState(true); 
     
+    const initialAccentId = useRef(currentAccent.id);
+    const [prevAccentVisible, setPrevAccentVisible] = useState(false);
+
+    useEffect(() => {
+        if (isAccentSheetVisible && !prevAccentVisible) {
+            initialAccentId.current = currentAccent.id;
+        }
+        setPrevAccentVisible(isAccentSheetVisible);
+    }, [isAccentSheetVisible]);
+
+    const revertAccent = () => {
+        setAccent(initialAccentId.current as any);
+        setIsAccentSheetVisible(false);
+    };
+    
     const [newPassword, setNewPassword] = useState('');
     const [passwordLoading, setPasswordLoading] = useState(false);
     const [bioSupported, setBioSupported] = useState(false);
@@ -81,15 +96,23 @@ export const SettingsScreen = () => {
         return () => task.cancel();
     }, [isAnonymous]);
 
-    useEffect(() => {
+    const resetReminderDate = () => {
         if (profile?.reminder_time) {
             const [hours, minutes] = profile.reminder_time.split(':');
             const d = new Date();
             d.setHours(parseInt(hours));
             d.setMinutes(parseInt(minutes));
             setReminderDate(d);
+        } else {
+            const d = new Date();
+            d.setHours(20, 0, 0, 0); // Default 8 PM
+            setReminderDate(d);
         }
-    }, [profile]);
+    };
+
+    useEffect(() => {
+        resetReminderDate();
+    }, [profile?.reminder_time]);
 
     const handleDeleteAccount = async () => {
         try {
@@ -382,7 +405,7 @@ export const SettingsScreen = () => {
                 <AppFooter />
             </ScrollView>
 
-            <BottomSheet visible={isTimeSheetVisible} onClose={() => setIsTimeSheetVisible(false)}>
+            <BottomSheet visible={isTimeSheetVisible} onClose={() => { setIsTimeSheetVisible(false); resetReminderDate(); }}>
                 <View className="items-center mt-2 w-full">
                     <MascotImage source={MASCOTS.WATCH} className="w-40 h-40 mb-4" resizeMode="contain" />
                     <Text className="text-2xl font-q-bold text-text text-center mb-6">When to remind you?</Text>
@@ -403,13 +426,13 @@ export const SettingsScreen = () => {
                         }}
                     />
 
-                    <TouchableOpacity onPress={() => { haptics.selection(); setIsTimeSheetVisible(false); }} className="mt-4 py-2 active:scale-95 transition-transform">
+                    <TouchableOpacity onPress={() => { haptics.selection(); setIsTimeSheetVisible(false); resetReminderDate(); }} className="mt-4 py-2 active:scale-95 transition-transform">
                         <Text className="text-muted font-q-bold text-base">Cancel</Text>
                     </TouchableOpacity>
                 </View>
             </BottomSheet>
 
-            <BottomSheet visible={isAccentSheetVisible} onClose={() => setIsAccentSheetVisible(false)}>
+            <BottomSheet visible={isAccentSheetVisible} onClose={revertAccent}>
                 <View className="items-center w-full">
                     <MascotImage source={MASCOTS.HUG} className="w-40 h-40 mb-4" resizeMode="contain" />
                     <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">Choose your vibe</Text>
@@ -476,7 +499,7 @@ export const SettingsScreen = () => {
                             }}
                         />
                         <TouchableOpacity 
-                            onPress={() => { haptics.selection(); setIsAccentSheetVisible(false); }}
+                            onPress={() => { haptics.selection(); revertAccent(); }}
                             className="mt-4 py-2 items-center active:scale-95 transition-transform"
                         >
                             <Text className="text-muted font-q-bold text-base">Maybe later</Text>

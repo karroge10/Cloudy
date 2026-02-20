@@ -334,7 +334,10 @@ export const ProfileScreen = () => {
                 <AppFooter />
             </ScrollView>
             
-             <BottomSheet visible={isNameSheetVisible} onClose={() => setIsNameSheetVisible(false)}>
+             <BottomSheet visible={isNameSheetVisible} onClose={() => {
+                setIsNameSheetVisible(false);
+                setTempName(profile?.display_name || '');
+             }}>
                 <View className="items-center w-full">
                      <MascotImage source={MASCOTS.THINK} className="w-40 h-40 mb-4" resizeMode="contain" />
                      <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">What should Cloudy call you?</Text>
@@ -355,13 +358,23 @@ export const ProfileScreen = () => {
                             haptics.success();
                         }}
                     />
-                    <TouchableOpacity onPress={() => { haptics.selection(); setIsNameSheetVisible(false); }} className="mt-4 py-2 active:scale-95 transition-transform">
+                    <TouchableOpacity 
+                        onPress={() => { 
+                            haptics.selection(); 
+                            setIsNameSheetVisible(false);
+                            setTempName(profile?.display_name || '');
+                        }} 
+                        className="mt-4 py-2 active:scale-95 transition-transform"
+                    >
                          <Text className="text-muted font-q-bold text-base">Cancel</Text>
                     </TouchableOpacity>
                 </View>
             </BottomSheet>
 
-             <BottomSheet visible={isAgeSheetVisible} onClose={() => setIsAgeSheetVisible(false)}>
+             <BottomSheet visible={isAgeSheetVisible} onClose={() => {
+                setIsAgeSheetVisible(false);
+                setTempAge(profile?.age ? profile.age.toString() : '');
+             }}>
                 <View className="items-center w-full">
                      <MascotImage source={MASCOTS.CAKE} className="w-40 h-40 mb-4" resizeMode="contain" />
                      <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">How old are you?</Text>
@@ -385,13 +398,23 @@ export const ProfileScreen = () => {
                             setIsAgeSheetVisible(false);
                         }}
                     />
-                    <TouchableOpacity onPress={() => { haptics.selection(); setIsAgeSheetVisible(false); }} className="mt-4 py-2 active:scale-95 transition-transform">
+                    <TouchableOpacity 
+                        onPress={() => { 
+                            haptics.selection(); 
+                            setIsAgeSheetVisible(false);
+                            setTempAge(profile?.age ? profile.age.toString() : '');
+                        }} 
+                        className="mt-4 py-2 active:scale-95 transition-transform"
+                    >
                          <Text className="text-muted font-q-bold text-base">Cancel</Text>
                     </TouchableOpacity>
                 </View>
             </BottomSheet>
 
-             <BottomSheet visible={isGenderSheetVisible} onClose={() => setIsGenderSheetVisible(false)}>
+             <BottomSheet visible={isGenderSheetVisible} onClose={() => {
+                setIsGenderSheetVisible(false);
+                setTempGender(profile?.gender || '');
+             }}>
                 <View className="items-center w-full">
                     <MascotImage source={MASCOTS.MIRROR} className="w-40 h-40 mb-4" resizeMode="contain" />
                     <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">How do you identify?</Text>
@@ -416,13 +439,22 @@ export const ProfileScreen = () => {
                             haptics.success();
                         }}
                     />
-                    <TouchableOpacity onPress={() => setIsGenderSheetVisible(false)} className="mt-4 py-2">
+                    <TouchableOpacity 
+                        onPress={() => {
+                            setIsGenderSheetVisible(false);
+                            setTempGender(profile?.gender || '');
+                        }} 
+                        className="mt-4 py-2"
+                    >
                          <Text className="text-muted font-q-bold text-base">Cancel</Text>
                     </TouchableOpacity>
                 </View>
             </BottomSheet>
 
-             <BottomSheet visible={isCountrySheetVisible} onClose={() => setIsCountrySheetVisible(false)}>
+             <BottomSheet visible={isCountrySheetVisible} onClose={() => {
+                setIsCountrySheetVisible(false);
+                setTempCountry(profile?.country || '');
+             }}>
                 <View className="items-center w-full">
                      <MascotImage source={MASCOTS.GLOBE} className="w-40 h-40 mb-4" resizeMode="contain" />
                      <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">Where are you from?</Text>
@@ -442,7 +474,14 @@ export const ProfileScreen = () => {
                             haptics.success();
                         }}
                     />
-                    <TouchableOpacity onPress={() => { haptics.selection(); setIsCountrySheetVisible(false); }} className="mt-4 py-2 active:scale-95 transition-transform">
+                    <TouchableOpacity 
+                        onPress={() => { 
+                            haptics.selection(); 
+                            setIsCountrySheetVisible(false); 
+                            setTempCountry(profile?.country || '');
+                        }} 
+                        className="mt-4 py-2 active:scale-95 transition-transform"
+                    >
                          <Text className="text-muted font-q-bold text-base">Cancel</Text>
                     </TouchableOpacity>
                 </View>
@@ -450,7 +489,10 @@ export const ProfileScreen = () => {
 
              <BottomSheet 
                 visible={isGoalSheetVisible} 
-                onClose={() => setIsGoalSheetVisible(false)}
+                onClose={() => {
+                    setIsGoalSheetVisible(false);
+                    setSelectedGoals(profile?.goals || []);
+                }}
             >
                 <View className="items-center w-full">
                     <MascotImage source={MASCOTS.ZEN} className="w-40 h-40 mb-4" resizeMode="contain" />
@@ -485,7 +527,14 @@ export const ProfileScreen = () => {
                             haptics.success();
                         }}
                     />
-                    <TouchableOpacity onPress={() => { haptics.selection(); setIsGoalSheetVisible(false); }} className="mt-4 py-2 active:scale-95 transition-transform">
+                    <TouchableOpacity 
+                        onPress={() => { 
+                            haptics.selection(); 
+                            setIsGoalSheetVisible(false); 
+                            setSelectedGoals(profile?.goals || []);
+                        }} 
+                        className="mt-4 py-2 active:scale-95 transition-transform"
+                    >
                          <Text className="text-muted font-q-bold text-base">Cancel</Text>
                     </TouchableOpacity>
                 </View>
@@ -493,7 +542,10 @@ export const ProfileScreen = () => {
 
              <BottomSheet 
                 visible={isStruggleSheetVisible} 
-                onClose={() => setIsStruggleSheetVisible(false)}
+                onClose={() => {
+                    setIsStruggleSheetVisible(false);
+                    setSelectedStruggles(profile?.struggles || []);
+                }}
             >
                 <View className="items-center w-full">
                     <MascotImage source={MASCOTS.SAD} className="w-40 h-40 mb-4" resizeMode="contain" />
@@ -526,13 +578,26 @@ export const ProfileScreen = () => {
                             haptics.success();
                         }}
                     />
-                    <TouchableOpacity onPress={() => { haptics.selection(); setIsStruggleSheetVisible(false); }} className="mt-4 py-2 active:scale-95 transition-transform">
+                    <TouchableOpacity 
+                        onPress={() => { 
+                            haptics.selection(); 
+                            setIsStruggleSheetVisible(false); 
+                            setSelectedStruggles(profile?.struggles || []);
+                        }} 
+                        className="mt-4 py-2 active:scale-95 transition-transform"
+                    >
                          <Text className="text-muted font-q-bold text-base">Cancel</Text>
                     </TouchableOpacity>
                 </View>
             </BottomSheet>
 
-            <BottomSheet visible={isMascotSheetVisible} onClose={() => setIsMascotSheetVisible(false)}>
+             <BottomSheet 
+                visible={isMascotSheetVisible} 
+                onClose={() => {
+                    setIsMascotSheetVisible(false);
+                    setTempMascotName(profile?.mascot_name || 'Cloudy');
+                }}
+            >
                 <View className="items-center w-full">
                     <MascotImage source={MASCOTS.HUG} className="w-40 h-40 mb-4" resizeMode="contain" />
                     <Text className="text-2xl font-q-bold text-text text-center mb-1 px-4">Choose your companion</Text>
@@ -597,7 +662,11 @@ export const ProfileScreen = () => {
                                             />
                                         )}
                                         <TouchableOpacity 
-                                            onPress={() => { haptics.selection(); setIsMascotSheetVisible(false); }}
+                                            onPress={() => { 
+                                                haptics.selection(); 
+                                                setIsMascotSheetVisible(false); 
+                                                setTempMascotName(profile?.mascot_name || 'Cloudy');
+                                            }}
                                             className="mt-4 py-2 items-center active:scale-95 transition-transform"
                                         >
                                             <Text className="text-muted font-q-bold text-base">Maybe later</Text>
