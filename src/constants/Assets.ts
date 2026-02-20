@@ -23,6 +23,7 @@ export const MASCOTS = {
     CRY: require('../../assets/mascots/mascot_cry.png'),
     STAR: require('../../assets/mascots/mascot_star.png'),
     ENVELOPE: require('../../assets/mascots/mascot_envelope.png'),
+    COLORS: require('../../assets/mascots/mascot_colors.png'),
     CHEF: require('../../assets/mascots/companions/mascot_chef.png'),
     DOCTOR: require('../../assets/mascots/companions/mascot_doctor.png'),
     FARMER: require('../../assets/mascots/companions/mascot_farmer.png'),
