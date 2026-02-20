@@ -18,10 +18,11 @@ import { Skeleton } from '../components/Skeleton';
 import { MascotImage } from '../components/MascotImage';
 import { MASCOTS } from '../constants/Assets';
 import { Insights } from '../components/Insights';
-import { MemoryMix } from '../components/MemoryMix';
+import { Flashback } from '../components/Flashback';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { Layout } from '../components/Layout';
 import { LogoutSheet } from '../components/LogoutSheet';
+import { Divider } from '../components/Divider';
 
 import { COMPANIONS } from '../constants/Companions';
 import { useTheme } from '../context/ThemeContext';
@@ -32,11 +33,14 @@ const GENDERS = ['Female', 'Male', 'Non-binary', 'Prefer not to say'];
 const GOALS = ['Mental Clarity', 'Memory keeping', 'Self-discipline', 'Creativity', 'Gratitude'];
 const STRUGGLES = ['Anxiety', 'Stress', 'Sleep', 'Focus', 'Motivation', 'N/A'];
 
+import { useAccent } from '../context/AccentContext';
+
 export const ProfileScreen = () => {
     const { streak, rawStreakData, refreshEntries } = useJournal();
     const { profile, loading: profileLoading, updateProfile, isAnonymous, userId, logout } = useProfile();
     const { isDarkMode } = useTheme();
     const { trackEvent } = useAnalytics();
+    const { currentAccent } = useAccent();
     let navigation: any;
     try {
         navigation = useNavigation<any>();
@@ -174,8 +178,8 @@ export const ProfileScreen = () => {
                     <RefreshControl
                         refreshing={isRefreshing}
                         onRefresh={onRefresh}
-                        tintColor="#FF9E7D"
-                        colors={["#FF9E7D"]}
+                        tintColor={currentAccent.hex}
+                        colors={[currentAccent.hex]}
                     />
                 }
             >
@@ -204,8 +208,8 @@ export const ProfileScreen = () => {
                                             <Text className="text-[#FFD700] font-q-bold text-[10px] ml-1.5 uppercase tracking-widest">HERO</Text>
                                         </View>
                                     ) : (
-                                        <View className="bg-primary/20 px-2.5 py-1 rounded-full">
-                                            <Text className="text-primary font-q-bold text-[10px] uppercase tracking-wider">{currentRank}</Text>
+                                        <View className="px-2.5 py-1 rounded-full" style={{ backgroundColor: `${currentAccent.hex}33` }}>
+                                            <Text className="font-q-bold text-[10px] uppercase tracking-wider" style={{ color: currentAccent.hex }}>{currentRank}</Text>
                                         </View>
                                     )}
                                  </View>
@@ -236,7 +240,10 @@ export const ProfileScreen = () => {
                              className="w-32 h-32" 
                              resizeMode="contain" 
                          />
-                         <View className="absolute bottom-0 right-0 bg-primary rounded-full p-1.5 border-2 border-background shadow-sm">
+                         <View 
+                             className="absolute bottom-0 right-0 rounded-full p-1.5 border-2 border-background shadow-sm"
+                             style={{ backgroundColor: currentAccent.hex }}
+                         >
                              <Ionicons name="sync" size={14} color="white" />
                          </View>
                      </TouchableOpacity>
@@ -246,7 +253,7 @@ export const ProfileScreen = () => {
 
                  <Insights userId={userId || undefined} />
                  
-                 <MemoryMix />
+                 <Flashback />
 
 
 
@@ -254,46 +261,59 @@ export const ProfileScreen = () => {
                     style={{ shadowColor: isDarkMode ? '#000' : '#0000000D', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}>
                     
                     <View className="py-2">
+                        <TouchableOpacity onPress={() => { haptics.selection(); setIsNameSheetVisible(true); }} className="flex-row justify-between items-center py-3">
+                            <Text className="text-lg font-q-bold text-text">Name</Text>
+                            <View className="flex-1 flex-row items-center justify-end ml-4">
+                                <Text className="font-q-bold text-base mr-2" style={{ color: currentAccent.hex }}>{profile?.display_name || 'Set Name'}</Text>
+                                <Ionicons name="chevron-forward" size={16} color={isDarkMode ? "#64748B" : "#CBD5E1"} />
+                            </View>
+                        </TouchableOpacity>
+                        <Divider />
                         <TouchableOpacity onPress={() => { haptics.selection(); setIsAgeSheetVisible(true); }} className="flex-row justify-between items-center py-3">
                             <Text className="text-lg font-q-bold text-text">Age</Text>
-                            <View className="flex-1 items-end ml-4">
-                                <Text className="text-primary font-q-bold text-base">{profile?.age || 'Set Age'}</Text>
+                            <View className="flex-1 flex-row items-center justify-end ml-4">
+                                <Text className="font-q-bold text-base mr-2" style={{ color: currentAccent.hex }}>{profile?.age || 'Set Age'}</Text>
+                                <Ionicons name="chevron-forward" size={16} color={isDarkMode ? "#64748B" : "#CBD5E1"} />
                             </View>
                         </TouchableOpacity>
-                        <View className="h-[1px] bg-inactive opacity-10" />
+                        <Divider />
                         <TouchableOpacity onPress={() => { haptics.selection(); setIsGenderSheetVisible(true); }} className="flex-row justify-between items-center py-3">
                             <Text className="text-lg font-q-bold text-text">Gender</Text>
-                            <View className="flex-1 items-end ml-4">
-                                <Text className="text-primary font-q-bold text-base">{profile?.gender || 'Set Gender'}</Text>
+                            <View className="flex-1 flex-row items-center justify-end ml-4">
+                                <Text className="font-q-bold text-base mr-2" style={{ color: currentAccent.hex }}>{profile?.gender || 'Set Gender'}</Text>
+                                <Ionicons name="chevron-forward" size={16} color={isDarkMode ? "#64748B" : "#CBD5E1"} />
                             </View>
                         </TouchableOpacity>
-                        <View className="h-[1px] bg-inactive opacity-10" />
+                        <Divider />
                         <TouchableOpacity onPress={() => { haptics.selection(); setIsCountrySheetVisible(true); }} className="flex-row justify-between items-center py-3">
                             <Text className="text-lg font-q-bold text-text">Location</Text>
-                            <View className="flex-1 items-end ml-4">
-                                <Text className="text-primary font-q-bold text-base">{profile?.country || 'Set Country'}</Text>
+                            <View className="flex-1 flex-row items-center justify-end ml-4">
+                                <Text className="font-q-bold text-base mr-2" style={{ color: currentAccent.hex }}>{profile?.country || 'Set Country'}</Text>
+                                <Ionicons name="chevron-forward" size={16} color={isDarkMode ? "#64748B" : "#CBD5E1"} />
                             </View>
                         </TouchableOpacity>
-                        <View className="h-[1px] bg-inactive opacity-10" />
+                        <Divider />
                         <TouchableOpacity onPress={() => { haptics.selection(); setIsGoalSheetVisible(true); }} className="flex-row justify-between items-center py-3">
                             <Text className="text-lg font-q-bold text-text">Goals</Text>
-                            <View className="flex-1 items-end ml-4">
-                                <Text className="text-primary font-q-bold text-base" numberOfLines={1}>
+                            <View className="flex-1 flex-row items-center justify-end ml-4">
+                                <Text className="font-q-bold text-base mr-2" numberOfLines={1} style={{ color: currentAccent.hex }}>
                                     {(profile?.goals?.length ?? 0) === 0 ? 'Set Goals' : 
                                      profile?.goals?.length === 1 ? profile.goals[0] : 
                                      `${profile?.goals?.[0]} +${(profile?.goals?.length ?? 0) - 1} more`}
                                 </Text>
+                                <Ionicons name="chevron-forward" size={16} color={isDarkMode ? "#64748B" : "#CBD5E1"} />
                             </View>
                         </TouchableOpacity>
-                        <View className="h-[1px] bg-inactive opacity-10" />
+                        <Divider />
                         <TouchableOpacity onPress={() => { haptics.selection(); setIsStruggleSheetVisible(true); }} className="flex-row justify-between items-center py-3">
                             <Text className="text-lg font-q-bold text-text">Struggles</Text>
-                            <View className="flex-1 items-end ml-4">
-                                <Text className="text-primary font-q-bold text-base" numberOfLines={1}>
+                            <View className="flex-1 flex-row items-center justify-end ml-4">
+                                <Text className="font-q-bold text-base mr-2" numberOfLines={1} style={{ color: currentAccent.hex }}>
                                     {(profile?.struggles?.length ?? 0) === 0 ? 'Set Struggles' : 
                                      profile?.struggles?.length === 1 ? profile.struggles[0] : 
                                      `${profile?.struggles?.[0]} +${(profile?.struggles?.length ?? 0) - 1} more`}
                                 </Text>
+                                <Ionicons name="chevron-forward" size={16} color={isDarkMode ? "#64748B" : "#CBD5E1"} />
                             </View>
                         </TouchableOpacity>
                     </View>
@@ -525,7 +545,9 @@ export const ProfileScreen = () => {
                         }}
                         className="mb-8"
                     >
-                        <Text className="text-primary font-q-bold text-sm uppercase tracking-widest border-b border-primary pb-0.5">See Progress</Text>
+                         <View style={{ borderBottomWidth: 1, borderBottomColor: currentAccent.hex, paddingBottom: 2 }}>
+                             <Text className="font-q-bold text-sm uppercase tracking-widest" style={{ color: currentAccent.hex }}>See Progress</Text>
+                         </View>
                     </TouchableOpacity>
 
                     <View className="flex-row flex-wrap justify-between w-full mb-4">
@@ -608,7 +630,7 @@ export const ProfileScreen = () => {
                 {onboardingStep === 0 ? (
                     <View className="items-center w-full">
                         <MascotImage source={MASCOTS.THINK} className="w-40 h-40 mb-4" resizeMode="contain" />
-                        <Text className="text-xl font-q-bold text-primary text-center mb-1">A fresh start!</Text>
+                        <Text className="text-xl font-q-bold text-center mb-1" style={{ color: currentAccent.hex }}>A fresh start!</Text>
                         <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">
                             What should Cloudy call you?
                         </Text>
@@ -654,7 +676,7 @@ export const ProfileScreen = () => {
                 ) : (
                     <View className="items-center w-full">
                         <MascotImage source={MASCOTS.WATCH} className="w-40 h-40 mb-4" resizeMode="contain" />
-                        <Text className="text-xl font-q-bold text-primary text-center mb-1 px-4">
+                        <Text className="text-xl font-q-bold text-center mb-1 px-4" style={{ color: currentAccent.hex }}>
                             {tempName ? `Nice to meet you, ${tempName}!` : "Nice to meet you!"}
                         </Text>
                         <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">
@@ -692,7 +714,7 @@ export const ProfileScreen = () => {
                         />
 
                         <TouchableOpacity 
-                            onPress={() => { 
+                             onPress={() => { 
                                 haptics.selection(); 
                                 setShowOnboarding(false);
                                 updateProfile({ onboarding_completed: true }).catch(console.warn);

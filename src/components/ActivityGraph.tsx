@@ -2,12 +2,15 @@ import React, { useRef } from 'react';
 import { View, Text, ScrollView, Dimensions } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 
+import { useAccent } from '../context/AccentContext';
+
 interface ActivityGraphProps {
     entries?: { created_at: string }[]; // Array of objects with ISO date strings
     maxStreak?: number;
 }
 
 export const ActivityGraph: React.FC<ActivityGraphProps> = ({ entries, maxStreak }) => {
+    const { currentAccent } = useAccent();
     const scrollViewRef = useRef<ScrollView>(null);
     // Calculate reliable width
     const screenWidth = Dimensions.get('window').width;
@@ -83,18 +86,18 @@ export const ActivityGraph: React.FC<ActivityGraphProps> = ({ entries, maxStreak
         return result;
     }, [entries, totalDays]);
 
-    const getColor = (intensity: number) => {
-        if (intensity === -1) return 'bg-transparent'; // Future / Hidden
+    const getColorStyle = (intensity: number) => {
+        if (intensity === -1) return { backgroundColor: 'transparent' }; 
+        if (intensity === 0) return { backgroundColor: isDarkMode ? '#334155' : '#E2E8F0', opacity: 0.3 }; // inactive color
+        
+        // Use accent color with varying opacity
         switch (intensity) {
-            case 0: return 'bg-inactive opacity-30';
-            case 1: return 'bg-primary opacity-30';
-            case 2: return 'bg-primary opacity-60';
-            case 3: return 'bg-primary';
-            default: return 'bg-inactive';
+             // We can use hex opacity or rgba. hex 4D = 30%, 99 = 60%, FF = 100%
+            case 1: return { backgroundColor: currentAccent.hex, opacity: 0.3 };
+            case 2: return { backgroundColor: currentAccent.hex, opacity: 0.6 };
+            default: return { backgroundColor: currentAccent.hex, opacity: 1 };
         }
     };
-
-
 
     const { isDarkMode } = useTheme();
 
@@ -129,7 +132,8 @@ export const ActivityGraph: React.FC<ActivityGraphProps> = ({ entries, maxStreak
                                 {week.map((intensity, dayIndex) => (
                                     <View
                                         key={dayIndex}
-                                        className={`w-3.5 h-3.5 rounded-sm ${getColor(intensity)}`}
+                                        className="w-3.5 h-3.5 rounded-sm"
+                                        style={getColorStyle(intensity)}
                                     />
                                 ))}
                             </View>
@@ -142,14 +146,14 @@ export const ActivityGraph: React.FC<ActivityGraphProps> = ({ entries, maxStreak
                 <View className="flex-row items-center gap-2">
                     <Text className="text-[10px] font-q-medium text-muted">Less</Text>
                     <View className="w-2.5 h-2.5 rounded-sm bg-inactive opacity-30" />
-                    <View className="w-2.5 h-2.5 rounded-sm bg-primary opacity-30" />
-                    <View className="w-2.5 h-2.5 rounded-sm bg-primary opacity-60" />
-                    <View className="w-2.5 h-2.5 rounded-sm bg-primary" />
+                    <View className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: currentAccent.hex, opacity: 0.3 }} />
+                    <View className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: currentAccent.hex, opacity: 0.6 }} />
+                    <View className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: currentAccent.hex }} />
                     <Text className="text-[10px] font-q-medium text-muted">More</Text>
                 </View>
                 
                 {maxStreak !== undefined && (
-                    <Text className="text-[10px] font-q-bold text-primary">
+                    <Text className="text-[10px] font-q-bold" style={{ color: currentAccent.hex }}>
                         Max Streak: {maxStreak} Days 🔥
                     </Text>
                 )}

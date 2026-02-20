@@ -9,13 +9,14 @@ import { Layout } from '../components/Layout';
 import { GOALS } from '../constants/Goals';
 import { MascotImage } from '../components/MascotImage';
 import { useAnalytics } from '../hooks/useAnalytics';
-
+import { useAccent } from '../context/AccentContext';
 
 export const GoalSelectionScreen = () => {
     const navigation = useNavigation();
     const { height } = useWindowDimensions();
     const route = useRoute();
     const { trackEvent } = useAnalytics();
+    const { currentAccent } = useAccent();
 
     const mascotSize = height < 750 ? 'w-48 h-48' : height < 850 ? 'w-64 h-64' : 'w-72 h-72';
 
@@ -76,7 +77,7 @@ export const GoalSelectionScreen = () => {
                      <View className="flex-row justify-center gap-2 mb-8">
                         <View className="w-3 h-3 rounded-full bg-gray-300" />
                         <View className="w-3 h-3 rounded-full bg-gray-300" />
-                        <View className="w-3 h-3 rounded-full bg-primary" />
+                        <View className="w-3 h-3 rounded-full" style={{ backgroundColor: currentAccent.hex }} />
                         <View className="w-3 h-3 rounded-full bg-gray-300" />
                     </View>
 

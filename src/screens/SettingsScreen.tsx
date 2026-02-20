@@ -12,9 +12,6 @@ import { AppFooter } from '../components/AppFooter';
 import { useTheme } from '../context/ThemeContext';
 import { FeedbackSheet } from '../components/FeedbackSheet';
 import { supabase } from '../lib/supabase';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { resetUser } from '../lib/posthog';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { getFriendlyAuthErrorMessage } from '../utils/authErrors';
 import { MascotImage } from '../components/MascotImage';
@@ -23,39 +20,47 @@ import { Button } from '../components/Button';
 import { BottomSheet } from '../components/BottomSheet';
 import { TimePicker } from '../components/TimePicker';
 import { LogoutSheet } from '../components/LogoutSheet';
+import { Divider } from '../components/Divider';
+import { useAccent, ACCENT_COLORS } from '../context/AccentContext';
 import { useAppLogout } from '../hooks/useAppLogout';
 
 export const SettingsScreen = () => {
     const navigation = useNavigation<any>();
-    const { profile, updateProfile, logout, isAnonymous, userId } = useProfile();
+    const { profile, updateProfile, isAnonymous, userId } = useProfile();
     const { showAlert } = useAlert();
     const { trackEvent } = useAnalytics();
-    const { isDarkMode, toggleTheme, isThemeUnlocked } = useTheme();
+    const { isDarkMode, toggleTheme } = useTheme();
+    const { currentAccent, setAccent } = useAccent();
 
     const [isFeedbackSheetVisible, setIsFeedbackSheetVisible] = useState(false);
     const [isDeleteSheetVisible, setIsDeleteSheetVisible] = useState(false);
     const [isLogoutSheetVisible, setIsLogoutSheetVisible] = useState(false);
     const [isTimeSheetVisible, setIsTimeSheetVisible] = useState(false);
+    const [isAccentSheetVisible, setIsAccentSheetVisible] = useState(false);
     const [reminderDate, setReminderDate] = useState(new Date());
     const [isPasswordSheetVisible, setIsPasswordSheetVisible] = useState(false);
     const [hasPasswordLogin, setHasPasswordLogin] = useState(true); 
-    // Default true (hidden) to prevent flash for most users. 
-    // We will update this in useEffect.
-    
-    // NOTE: isAnonymous is available from useProfile() hook, which is called at the top of this component.
-    // const { profile, updateProfile, isAnonymous } = useProfile(); <-- This line exists in the file (implied).
     
     const [newPassword, setNewPassword] = useState('');
     const [passwordLoading, setPasswordLoading] = useState(false);
     const [bioSupported, setBioSupported] = useState(false);
 
-    const isHapticsEnabled = profile?.haptics_enabled ?? true;
+    const [localHaptics, setLocalHaptics] = useState(profile?.haptics_enabled ?? true);
+    const [localReminder, setLocalReminder] = useState(!!profile?.reminder_time);
+
+    // Logout Hook for Delete Account
+    const { isLoggingOut: isHookLoggingOut, handleLogout: hookHandleLogout } = useAppLogout();
+
+    useEffect(() => {
+        setLocalHaptics(profile?.haptics_enabled ?? true);
+        setLocalReminder(!!profile?.reminder_time);
+    }, [profile?.haptics_enabled, profile?.reminder_time]);
+
     const reminderTime = profile?.reminder_time;
     const displayReminderTime = reminderTime || '20:00';
     
     useEffect(() => {
         const checkStatus = async () => {
-            // Check biometrics for everyone (anonymous or not)
             const supported = await security.isSupported();
             setBioSupported(supported);
 
@@ -85,55 +90,6 @@ export const SettingsScreen = () => {
             setReminderDate(d);
         }
     }, [profile]);
-
-    const [isLoggingOut, setIsLoggingOut] = useState(false); // Used ONLY for deleting account flow locally if needed, but wait... handleDeleteAccount calls handleLogout.
-    // Actually, handleLogout is now from hook.
-    // handleDeleteAccount calls handleLogout. If handleLogout is from hook, it handles the modal inside the hook?
-    // Wait, the hook returns { isLoggingOut, handleLogout }.
-    // If I use the hook's handleLogout, the hook's isLoggingOut state will change.
-    // But the LogoutSheet inside uses the hook too... NO.
-    // If I use LogoutSheet, it has its OWN useAppLogout hook call inside (as written in my implemented LogoutSheet).
-    // So if I call handleLogout from SettingsScreen (for DeleteAccount), I need access to the same state/logic?
-    // Actually, LogoutSheet is UI.
-    // If SettingsScreen needs to logout programmatically (delete account), it should use the hook itself.
-    
-    const { handleLogout } = useAppLogout();
-    
-    // We need 'setIsLoggingOut' for the DeleteAccount flow to show spinner? 
-    // The previous handleDeleteAccount called handleLogout() which set isLoggingOut=true.
-    // The hook's handleLogout sets its own isLoggingOut=true.
-    // But where is the Modal rendered for DeleteAccount flow?
-    // The Modal was previously rendered at the bottom of SettingsScreen based on local isLoggingOut.
-    // Now LogoutSheet renders a Modal based on ITS hook state.
-    // If I call handleLogout from the hook here in Settings, the state 'isLoggingOut' from the hook instance here in Settings will update.
-    // So I need to render the Modal here in Settings too IF I want the spinner to show during Delete Account.
-    // OR... I can just let it happen in background? No, we want spinner.
-    // Let's check useAppLogout implementation again. It returns state.
-    
-    // RETHINK: LogoutSheet component has `const { isLoggingOut, handleLogout } = useAppLogout();` inside it.
-    // If I render <LogoutSheet /> it has its own instance of the hook.
-    // If I use `const { handleLogout } = useAppLogout()` here for DeleteAccount, it is a DIFFERENT instance.
-    // So duplicate modals? No, because LogoutSheet modal is only visible if its instance isLoggingOut is true.
-    // So if I use hook here, I need to render a Modal here too?
-    // Yes.
-    // The user said "reuse the bottom sheet component".
-    // Maybe I should NOT put the hook inside the Component, but pass it in?
-    // But then ProfileScreen needs to set it up too.
-    // Keeping it simple: 
-    // SettingsScreen uses useAppLogout for handleDeleteAccount.
-    // LogoutSheet uses useAppLogout for the sheet buttons.
-    // So if user clicks "Logout" in sheet -> Sheet's hook runs -> Sheet's modal shows.
-    // If user clicks "Delete Account" -> Settings' hook runs -> Need Settings Modal.
-    // BUT SettingsScreen already has a Modal at the bottom.
-    // I should probably remove the inline Modal from SettingsScreen and rely on... wait.
-    // If I remove the inline Modal, create a `LogoutModal` component?
-    // The `LogoutSheet` includes the `Modal` inside it (Step 40).
-    // So if I use `LogoutSheet`, I get the modal for free for interactions *within* the sheet.
-    // But for `handleDeleteAccount`, I am outside the sheet.
-    // Solution: Just modify `SettingsScreen` to use the hook and render the Modal if needed, OR just duplicated the logic is minimal.
-    // Let's see: `handleDeleteAccount` calls `handleLogout`.
-    
-    const { isLoggingOut: isHookLoggingOut, handleLogout: hookHandleLogout } = useAppLogout();
 
     const handleDeleteAccount = async () => {
         try {
@@ -210,13 +166,14 @@ export const SettingsScreen = () => {
                         <View className="flex-1">
                             <Text className="text-lg font-q-bold text-text">Daily Reminder</Text>
                             <TouchableOpacity onPress={() => { haptics.selection(); setIsTimeSheetVisible(true); }}>
-                                <Text className="text-primary font-q-bold text-base mt-1">{displayReminderTime}</Text>
+                                <Text className="font-q-bold text-base mt-1" style={{ color: currentAccent.hex }}>{displayReminderTime}</Text>
                             </TouchableOpacity>
                         </View>
                         <Switch
-                            trackColor={{ false: '#E0E0E0', true: '#FF9E7D' }}
+                            trackColor={{ false: '#E0E0E0', true: currentAccent.hex }}
                             thumbColor="#FFFFFF"
                             onValueChange={(val) => {
+                                setLocalReminder(val);
                                 haptics.selection();
                                 if (val) {
                                     updateProfile({ reminder_time: displayReminderTime });
@@ -224,11 +181,11 @@ export const SettingsScreen = () => {
                                     updateProfile({ reminder_time: null });
                                 }
                             }}
-                            value={!!reminderTime}
+                            value={localReminder}
                         />
                     </View>
 
-                    <View className="h-[1px] bg-inactive opacity-10" />
+                    <Divider />
 
                     {/* Haptic Feedback */}
                     <View className="flex-row items-center justify-between py-4">
@@ -237,17 +194,18 @@ export const SettingsScreen = () => {
                             <Text className="text-muted font-q-medium text-xs">Soft vibrations for interactions</Text>
                         </View>
                         <Switch
-                            trackColor={{ false: '#E0E0E0', true: '#FF9E7D' }}
+                            trackColor={{ false: '#E0E0E0', true: currentAccent.hex }}
                             thumbColor="#FFFFFF"
                             onValueChange={(val) => {
-                                updateProfile({ haptics_enabled: val });
+                                setLocalHaptics(val);
                                 haptics.selection();
+                                updateProfile({ haptics_enabled: val });
                             }}
-                            value={isHapticsEnabled}
+                            value={localHaptics}
                         />
                     </View>
 
-                    <View className="h-[1px] bg-inactive opacity-10" />
+                    <Divider />
 
                     {/* Cloudy Night Theme (Dark Mode) */}
                     <View className="flex-row items-center justify-between py-4">
@@ -265,7 +223,7 @@ export const SettingsScreen = () => {
                             </TouchableOpacity>
                         </View>
                         <Switch
-                            trackColor={{ false: '#E0E0E0', true: '#FF9E7D' }}
+                            trackColor={{ false: '#E0E0E0', true: currentAccent.hex }}
                             thumbColor="#FFFFFF"
                             onValueChange={() => {
                                 haptics.selection();
@@ -275,7 +233,33 @@ export const SettingsScreen = () => {
                         />
                     </View>
 
-                    <View className="h-[1px] bg-inactive opacity-10" />
+                    <View className="h-[1px] bg-inactive/10" />
+
+                    {/* Accent Color */}
+                    <TouchableOpacity
+                        onPress={() => {
+                            if (profile?.max_streak && profile.max_streak >= 60) {
+                                haptics.selection();
+                                setIsAccentSheetVisible(true);
+                            } else {
+                                haptics.error();
+                                showAlert('Feature Locked', 'Reach a 60-day streak to unlock accent colors!', [{ text: 'Okay' }], 'info');
+                            }
+                        }}
+                        className={`flex-row items-center justify-between py-4 ${profile?.max_streak && profile.max_streak >= 60 ? '' : 'opacity-60'}`}
+                    >
+                        <View>
+                            <Text className="text-lg font-q-bold text-text">Accent Color</Text>
+                            <Text className="text-muted font-q-medium text-xs">Personalize your app's primary color</Text>
+                        </View>
+                        {profile?.max_streak && profile.max_streak >= 60 ? (
+                            <View className="w-6 h-6 rounded-full border-2 border-white/20" style={{ backgroundColor: currentAccent.hex }} />
+                        ) : (
+                            <Ionicons name="lock-closed-outline" size={22} color="#94A3B8" />
+                        )}
+                    </TouchableOpacity>
+
+                    <Divider />
 
                     {/* Biometric Lock */}
                     <View className="flex-row items-center justify-between py-4">
@@ -284,12 +268,11 @@ export const SettingsScreen = () => {
                             <Text className="text-muted font-q-medium text-xs">Biometric protection for your diary</Text>
                         </View>
                         <Switch
-                            trackColor={{ false: '#E0E0E0', true: '#FF9E7D' }}
+                            trackColor={{ false: '#E0E0E0', true: currentAccent.hex }}
                             thumbColor="#FFFFFF"
                             onValueChange={async (val) => {
                                 haptics.selection();
                                 
-                                // 1. Check support if enabling
                                 if (val && !bioSupported) {
                                     showAlert(
                                         'Not Supported',
@@ -300,24 +283,19 @@ export const SettingsScreen = () => {
                                     return;
                                 }
 
-                                // 2. Authenticate to confirm change
                                 const prompt = val ? 'Authenticate to Enable Lock' : 'Authenticate to Disable Lock';
                                 const authenticated = await security.authenticate(prompt);
 
                                 if (authenticated) {
                                     updateProfile({ security_lock_enabled: val });
                                     haptics.success();
-                                } else {
-                                    haptics.error();
-                                    // Switch will naturally revert since we didn't update profile
                                 }
                             }}
-
                             value={profile?.security_lock_enabled ?? false}
                         />
                     </View>
 
-                    <View className="h-[1px] bg-inactive opacity-10" />
+                    <Divider />
 
                     {/* Privacy Policy */}
                     <TouchableOpacity
@@ -325,10 +303,10 @@ export const SettingsScreen = () => {
                         className="flex-row items-center justify-between py-4"
                     >
                         <Text className="text-lg font-q-bold text-text">Privacy & Security</Text>
-                        <Ionicons name="lock-closed-outline" size={22} color="#FF9E7D" />
+                        <Ionicons name="lock-closed-outline" size={22} color={currentAccent.hex} />
                     </TouchableOpacity>
 
-                    <View className="h-[1px] bg-inactive opacity-10" />
+                    <Divider />
 
                     {/* Feedback */}
                     <TouchableOpacity
@@ -339,39 +317,20 @@ export const SettingsScreen = () => {
                             <Text className="text-lg font-q-bold text-text">Cloudy Whisper</Text>
                             <Text className="text-muted font-q-medium text-xs">Send feedback or report bugs</Text>
                         </View>
-                        <Ionicons name="chatbubble-ellipses-outline" size={22} color="#FF9E7D" />
+                        <Ionicons name="chatbubble-ellipses-outline" size={22} color={currentAccent.hex} />
                     </TouchableOpacity>
 
-                    <View className="h-[1px] bg-inactive opacity-10" />
-
-                    <View className="h-[1px] bg-inactive opacity-10" />
-
-                    <View className="h-[1px] bg-inactive opacity-10" />
+                    <Divider />
 
                     {/* Add Password (for Google-only users without password) */}
-                    {/* We reserve space or render if we know they lack a password */}
-                    {/* Logic: If user has 'google' provider AND DOES NOT have 'email' (password) provider */}
-                    {/* OR if they are anonymous (handled by profile context mostly, but here we check providers) */}
                     
                     {(() => {
-                        const showAddPassword = !hasPasswordLogin; 
-                        
-                        // To prevent layout shift, if we are loading, we can keep the view mounted or show nothing if we want it to "pop in" only if needed.
-                        // But user asked to prevent pop-in. So we should ideally default to hidden?
-                        // Actually, if we default to true (hasPasswordLogin=true), it starts hidden.
-                        // If we discover they DON'T have a password, it pops in.
-                        // To fix this, we need to know SOONER.
-                        // But we can't block render.
-                        // Best UX: Show it if we suspect they might need it (e.g. isAnonymous is true) or just accept the pop-in but make it smooth?
-                        // The user said: "It should be preloaded like all other things on screen."
-                        // Since checking providers is async, we can't "preload" it before render without a loading state for the whole screen.
-                        // COMPROMISE: We will show a skeleton or just render it if specific criteria met.
-                        // User Request Clarification: "It is not a feature for accounts that already have email and password provider."
-                        
+                        // If hasPasswordLogin is true, we hide this section
                         if (hasPasswordLogin) return null;
 
                         return (
                             <>
+                                <View className="h-[1px] bg-inactive/10" />
                                 <TouchableOpacity
                                     onPress={() => { haptics.selection(); setIsPasswordSheetVisible(true); }}
                                     className="flex-row items-center justify-between py-4"
@@ -380,9 +339,9 @@ export const SettingsScreen = () => {
                                         <Text className="text-lg font-q-bold text-text">Add Password Login</Text>
                                         <Text className="text-muted font-q-medium text-xs">Enable logging in with email & password</Text>
                                     </View>
-                                    <Ionicons name="key-outline" size={22} color="#FF9E7D" />
+                                    <Ionicons name="key-outline" size={22} color={currentAccent.hex} />
                                 </TouchableOpacity>
-                                <View className="h-[1px] bg-inactive opacity-10" />
+                                <Divider />
                             </>
                         );
                     })()}
@@ -390,6 +349,7 @@ export const SettingsScreen = () => {
                     {/* Secure Account (Anonymous users) */}
                     {isAnonymous && (
                         <>
+                            <View className="h-[1px] bg-inactive/10" />
                             <TouchableOpacity
                                 onPress={() => { haptics.selection(); navigation.navigate('SecureAccount'); }}
                                 className="flex-row items-center justify-between py-4"
@@ -398,9 +358,9 @@ export const SettingsScreen = () => {
                                     <Text className="text-lg font-q-bold text-text">Secure Your Journey</Text>
                                     <Text className="text-muted font-q-medium text-xs">Create an account to save your progress</Text>
                                 </View>
-                                <Ionicons name="sparkles-outline" size={22} color="#FF9E7D" />
+                                <Ionicons name="sparkles-outline" size={22} color={currentAccent.hex} />
                             </TouchableOpacity>
-                            <View className="h-[1px] bg-inactive opacity-10" />
+                            <Divider />
                         </>
                     )}
 
@@ -410,7 +370,7 @@ export const SettingsScreen = () => {
                         className="flex-row items-center justify-between py-4"
                     >
                         <Text className="text-lg font-q-bold text-text">Delete Account & Data</Text>
-                        <Ionicons name="trash-outline" size={22} color="#FF9E7D" />
+                        <Ionicons name="trash-outline" size={22} color={currentAccent.hex} />
                     </TouchableOpacity>
                 </View>
 
@@ -446,6 +406,82 @@ export const SettingsScreen = () => {
                     <TouchableOpacity onPress={() => { haptics.selection(); setIsTimeSheetVisible(false); }} className="mt-4 py-2 active:scale-95 transition-transform">
                         <Text className="text-muted font-q-bold text-base">Cancel</Text>
                     </TouchableOpacity>
+                </View>
+            </BottomSheet>
+
+            <BottomSheet visible={isAccentSheetVisible} onClose={() => setIsAccentSheetVisible(false)}>
+                <View className="items-center w-full">
+                    <MascotImage source={MASCOTS.HUG} className="w-40 h-40 mb-4" resizeMode="contain" />
+                    <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">Choose your vibe</Text>
+
+                    <View className="flex-row flex-wrap justify-between w-full mb-4">
+                        {Object.values(ACCENT_COLORS).map((color) => {
+                            const isSelected = currentAccent.id === color.id;
+                            
+                            return (
+                                <TouchableOpacity
+                                    key={color.id}
+                                    onPress={() => {
+                                        haptics.selection();
+                                        setAccent(color.id);
+                                    }}
+                                    delayPressIn={0}
+                                    activeOpacity={0.7}
+                                    className="w-[30%] aspect-square mb-4 rounded-[32px] items-center justify-center p-2 bg-card shadow-sm active:scale-95"
+                                    style={{
+                                        borderColor: isSelected ? color.hex : 'transparent',
+                                        borderWidth: 2,
+                                        elevation: isSelected ? 2 : 0
+                                    }}
+                                >
+                                    {isSelected && (
+                                        <View 
+                                            style={{ 
+                                                position: 'absolute', 
+                                                top: 0, left: 0, right: 0, bottom: 0, 
+                                                backgroundColor: `${color.hex}15`,
+                                                borderRadius: 30
+                                            }} 
+                                        />
+                                    )}
+                                    <View className="items-center justify-center">
+                                         <View 
+                                            className="w-12 h-12 rounded-full shadow-sm shadow-black/10" 
+                                            style={{ backgroundColor: color.hex }} 
+                                        />
+                                        {isSelected && (
+                                            <View className="absolute bg-white rounded-full p-0.5 shadow-sm border border-inactive/20 -right-1 -top-1">
+                                                <Ionicons name="checkmark-circle" size={16} color={color.hex} />
+                                            </View>
+                                        )}
+                                    </View>
+                                    <Text 
+                                        className={`font-q-bold text-[10px] mt-2 uppercase ${isSelected ? '' : 'text-muted'}`}
+                                        style={isSelected ? { color: color.hex } : undefined}
+                                        numberOfLines={1}
+                                    >
+                                        {color.label.replace('Cloudy ', '').replace('Sunset ', '')}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+
+                    <View className="w-full mt-4">
+                        <Button 
+                            label="Looks Great" 
+                            onPress={() => {
+                                haptics.success();
+                                setIsAccentSheetVisible(false);
+                            }}
+                        />
+                        <TouchableOpacity 
+                            onPress={() => { haptics.selection(); setIsAccentSheetVisible(false); }}
+                            className="mt-4 py-2 items-center active:scale-95 transition-transform"
+                        >
+                            <Text className="text-muted font-q-bold text-base">Maybe later</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </BottomSheet>
 
@@ -532,7 +568,7 @@ export const SettingsScreen = () => {
                         <Text className="text-2xl font-q-bold text-text text-center">See you soon!</Text>
                         <Text className="text-base font-q-medium text-muted mt-2 text-center px-4">Logging out...</Text>
                         <View className="mt-6">
-                            <ActivityIndicator size="small" color="#FF9E7D" />
+                            <ActivityIndicator size="small" color={currentAccent.hex} />
                         </View>
                     </View>
                 </View>

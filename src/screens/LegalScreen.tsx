@@ -6,11 +6,13 @@ import { Layout } from '../components/Layout';
 import { TopNav } from '../components/TopNav';
 import { haptics } from '../utils/haptics';
 import { AppFooter } from '../components/AppFooter';
+import { useAccent } from '../context/AccentContext';
 
 export const LegalScreen = () => {
     const navigation = useNavigation();
     const route = useRoute<any>();
     const [activeTab, setActiveTab] = useState<'privacy' | 'terms'>(route.params?.type || 'privacy');
+    const { currentAccent } = useAccent();
 
     const privacyPolicy = `
 Last Updated: February 14, 2026
@@ -68,13 +70,15 @@ Cloudy is provided "as is" without any warranties. We are not liable for any dam
             <View className="flex-row px-6 mt-4 gap-4">
                 <TouchableOpacity 
                     onPress={() => { haptics.selection(); setActiveTab('privacy'); }}
-                    className={`flex-1 py-3 rounded-2xl items-center ${activeTab === 'privacy' ? 'bg-primary' : 'bg-card border border-inactive/10'}`}
+                    className={`flex-1 py-3 rounded-2xl items-center ${activeTab === 'privacy' ? '' : 'bg-card border border-inactive/10'}`}
+                    style={activeTab === 'privacy' ? { backgroundColor: currentAccent.hex } : {}}
                 >
                     <Text className={`font-q-bold ${activeTab === 'privacy' ? 'text-white' : 'text-muted'}`}>Privacy Policy</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
                     onPress={() => { haptics.selection(); setActiveTab('terms'); }}
-                    className={`flex-1 py-3 rounded-2xl items-center ${activeTab === 'terms' ? 'bg-primary' : 'bg-card border border-inactive/10'}`}
+                    className={`flex-1 py-3 rounded-2xl items-center ${activeTab === 'terms' ? '' : 'bg-card border border-inactive/10'}`}
+                    style={activeTab === 'terms' ? { backgroundColor: currentAccent.hex } : {}}
                 >
                     <Text className={`font-q-bold ${activeTab === 'terms' ? 'text-white' : 'text-muted'}`}>Terms of Service</Text>
                 </TouchableOpacity>

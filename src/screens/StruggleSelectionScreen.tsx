@@ -6,17 +6,16 @@ import { useNavigation } from '@react-navigation/native';
 import { MASCOTS } from '../constants/Assets';
 import { TopNav } from '../components/TopNav';
 import { MascotImage } from '../components/MascotImage';
-
 import { Layout } from '../components/Layout';
-
 import { STRUGGLES } from '../constants/Struggles';
 import { useAnalytics } from '../hooks/useAnalytics';
-
+import { useAccent } from '../context/AccentContext';
 
 export const StruggleSelectionScreen = () => {
     const navigation = useNavigation();
     const { height } = useWindowDimensions();
     const { trackEvent } = useAnalytics();
+    const { currentAccent } = useAccent();
     const [selected, setSelected] = useState<string[]>([]);
 
     const mascotSize = height < 750 ? 'w-48 h-48' : height < 850 ? 'w-64 h-64' : 'w-72 h-72';
@@ -75,7 +74,7 @@ export const StruggleSelectionScreen = () => {
                      {/* Progress Dots */}
                      <View className="flex-row justify-center gap-2 mb-8">
                         <View className="w-3 h-3 rounded-full bg-gray-300" />
-                        <View className="w-3 h-3 rounded-full bg-primary" />
+                        <View className="w-3 h-3 rounded-full" style={{ backgroundColor: currentAccent.hex }} />
                         <View className="w-3 h-3 rounded-full bg-gray-300" />
                         <View className="w-3 h-3 rounded-full bg-gray-300" />
                     </View>

@@ -6,6 +6,7 @@ import { MASCOTS } from '../constants/Assets';
 import { haptics } from '../utils/haptics';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
+import { useAccent } from '../context/AccentContext';
 
 interface LockedFeatureProps {
     featureName: string;
@@ -24,13 +25,14 @@ export const LockedFeature = ({
 }: LockedFeatureProps) => {
     const navigation = useNavigation<any>();
     const { isDarkMode } = useTheme();
+    const { currentAccent } = useAccent();
 
     return (
         <View className="bg-card rounded-[32px] p-8 shadow-xl mb-8 items-center border-2 border-dashed border-inactive/20"
             style={{ shadowColor: isDarkMode ? '#000' : '#0000000D', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}>
             
-            <View className="bg-primary/10 p-4 rounded-full mb-6">
-                <Ionicons name={icon} size={32} color="#FF9E7D" />
+            <View className="p-4 rounded-full mb-6" style={{ backgroundColor: `${currentAccent.hex}1A` }}>
+                <Ionicons name={icon} size={32} color={currentAccent.hex} />
             </View>
 
             <MascotImage 
@@ -52,7 +54,8 @@ export const LockedFeature = ({
                     haptics.selection();
                     navigation.navigate('Progress');
                 }}
-                className="bg-primary px-8 py-4 rounded-[20px] active:scale-95 transition-transform"
+                className="px-8 py-4 rounded-[20px] active:scale-95 transition-transform"
+                style={{ backgroundColor: currentAccent.hex }}
             >
                 <Text className="text-white font-q-bold text-lg">See Progress</Text>
             </TouchableOpacity>

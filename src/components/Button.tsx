@@ -2,6 +2,7 @@ import React from 'react';
 import { TouchableOpacity, Text, View, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { haptics } from '../utils/haptics';
+import { useAccent } from '../context/AccentContext';
 
 interface ButtonProps {
     label: string;
@@ -20,16 +21,18 @@ export const Button: React.FC<ButtonProps> = ({
     loading = false,
     variant = 'primary',
     showArrow = false,
-    haptic = 'medium'
+    haptic = 'selection'
 }) => {
+    const { currentAccent } = useAccent();
+
     const baseClasses = "w-full py-4 min-h-[56px] rounded-full items-center justify-center flex-row shadow-sm active:scale-95 transition-transform";
-    const primaryClasses = (disabled || loading) ? "bg-inactive" : "bg-primary active:opacity-90";
-    const outlineClasses = "bg-transparent border-2 border-primary"; 
+    const primaryClasses = (disabled || loading) ? "bg-inactive" : "active:opacity-90"; 
+    const outlineClasses = "bg-transparent border-2"; 
     const dangerClasses = (disabled || loading) ? "bg-inactive" : "bg-red-500 active:opacity-90";
 
     const textClasses = "text-xl font-q-bold";
     const primaryText = "text-white";
-    const outlineText = "text-primary";
+    const outlineText = ""; 
     const dangerText = "text-white";
 
     const handlePress = () => {
@@ -42,18 +45,28 @@ export const Button: React.FC<ButtonProps> = ({
                 case 'success': haptics.success(); break;
             }
         }
-        onPress();
+        if (onPress) onPress();
     };
+
+    const dynamicStyle = variant === 'primary' && !disabled && !loading 
+        ? { backgroundColor: currentAccent.hex } 
+        : variant === 'outline' 
+            ? { borderColor: currentAccent.hex } 
+            : {};
+
+    const dynamicTextStyle = variant === 'outline' ? { color: currentAccent.hex } : {};
 
     return (
         <TouchableOpacity
             onPress={handlePress}
             disabled={disabled || loading}
             className={`${baseClasses} ${variant === 'primary' ? primaryClasses : variant === 'danger' ? dangerClasses : outlineClasses}`}
+            style={dynamicStyle}
         >
             <View className="w-full h-full flex-row items-center justify-center">
                 <Text 
                     className={`${textClasses} ${variant === 'primary' || variant === 'danger' ? primaryText : outlineText} ${loading ? "opacity-0" : "opacity-100"}`}
+                    style={dynamicTextStyle}
                 >
                     {label}
                 </Text>
@@ -61,7 +74,7 @@ export const Button: React.FC<ButtonProps> = ({
                 {loading && (
                     <View className="absolute inset-0 items-center justify-center">
                         <ActivityIndicator 
-                            color={variant === 'primary' ? 'white' : '#FF9E7D'} 
+                            color={variant === 'primary' ? 'white' : currentAccent.hex} 
                             size="small" 
                             className="scale-125" 
                         />
@@ -70,7 +83,7 @@ export const Button: React.FC<ButtonProps> = ({
 
                 {!loading && showArrow && (
                     <View className="absolute right-6">
-                        <Ionicons name="arrow-forward" size={28} color={variant === 'primary' ? 'white' : '#FF9E7D'} />
+                        <Ionicons name="arrow-forward" size={28} color={variant === 'primary' || variant === 'danger' ? 'white' : currentAccent.hex} />
                     </View>
                 )}
             </View>

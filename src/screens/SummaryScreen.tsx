@@ -14,7 +14,7 @@ import { getFriendlyAuthErrorMessage } from '../utils/authErrors';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { identifyUser } from '../lib/posthog';
 import { useProfile } from '../context/ProfileContext';
-
+import { useAccent } from '../context/AccentContext';
 
 
 export const SummaryScreen = () => {
@@ -24,6 +24,7 @@ export const SummaryScreen = () => {
     const route = useRoute();
     const { trackEvent } = useAnalytics();
     const { updateProfile } = useProfile();
+    const { currentAccent } = useAccent();
 
     const mascotSize = height < 750 ? 'w-48 h-48' : height < 850 ? 'w-64 h-64' : 'w-72 h-72';
 
@@ -102,7 +103,7 @@ export const SummaryScreen = () => {
                         />
 
                          <Text className="text-2xl text-text text-center font-q-regular leading-relaxed px-4">
-                            Research shows that writing down just <Text className="font-q-bold text-primary">one gratitude</Text> a day can reduce <Text className="font-q-bold text-primary">{struggleText}</Text> and help you find <Text className="font-q-bold text-primary">{goalText}</Text>.
+                            Research shows that writing down just <Text className="font-q-bold" style={{ color: currentAccent.hex }}>one gratitude</Text> a day can reduce <Text className="font-q-bold" style={{ color: currentAccent.hex }}>{struggleText}</Text> and help you find <Text className="font-q-bold" style={{ color: currentAccent.hex }}>{goalText}</Text>.
                         </Text>
                     </View>
                 </View>
@@ -112,7 +113,7 @@ export const SummaryScreen = () => {
                         <View className="w-3 h-3 rounded-full bg-gray-300" />
                         <View className="w-3 h-3 rounded-full bg-gray-300" />
                         <View className="w-3 h-3 rounded-full bg-gray-300" />
-                        <View className="w-3 h-3 rounded-full bg-primary" />
+                        <View className="w-3 h-3 rounded-full" style={{ backgroundColor: currentAccent.hex }} />
                     </View>
 
                     <Button

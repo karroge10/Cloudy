@@ -7,11 +7,13 @@ import { useTheme } from '../context/ThemeContext';
 import { haptics } from '../utils/haptics';
 import { MascotImage } from './MascotImage';
 import { MASCOTS } from '../constants/Assets';
+import { useAccent } from '../context/AccentContext';
 
-export const MemoryMix = () => {
+export const Flashback = () => {
     const navigation = useNavigation<any>();
     const { profile } = useProfile();
     const { isDarkMode } = useTheme();
+    const { currentAccent } = useAccent();
     
     // Cookie unlocks at 30 days
     const isUnlocked = (profile?.max_streak || 0) >= 30;
@@ -30,7 +32,7 @@ export const MemoryMix = () => {
                 onPress={() => { 
                     haptics.selection(); 
                     if (isUnlocked) {
-                        navigation.navigate('MemoryMix');
+                        navigation.navigate('Flashback');
                     } else {
                         navigation.navigate('Progress');
                     }
@@ -41,7 +43,7 @@ export const MemoryMix = () => {
                     <View className="flex-row justify-between items-start">
                         <View className="flex-1 mr-4">
                             <View className="flex-row items-center mb-2">
-                                <Text className="text-lg font-q-bold text-text mr-2">Memory Mix</Text>
+                                <Text className="text-lg font-q-bold text-text mr-2">Flashback</Text>
                             </View>
                             
                             <Text className="text-base font-q-medium text-muted leading-6">
@@ -49,8 +51,8 @@ export const MemoryMix = () => {
                             </Text>
                             
                             <View className="flex-row items-center mt-4">
-                                <Text className="text-primary font-q-bold text-sm uppercase tracking-wider mr-1">Enter Mix</Text>
-                                <Ionicons name="arrow-forward" size={14} color="#FF9E7D" />
+                                <Text className="font-q-bold text-sm uppercase tracking-wider mr-1" style={{ color: currentAccent.hex }}>Enter Mix</Text>
+                                <Ionicons name="arrow-forward" size={14} color={currentAccent.hex} />
                             </View>
                         </View>
                         
@@ -63,7 +65,7 @@ export const MemoryMix = () => {
                 ) : (
                     <View className="items-center py-2 pb-6">
                         <View className="flex-row justify-between items-center w-full mb-6">
-                            <Text className="text-lg font-q-bold text-text">Memory Mix</Text>
+                            <Text className="text-lg font-q-bold text-text">Flashback</Text>
                             <View className="bg-inactive/10 px-3 py-1 rounded-full flex-row items-center">
                                 <Ionicons name="lock-closed" size={10} color={isDarkMode ? "#94A3B8" : "#64748B"} />
                                 <Text className="text-[10px] font-q-bold text-muted ml-1 uppercase">Locked</Text>
@@ -88,19 +90,22 @@ export const MemoryMix = () => {
                         <View className="w-full max-w-[220px] mb-6">
                             <View className="flex-row justify-between mb-2 px-1">
                                 <Text className="text-[10px] font-q-bold text-muted uppercase tracking-tight">Progress</Text>
-                                <Text className="text-[10px] font-q-bold text-primary font-q-bold">{Math.min(profile?.max_streak || 0, 30)} / 30 days</Text>
+                                <Text className="text-[10px] font-q-bold font-q-bold" style={{ color: currentAccent.hex }}>{Math.min(profile?.max_streak || 0, 30)} / 30 days</Text>
                             </View>
                             <View className="w-full h-2 bg-inactive/10 rounded-full overflow-hidden">
                                 <View 
-                                    className="h-full bg-primary rounded-full" 
-                                    style={{ width: `${Math.min(((profile?.max_streak || 0) / 30) * 100, 100)}%` }} 
+                                    className="h-full rounded-full" 
+                                    style={{ 
+                                        width: `${Math.min(((profile?.max_streak || 0) / 30) * 100, 100)}%`,
+                                        backgroundColor: currentAccent.hex
+                                    }} 
                                 />
                             </View>
                         </View>
 
                         <View className="flex-row items-center">
-                            <Text className="text-[11px] font-q-bold text-primary uppercase tracking-[0.15em]">Track Progress</Text>
-                            <Ionicons name="chevron-forward" size={12} color="#FF9E7D" style={{ marginLeft: 4 }} />
+                            <Text className="text-[11px] font-q-bold uppercase tracking-[0.15em]" style={{ color: currentAccent.hex }}>Track Progress</Text>
+                            <Ionicons name="chevron-forward" size={12} color={currentAccent.hex} style={{ marginLeft: 4 }} />
                         </View>
                     </View>
                 )}

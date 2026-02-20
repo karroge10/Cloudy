@@ -10,7 +10,7 @@ module.exports = ({ config }) => {
     },
     extra: {
       ...config.extra,
-      googleWebClientId: '110002315879-19osagf9f4s3spnpns5jckcdc5dq0g5r.apps.googleusercontent.com',
+      googleWebClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
     }
   };
 };

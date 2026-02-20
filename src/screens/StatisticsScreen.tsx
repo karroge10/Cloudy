@@ -7,19 +7,42 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { MascotImage } from '../components/MascotImage';
 import { MASCOTS } from '../constants/Assets';
 import { useTheme } from '../context/ThemeContext';
+import { useAccent } from '../context/AccentContext';
 
 export const StatisticsScreen = () => {
     const route = useRoute<any>();
     const navigation = useNavigation();
     const { data } = route.params || {};
     const { isDarkMode } = useTheme();
+    const { currentAccent } = useAccent();
 
     if (!data) return null;
+
+    const accentBgStyle = { backgroundColor: `${currentAccent.hex}1A` }; // 10% opacity
+    const accentTextStyle = { color: currentAccent.hex };
+
+    const StatCard = ({ title, value, subtitle, icon }: any) => (
+        <View className="bg-card rounded-3xl p-5 mb-4 shadow-sm border border-inactive/5 flex-row items-center h-28">
+            <View 
+                className="w-12 h-12 rounded-2xl items-center justify-center mr-4"
+                style={{ backgroundColor: `${currentAccent.hex}1A` }}
+            >
+                <Ionicons name={icon} size={24} color={currentAccent.hex} />
+            </View>
+            <View className="flex-1">
+                <Text className="text-[10px] font-q-bold text-muted uppercase tracking-wider mb-1" numberOfLines={1}>{title}</Text>
+                <View className="flex-row items-baseline">
+                    <Text className="text-2xl font-q-bold text-text mr-1" numberOfLines={1}>{value}</Text>
+                    <Text className="text-sm font-q-medium text-muted" numberOfLines={1}>{subtitle}</Text>
+                </View>
+            </View>
+        </View>
+    );
 
     return (
         <Layout useSafePadding={false}>
             <View className="px-6 pt-4 mb-4">
-                <TopNav title="Deep Dive" subtitle="ALL TIME STATS" onBack={() => navigation.goBack()} />
+                <TopNav title="Deep Dive" onBack={() => navigation.goBack()} />
             </View>
 
             <ScrollView 
@@ -27,141 +50,79 @@ export const StatisticsScreen = () => {
                 contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}
             >
                 <View className="items-center w-full mb-8">
-                    <MascotImage source={MASCOTS.ANALYTICS} className="w-48 h-48 mb-4" resizeMode="contain" />
+                    <MascotImage source={MASCOTS.ANALYTICS} className="w-40 h-40" resizeMode="contain" />
+                    <Text className="text-2xl font-q-bold text-text mt-4">Cloudy Analysis</Text>
+                    <Text className="text-base font-q-medium text-muted text-center mt-1">Numerical patterns of your story</Text>
                 </View>
 
-                {/* Active Days */}
-                <View className="w-full bg-card border border-inactive/10 rounded-[24px] p-5 mb-4 flex-row items-center justify-between shadow-sm">
-                        <View className="flex-row items-center">
-                            <View className="bg-primary/10 p-3 rounded-full mr-4">
-                            <Ionicons name="calendar-outline" size={20} color="#FF9E7D" />
-                            </View>
-                            <View>
-                                <Text className="text-base font-q-bold text-text">Active Days</Text>
-                                <Text className="text-sm text-muted font-q-medium">
-                                    Total days journaled
-                                </Text>
-                            </View>
+                <View className="mb-4">
+                    <Text className="text-xs font-q-bold text-muted uppercase tracking-[0.2em] mb-4 ml-1">Key Metrics</Text>
+                    <View className="flex-row flex-wrap justify-between w-full">
+                        <View style={{ width: '48%' }}>
+                            <StatCard title="Active Days" value={data.activeDays} subtitle="days" icon="calendar-outline" />
                         </View>
-                        <View className="bg-primary/10 px-3 py-1 rounded-full">
-                        <Text className="text-primary font-q-bold text-sm">
-                            {data.activeDays} Days
-                        </Text>
+                        <View style={{ width: '48%' }}>
+                            <StatCard title="Total Logs" value={data.totalEntries} subtitle="logs" icon="documents-outline" />
                         </View>
+                        <View style={{ width: '48%' }}>
+                            <StatCard title="Avg Length" value={data.avgWordsPerEntry} subtitle="words" icon="text-outline" />
+                        </View>
+                        <View style={{ width: '48%' }}>
+                            <StatCard title="Max Words" value={data.longestEntryWords} subtitle="words" icon="trophy-outline" />
+                        </View>
+                        <View style={{ width: '48%' }}>
+                            <StatCard title="Time Spent" value={`${data.totalTimeSpentMinutes}m`} subtitle="writing" icon="hourglass-outline" />
+                        </View>
+                        <View style={{ width: '48%' }}>
+                            <StatCard title="Word Count" value={data.totalWords} subtitle="words" icon="create-outline" />
+                        </View>
+                    </View>
                 </View>
 
-                {/* Total Entries */}
-                <View className="w-full bg-card border border-inactive/10 rounded-[24px] p-5 mb-4 flex-row items-center justify-between shadow-sm">
-                        <View className="flex-row items-center">
-                            <View className="bg-primary/10 p-3 rounded-full mr-4">
-                            <Ionicons name="documents-outline" size={20} color="#FF9E7D" />
-                            </View>
-                            <View>
-                                <Text className="text-base font-q-bold text-text">Total Entries</Text>
-                                <Text className="text-sm text-muted font-q-medium">
-                                    Memories captured
-                                </Text>
-                            </View>
+                {/* Graph Section */}
+                <View className="mb-4">
+                    <Text className="text-xs font-q-bold text-muted uppercase tracking-[0.2em] mb-4 ml-1">Writing Rhythm</Text>
+                    <View className="bg-card rounded-3xl p-6 mb-4 shadow-sm border border-inactive/5">
+                        <View className="flex-row items-end h-32 justify-around">
+                            {(() => {
+                                const total = data.timeOfDay.morning + data.timeOfDay.afternoon + data.timeOfDay.evening;
+                                const mPct = total ? (data.timeOfDay.morning / total) * 100 : 0;
+                                const aPct = total ? (data.timeOfDay.afternoon / total) * 100 : 0;
+                                const ePct = total ? (data.timeOfDay.evening / total) * 100 : 0;
+                                
+                                return (
+                                    <>
+                                        <View className="items-center flex-1">
+                                            <View className="w-12 rounded-t-xl" style={{ height: `${Math.max(mPct, 5)}%`, backgroundColor: mPct === Math.max(mPct, aPct, ePct) && total > 0 ? currentAccent.hex : `${currentAccent.hex}33` }} />
+                                            <Text className="text-xs font-q-bold text-muted mt-2">Morning</Text>
+                                            <Text className="text-[10px] font-q-bold" style={{ color: currentAccent.hex }}>{data.timeOfDay.morning}</Text>
+                                        </View>
+                                        <View className="items-center flex-1">
+                                            <View className="w-12 rounded-t-xl" style={{ height: `${Math.max(aPct, 5)}%`, backgroundColor: aPct === Math.max(mPct, aPct, ePct) && total > 0 ? currentAccent.hex : `${currentAccent.hex}33` }} />
+                                            <Text className="text-xs font-q-bold text-muted mt-2">Afternoon</Text>
+                                            <Text className="text-[10px] font-q-bold" style={{ color: currentAccent.hex }}>{data.timeOfDay.afternoon}</Text>
+                                        </View>
+                                        <View className="items-center flex-1">
+                                            <View className="w-12 rounded-t-xl" style={{ height: `${Math.max(ePct, 5)}%`, backgroundColor: ePct === Math.max(mPct, aPct, ePct) && total > 0 ? currentAccent.hex : `${currentAccent.hex}33` }} />
+                                            <Text className="text-xs font-q-bold text-muted mt-2">Evening</Text>
+                                            <Text className="text-[10px] font-q-bold" style={{ color: currentAccent.hex }}>{data.timeOfDay.evening}</Text>
+                                        </View>
+                                    </>
+                                );
+                            })()}
                         </View>
-                        <View className="bg-primary/10 px-3 py-1 rounded-full">
-                        <Text className="text-primary font-q-bold text-sm">
-                            {data.totalEntries} Entries
-                        </Text>
-                        </View>
-                </View>
-
-                {/* Avg Length */}
-                <View className="w-full bg-card border border-inactive/10 rounded-[24px] p-5 mb-4 flex-row items-center justify-between shadow-sm">
-                        <View className="flex-row items-center">
-                            <View className="bg-primary/10 p-3 rounded-full mr-4">
-                            <Ionicons name="text-outline" size={20} color="#FF9E7D" />
-                            </View>
-                            <View>
-                                <Text className="text-base font-q-bold text-text">Average Length</Text>
-                                <Text className="text-sm text-muted font-q-medium">
-                                    Words per entry
-                                </Text>
-                            </View>
-                        </View>
-                        <View className="bg-primary/10 px-3 py-1 rounded-full">
-                        <Text className="text-primary font-q-bold text-sm">
-                            {data.avgWordsPerEntry} Words
-                        </Text>
-                        </View>
-                </View>
-
-                {/* Max Length */}
-                <View className="w-full bg-card border border-inactive/10 rounded-[24px] p-5 mb-4 flex-row items-center justify-between shadow-sm">
-                        <View className="flex-row items-center">
-                            <View className="bg-primary/10 p-3 rounded-full mr-4">
-                            <Ionicons name="trophy-outline" size={20} color="#FF9E7D" />
-                            </View>
-                            <View>
-                                <Text className="text-base font-q-bold text-text">Longest Entry</Text>
-                                <Text className="text-sm text-muted font-q-medium">
-                                    Most words in one go
-                                </Text>
-                            </View>
-                        </View>
-                        <View className="bg-primary/10 px-3 py-1 rounded-full">
-                        <Text className="text-primary font-q-bold text-sm">
-                            {data.longestEntryWords} Words
-                        </Text>
-                        </View>
-                </View>
-
-                {/* Time Invested */}
-                <View className="w-full bg-card border border-inactive/10 rounded-[24px] p-5 mb-4 flex-row items-center justify-between shadow-sm">
-                        <View className="flex-row items-center">
-                            <View className="bg-primary/10 p-3 rounded-full mr-4">
-                            <Ionicons name="hourglass-outline" size={20} color="#FF9E7D" />
-                            </View>
-                            <View>
-                                <Text className="text-base font-q-bold text-text">Time Invested</Text>
-                                <Text className="text-sm text-muted font-q-medium">
-                                    Estimated writing time
-                                </Text>
-                            </View>
-                        </View>
-                        <View className="bg-primary/10 px-3 py-1 rounded-full">
-                        <Text className="text-primary font-q-bold text-sm">
-                            {data.totalTimeSpentMinutes}m
-                        </Text>
-                        </View>
-                </View>
-
-                {/* Productivity */}
-                <View className="w-full bg-card border border-inactive/10 rounded-[24px] p-5 mb-4 flex-row items-center justify-between shadow-sm">
-                        <View className="flex-row items-center">
-                            <View className="bg-primary/10 p-3 rounded-full mr-4">
-                            <Ionicons name="sunny-outline" size={20} color="#FF9E7D" />
-                            </View>
-                            <View>
-                                <Text className="text-base font-q-bold text-text">Most Productive</Text>
-                                <Text className="text-sm text-muted font-q-medium">
-                                    {
-                                    data.timeOfDay.morning >= data.timeOfDay.afternoon && data.timeOfDay.morning >= data.timeOfDay.evening ? 'Morning' :
-                                    data.timeOfDay.afternoon >= data.timeOfDay.morning && data.timeOfDay.afternoon >= data.timeOfDay.evening ? 'Afternoon' : 'Evening'
-                                    }
-                                </Text>
-                            </View>
-                        </View>
-                        <View className="bg-primary/10 px-3 py-1 rounded-full">
-                        <Text className="text-primary font-q-bold text-sm">
-                            {Math.max(data.timeOfDay.morning, data.timeOfDay.afternoon, data.timeOfDay.evening)} Entries
-                        </Text>
-                        </View>
+                    </View>
                 </View>
 
                 {/* Top Themes Section */}
                 {data.topWords.length > 0 && (
                     <View className="mb-12">
-                            <Text className="text-base font-q-bold text-text mb-4 ml-2">Top Themes</Text>
-                            <View className="flex-row flex-wrap gap-3">
+                        <Text className="text-xs font-q-bold text-muted uppercase tracking-[0.2em] mb-4 ml-1">Top Themes</Text>
+                        <View className="flex-row flex-wrap gap-3">
                                 {data.topWords.map((item: any, index: number) => (
-                                    <View key={index} className="bg-card border border-inactive/20 px-4 py-3 rounded-2xl flex-row items-center shadow-sm">
+                                     <View key={index} className="bg-card border border-inactive/10 px-4 py-3 rounded-2xl flex-row items-center shadow-sm">
                                         <Text className="text-base font-q-medium text-text mr-2 capitalize">{item.word}</Text>
-                                        <Text className="text-xs font-q-bold text-primary/60">{item.count}</Text>
+                                        <Text className="text-xs font-q-bold" style={{ color: `${currentAccent.hex}99` }}>{item.count}</Text>
                                     </View>
                                 ))}
                             </View>

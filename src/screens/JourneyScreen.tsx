@@ -28,15 +28,12 @@ import { Button } from '../components/Button';
 import { useProfile } from '../context/ProfileContext';
 import { CalendarView } from '../components/CalendarView';
 import { useTheme } from '../context/ThemeContext';
+import { useAccent } from '../context/AccentContext';
 
 const ITEM_HEIGHT = 190;
 
 /**
- * TimelineItem - Optimized with FlashList recycling support
- * 
- * Simplified animations: Removed scroll-linked interpolateColor and 
- * per-frame opacity calculations that caused jank. Now uses simple
- * fade-in on mount and delete animation.
+ * TimelineItem ...
  */
 const TimelineItem = ({ 
     item, 
@@ -47,7 +44,8 @@ const TimelineItem = ({
     isDeletingProp,
     onDeleteAnimationComplete,
     onPress,
-    isDarkMode
+    isDarkMode,
+    accentColor
 }: { 
     item: JournalEntry; 
     index: number;
@@ -58,7 +56,9 @@ const TimelineItem = ({
     onDeleteAnimationComplete: (id: string) => void;
     onPress: () => void;
     isDarkMode: boolean;
+    accentColor: string;
 }) => {
+    // ... existing hooks ...
     const trashScale = useSharedValue(1);
     const itemOpacity = useSharedValue(1);
     const itemHeight = useSharedValue(ITEM_HEIGHT);
@@ -130,10 +130,6 @@ const TimelineItem = ({
                         className="bg-card rounded-[40px] p-6 shadow-[#0000000D] shadow-xl flex-1 justify-between relative overflow-hidden"
                         style={{ shadowColor: isDarkMode ? '#000' : '#0000000D', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}
                     >
-                        <View className="absolute -top-3 -left-3 opacity-30">
-                             <Text className="text-[#FF9E7D] text-8xl font-q-bold opacity-10 leading-none">"</Text>
-                        </View>
-
                         <View className="mt-2 ml-1">
                             <Text 
                                 className="font-q-medium text-base leading-6 text-text/80"
@@ -144,9 +140,9 @@ const TimelineItem = ({
                         </View>
                         
                         <View className="flex-row justify-between mt-4 md:mt-6 items-center">
-                            <View className="flex-row items-center bg-[#FF9E7D10] px-3 py-1 rounded-full">
-                                <Ionicons name="time-outline" size={14} color="#FF9E7D" />
-                                <Text className="text-primary font-q-semibold ml-2 text-xs">
+                            <View className="flex-row items-center px-3 py-1 rounded-full" style={{ backgroundColor: `${accentColor}1A` }}>
+                                <Ionicons name="time-outline" size={14} color={accentColor} />
+                                <Text className="font-q-semibold ml-2 text-xs" style={{ color: accentColor }}>
                                     {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
                                 </Text>
                             </View>
@@ -158,7 +154,7 @@ const TimelineItem = ({
                                     <Ionicons 
                                         name={item.is_favorite ? "heart" : "heart-outline"} 
                                         size={22} 
-                                        color={item.is_favorite ? "#FF9E7D" : (isDarkMode ? "#E5E7EB" : "#333333")} 
+                                        color={item.is_favorite ? accentColor : (isDarkMode ? "#E5E7EB" : "#333333")} 
                                         style={{ opacity: item.is_favorite ? 1 : 0.4 }}
                                     />
                             </TouchableOpacity>
@@ -183,7 +179,7 @@ const TimelineItem = ({
                                         <Animated.View style={trashAnimatedStyle}>
                                             {isDeletingProp ? (
                                                 <View className="w-[22px] h-[22px] items-center justify-center">
-                                                    <ActivityIndicator size="small" color="#FF9E7D" />
+                                                    <ActivityIndicator size="small" color={accentColor} />
                                                 </View>
                                             ) : (
                                                 <Ionicons name="trash-outline" size={22} color={isDarkMode ? "#E5E7EB" : "#333333"} style={{ opacity: 0.4 }} />
@@ -210,7 +206,8 @@ const MemoizedTimelineItem = React.memo(TimelineItem, (prev, next) => {
         prev.isDeletingProp === next.isDeletingProp &&
         prev.index === next.index &&
         prev.totalCount === next.totalCount &&
-        prev.isDarkMode === next.isDarkMode
+        prev.isDarkMode === next.isDarkMode &&
+        prev.accentColor === next.accentColor
     );
 });
 
@@ -219,6 +216,7 @@ export const JourneyScreen = () => {
     const navigation = useNavigation();
     const { isDarkMode } = useTheme();
     const { profile, isAnonymous, loading: profileLoading } = useProfile();
+    const { currentAccent } = useAccent();
     const { 
         entries, 
         loading, 
@@ -233,6 +231,7 @@ export const JourneyScreen = () => {
         filterMode,
         setFilterMode
     } = useJournal();
+    // ... existing state ...
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [showCalendar, setShowCalendar] = useState(false);
 
@@ -257,6 +256,7 @@ export const JourneyScreen = () => {
         }, [fetchEntriesForDate])
     );
 
+    // ... handleEntryPress, handleDateSelect, markedDates, deletion logic ...
     const handleEntryPress = useCallback((entryId: string) => {
         haptics.selection();
         skipResetRef.current = true;
@@ -287,15 +287,10 @@ export const JourneyScreen = () => {
         });
         return dates;
     }, [rawStreakData]);
-    
-    // Deletion states
+
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [animatingIds, setAnimatingIds] = useState<Set<string>>(new Set());
-
-    // Track centered/visible item for subtle highlight
     const [centeredId, setCenteredId] = useState<string | null>(null);
-
-    // FlashList ref for layout animations
     const listRef = useRef<FlashListRef<JournalEntry>>(null);
 
     const viewabilityConfig = useMemo(() => ({
@@ -346,8 +341,6 @@ export const JourneyScreen = () => {
         haptics.heavy();
         const id = deletingId;
         setDeletingId(null);
-        
-        // Start animation
         setAnimatingIds(prev => new Set(prev).add(id));
     };
 
@@ -357,14 +350,11 @@ export const JourneyScreen = () => {
             next.delete(id);
             return next;
         });
-
         await deleteEntry(id);
     };
 
-       // Viewability config - track which item is most centered
     const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken<JournalEntry>[] }) => {
         if (viewableItems.length > 0) {
-            // Find the item closest to center (first in the middle of visible items)
             const middleIndex = Math.floor(viewableItems.length / 2);
             const centeredItem = viewableItems[middleIndex];
             if (centeredItem?.item?.id) {
@@ -372,6 +362,7 @@ export const JourneyScreen = () => {
             }
         }
     }, []);
+
     const renderItem = ({ item, index }: { item: JournalEntry; index: number }) => (
         <MemoizedTimelineItem 
             item={item} 
@@ -383,6 +374,7 @@ export const JourneyScreen = () => {
             onDeleteAnimationComplete={handleAnimationComplete}
             onPress={() => handleEntryPress(item.id)}
             isDarkMode={isDarkMode}
+            accentColor={currentAccent.hex}
         />
     );
 
@@ -395,7 +387,6 @@ export const JourneyScreen = () => {
                 className="mb-8"
             />
 
-
             {/* Filter Controls */}
             <View className="mb-6">
                 <View className="flex-row items-center justify-between">
@@ -405,8 +396,12 @@ export const JourneyScreen = () => {
                     >
                         <TouchableOpacity 
                             onPress={() => { haptics.selection(); setFilterMode('all'); }}
-                            className={`px-5 py-2 rounded-full ${filterMode === 'all' ? 'bg-primary' : 'bg-transparent'}`}
-                            style={{ borderRadius: 20, overflow: 'hidden' }}
+                            className="px-5 py-2 rounded-full"
+                            style={{ 
+                                borderRadius: 20, 
+                                overflow: 'hidden',
+                                backgroundColor: filterMode === 'all' ? currentAccent.hex : 'transparent' 
+                            }}
                         >
                             <Text className={`font-q-bold text-sm ${filterMode === 'all' ? 'text-white' : 'text-muted'}`}>
                                 All
@@ -414,8 +409,12 @@ export const JourneyScreen = () => {
                         </TouchableOpacity>
                         <TouchableOpacity 
                             onPress={() => { haptics.selection(); setFilterMode('favorites'); }}
-                            className={`px-5 py-2 rounded-full flex-row items-center ${filterMode === 'favorites' ? 'bg-primary' : 'bg-transparent'}`}
-                            style={{ borderRadius: 20, overflow: 'hidden' }}
+                            className="px-5 py-2 rounded-full flex-row items-center"
+                            style={{ 
+                                borderRadius: 20, 
+                                overflow: 'hidden',
+                                backgroundColor: filterMode === 'favorites' ? currentAccent.hex : 'transparent'
+                            }}
                         >
                             <Ionicons 
                                 name="heart" 
@@ -435,17 +434,27 @@ export const JourneyScreen = () => {
                             haptics.selection();
                             setShowCalendar(prev => !prev); 
                         }}
-                        className={`p-3 rounded-2xl shadow-sm ${selectedDate ? 'bg-primary/10 border-2 border-primary' : 'bg-card border border-inactive/10'}`}
-                        style={{ shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: Platform.OS === 'android' ? 2 : undefined }}
+                        className="p-3 rounded-2xl shadow-sm"
+                        style={{ 
+                            shadowOffset: { width: 0, height: 2 }, 
+                            shadowOpacity: 0.05, 
+                            shadowRadius: 4, 
+                            elevation: Platform.OS === 'android' ? 2 : undefined,
+                            backgroundColor: selectedDate ? `${currentAccent.hex}1A` : undefined, // 10% opacity
+                            borderWidth: 1,
+                            borderColor: selectedDate ? currentAccent.hex : 'rgba(0,0,0,0.1)'
+                        }}
                     >
                         <Ionicons 
                             name={selectedDate ? "calendar" : "calendar-outline"} 
                             size={20} 
-                            color={selectedDate ? "#FF9E7D" : isDarkMode ? "#E5E7EB" : "#333"} 
-
+                            color={selectedDate ? currentAccent.hex : isDarkMode ? "#E5E7EB" : "#333"} 
                         />
                         {selectedDate && (
-                            <View className="absolute -top-1 -right-1 bg-primary rounded-full w-5 h-5 items-center justify-center border-2 border-background">
+                            <View 
+                                className="absolute -top-1 -right-1 rounded-full w-5 h-5 items-center justify-center border-2 border-background"
+                                style={{ backgroundColor: currentAccent.hex }}
+                            >
                                 <Text className="text-white text-[9px] font-q-bold">
                                     {new Date(selectedDate).getDate()}
                                 </Text>
@@ -455,13 +464,13 @@ export const JourneyScreen = () => {
                 </View>
             </View>
         </View>
-    ), [isAnonymous, isProfileIncomplete, profileLoading, entries.length, filterMode, navigation, showCalendar, selectedDate, markedDates]);
+    ), [isAnonymous, isProfileIncomplete, profileLoading, entries.length, filterMode, navigation, showCalendar, selectedDate, markedDates, currentAccent.hex, isDarkMode]);
 
     const ListEmpty = useMemo(() => (
         <View className="items-center justify-center py-20">
             {loading ? (
                 <View className="items-center">
-                    <ActivityIndicator size="large" color="#FF9E7D" />
+                    <ActivityIndicator size="large" color={currentAccent.hex} />
                     <Text className="text-muted font-q-bold mt-4">Loading memories...</Text>
                 </View>
             ) : (
@@ -480,24 +489,24 @@ export const JourneyScreen = () => {
                             onPress={() => handleDateSelect(null)}
                             className="mt-4"
                         >
-                            <Text className="text-primary font-q-bold">View all entries</Text>
+                            <Text className="font-q-bold" style={{ color: currentAccent.hex }}>View all entries</Text>
                         </TouchableOpacity>
                     )}
                 </>
             )}
         </View>
-    ), [loading, filterMode, selectedDate]);
+    ), [loading, filterMode, selectedDate, currentAccent.hex]);
 
     const ListFooter = useMemo(() => (
         loadingMore && !loading && !selectedDate ? (
             <View className="py-8 items-center">
-                <ActivityIndicator color="#FF9E7D" size="large" />
+                <ActivityIndicator color={currentAccent.hex} size="large" />
                 <Text className="text-muted font-q-bold mt-4">Loading memories...</Text>
             </View>
         ) : (
             <View className="h-24" />
         )
-    ), [loadingMore, selectedDate, filterMode]);
+    ), [loadingMore, selectedDate, filterMode, currentAccent.hex]);
 
     return (
         <>

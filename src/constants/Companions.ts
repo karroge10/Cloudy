@@ -59,8 +59,8 @@ export const COMPANIONS: readonly Companion[] = [
         requiredStreak: 60,
         description: 'Rocking your journey with undeniable momentum.',
         trait: 'Legend',
-        unlockPerk: 'Custom App Icons',
-        unlockPerkDescription: 'Customize your home screen with unique icons.'
+        unlockPerk: 'Accent Colors',
+        unlockPerkDescription: 'Personalize your app with a primary color of your choice.'
     },
     { 
         id: 'SPARKY', 

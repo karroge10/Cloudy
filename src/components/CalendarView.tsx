@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { haptics } from '../utils/haptics';
 import { useTheme } from '../context/ThemeContext';
+import { useAccent } from '../context/AccentContext';
 
 interface CalendarViewProps {
     markedDates: Set<string>; // YYYY-MM-DD
@@ -12,6 +13,7 @@ interface CalendarViewProps {
 
 export const CalendarView = ({ markedDates, onDateSelect, selectedDate }: CalendarViewProps) => {
     const { isDarkMode } = useTheme();
+    const { currentAccent } = useAccent();
     const [currentMonth, setCurrentMonth] = useState(() => {
         if (selectedDate) {
             const [year, month, day] = selectedDate.split('-').map(Number);
@@ -25,6 +27,8 @@ export const CalendarView = ({ markedDates, onDateSelect, selectedDate }: Calend
         const month = currentMonth.getMonth();
         const date = new Date(year, month, 1);
         const days = [];
+        
+        // Correcting the loop to properly generate days of the month
         while (date.getMonth() === month) {
             days.push(new Date(date));
             date.setDate(date.getDate() + 1);
@@ -34,6 +38,8 @@ export const CalendarView = ({ markedDates, onDateSelect, selectedDate }: Calend
 
     const firstDayOfMonth = daysInMonth[0].getDay(); // 0 = Sunday
     const monthLabel = currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+    // ... handlePrevMonth, handleNextMonth ...
 
     const handlePrevMonth = () => {
         haptics.selection();
@@ -53,23 +59,13 @@ export const CalendarView = ({ markedDates, onDateSelect, selectedDate }: Calend
         });
     };
 
+    // ... isToday, isSameDate, getDayString ...
+
     const isToday = (date: Date) => {
         const today = new Date();
         return date.getDate() === today.getDate() &&
                date.getMonth() === today.getMonth() &&
                date.getFullYear() === today.getFullYear();
-    };
-
-    const isSameDate = (d1: Date, dateString: string | null) => {
-        if (!dateString) return false;
-        // dateString is YYYY-MM-DD
-        // d1 is Date object
-        // We need to compare carefully.
-        // Let's format d1 to YYYY-MM-DD locally
-        const year = d1.getFullYear();
-        const month = (d1.getMonth() + 1).toString().padStart(2, '0');
-        const day = d1.getDate().toString().padStart(2, '0');
-        return `${year}-${month}-${day}` === dateString;
     };
 
     const getDayString = (date: Date) => {
@@ -79,9 +75,7 @@ export const CalendarView = ({ markedDates, onDateSelect, selectedDate }: Calend
         return `${year}-${month}-${day}`;
     };
 
-    const renderDay = (date: Date | null, index: number) => {
-        if (!date) return <View key={`empty-${index}`} className="flex-1 aspect-square" />;
-
+    const renderDay = (date: Date, index: number) => {
         const dateStr = getDayString(date);
         const hasEntry = markedDates.has(dateStr);
         const isSelected = selectedDate === dateStr;
@@ -93,23 +87,28 @@ export const CalendarView = ({ markedDates, onDateSelect, selectedDate }: Calend
                 className="flex-1 aspect-square items-center justify-center m-0.5 rounded-full"
                 onPress={() => {
                     haptics.selection();
+                    // If marked date is passed as YYYY-MM-DD but JS date object is local, it should match.
                     if (isSelected) {
                          onDateSelect(null);
                     } else {
+                         // onDateSelect expects YYYY-MM-DD
                          onDateSelect(dateStr);
                     }
                 }}
                 style={{
-                    backgroundColor: isSelected ? '#FF9E7D' : isCurrentDay ? (isDarkMode ? '#FF9E7D20' : '#FFF0E6') : 'transparent',
+                    backgroundColor: isSelected ? currentAccent.hex : isCurrentDay ? (isDarkMode ? `${currentAccent.hex}33` : `${currentAccent.hex}1A`) : 'transparent',
                     borderWidth: isCurrentDay && !isSelected ? 1 : 0,
-                    borderColor: '#FF9E7D'
+                    borderColor: currentAccent.hex
                 }}
             >
                 <Text className={`font-q-bold ${isSelected ? 'text-white' : hasEntry ? 'text-text' : 'text-muted/50'}`}>
                     {date.getDate()}
                 </Text>
                 {hasEntry && !isSelected && (
-                    <View className="w-1 h-1 rounded-full bg-primary mt-0.5 absolute bottom-1" />
+                    <View 
+                        className="w-1 h-1 rounded-full mt-0.5 absolute bottom-1" 
+                        style={{ backgroundColor: currentAccent.hex }}
+                    />
                 )}
             </TouchableOpacity>
         );
@@ -164,7 +163,7 @@ export const CalendarView = ({ markedDates, onDateSelect, selectedDate }: Calend
                     <View key={rIndex} className="flex-row items-center justify-between">
                         {row.map((date, cIndex) => (
                             <View key={cIndex} className="flex-1 aspect-square">
-                                {renderDay(date, rIndex * 7 + cIndex)}
+                                {date ? renderDay(date, rIndex * 7 + cIndex) : <View className="flex-1 aspect-square" />}
                             </View>
                         ))}
                     </View>

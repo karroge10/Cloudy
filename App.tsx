@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Session } from '@supabase/supabase-js';
 import { DeviceEventEmitter, View, ActivityIndicator, AppState, AppStateStatus, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { navigationRef } from './src/utils/navigation';
@@ -49,7 +50,10 @@ import { SettingsScreen } from './src/screens/SettingsScreen';
 import { ProgressScreen } from './src/screens/ProgressScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen'; // Added ProfileScreen import
 import { StatisticsScreen } from './src/screens/StatisticsScreen';
-import { MemoryMixScreen } from './src/screens/MemoryMixScreen';
+import { FlashbackScreen } from './src/screens/FlashbackScreen';
+
+import { AccentProvider } from './src/context/AccentContext';
+
 
 const AppContent = () => {
   useNotifications(true); // Pass flag to ignore hook errors if needed, but we'll use ref now
@@ -148,7 +152,8 @@ const RootNavigator = ({ session, isBioLocked, isColdStartWithSession, isAuthLoa
               {/* Unique name to prevent navigation focus leakage from the Login screen */}
               <Stack.Screen name="SecureAccount" component={AuthScreen} />
               <Stack.Screen name="Statistics" component={StatisticsScreen} />
-              <Stack.Screen name="MemoryMix" component={MemoryMixScreen} />
+              <Stack.Screen name="Flashback" component={FlashbackScreen} />
+
             </>
         ) : viewMode === 'loading' ? (
             <Stack.Screen name="InitialLoading">
@@ -188,7 +193,7 @@ const AppNavigator = ({
   showPrivacyOverlay: boolean
 }) => {
   const { isDarkMode } = useTheme();
-  const theme = getCloudyTheme(isDarkMode);
+  const theme = React.useMemo(() => getCloudyTheme(isDarkMode), [isDarkMode]);
 
   return (
     <View className={`flex-1 ${isDarkMode ? 'dark' : ''}`} style={{ backgroundColor: isDarkMode ? '#111427' : (session && isBioLocked ? '#111427' : '#FFF9F0') }}>
@@ -244,6 +249,7 @@ export default function App() {
     Quicksand_500Medium,
     Quicksand_600SemiBold,
     Quicksand_700Bold,
+    ...Ionicons.font,
   });
 
   const [session, setSession] = useState<Session | null>(null);
@@ -355,23 +361,25 @@ export default function App() {
   return (
     <PostHogProvider client={posthog} autocapture={false}>
       <SafeAreaProvider>
-        <ProfileProvider session={session}>
-          <ThemeProvider>
-            <AlertProvider>
-              <JournalProvider session={session}>
-                <AppNavigator 
-                  session={session} 
-                  isAuthLoading={isAuthLoading} 
-                  isBioLocked={isBioLocked} 
-                  isColdStartWithSession={isColdStartWithSession.current === true}
-                  fontsLoaded={fontsLoaded}
-                  showAnimatedSplash={showAnimatedSplash}
-                  setShowAnimatedSplash={setShowAnimatedSplash}
-                  showPrivacyOverlay={showPrivacyOverlay}
-                />
-              </JournalProvider>
-            </AlertProvider>
-          </ThemeProvider>
+         <ProfileProvider session={session}>
+          <AccentProvider>
+            <ThemeProvider>
+              <AlertProvider>
+                <JournalProvider session={session}>
+                  <AppNavigator 
+                    session={session} 
+                    isAuthLoading={isAuthLoading} 
+                    isBioLocked={isBioLocked} 
+                    isColdStartWithSession={isColdStartWithSession.current === true}
+                    fontsLoaded={fontsLoaded}
+                    showAnimatedSplash={showAnimatedSplash}
+                    setShowAnimatedSplash={setShowAnimatedSplash}
+                    showPrivacyOverlay={showPrivacyOverlay}
+                  />
+                </JournalProvider>
+              </AlertProvider>
+            </ThemeProvider>
+          </AccentProvider>
         </ProfileProvider>
       </SafeAreaProvider>
     </PostHogProvider>

@@ -22,6 +22,9 @@ import { COMPANIONS } from '../constants/Companions';
 import { ReviewNudge } from '../components/ReviewNudge';
 import { StreakLostSheet } from '../components/StreakLostSheet';
 import { MilestoneSheet } from '../components/MilestoneSheet';
+import { Divider } from '../components/Divider';
+
+import { useAccent } from '../context/AccentContext';
 
 export const HomeScreen = () => {
     const { showAlert } = useAlert();
@@ -29,6 +32,7 @@ export const HomeScreen = () => {
     const { addEntry, streak, rawStreakData, loading: journalLoading, refreshEntries, isMerging } = useJournal();
     const { profile, loading: profileLoading, updateProfile, isAnonymous, userId, refreshProfile } = useProfile();
     const { trackEvent } = useAnalytics();
+    const { currentAccent } = useAccent();
 
     
     const [text, setText] = useState('');
@@ -276,8 +280,8 @@ export const HomeScreen = () => {
                     <RefreshControl
                         refreshing={isRefreshing}
                         onRefresh={onRefresh}
-                        tintColor="#FF9E7D"
-                        colors={["#FF9E7D"]}
+                        tintColor={currentAccent.hex}
+                        colors={[currentAccent.hex]}
                     />
                 }
             >
@@ -300,11 +304,11 @@ export const HomeScreen = () => {
                             className="ml-3 active:scale-90 transition-transform"
                         >
                             <View className="flex-row items-center bg-card px-2 py-1 rounded-full shadow-sm">
-                                <Ionicons name="flame" size={16} color="#FF9E7D" />
+                                <Ionicons name="flame" size={16} color={currentAccent.hex} />
                                 {journalLoading && streak === 0 ? (
-                                    <View className="bg-primary/10 w-4 h-4 rounded-full ml-1" />
+                                    <View className="w-4 h-4 rounded-full ml-1" style={{ backgroundColor: `${currentAccent.hex}1A` }} />
                                 ) : (
-                                    <Text className="font-q-bold text-primary ml-1 text-base">{streak}</Text>
+                                    <Text className="font-q-bold ml-1 text-base" style={{ color: currentAccent.hex }}>{streak}</Text>
                                 )}
                             </View>
                         </TouchableOpacity>
@@ -326,7 +330,7 @@ export const HomeScreen = () => {
                 }}
             />
             
-
+            
 
             {/* Main Writing Card */}
             <View className="bg-card rounded-[32px] p-6 shadow-[#0000000D] shadow-xl mb-6 flex-1 min-h-[300px]" style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 20, elevation: 5 }}>
@@ -345,7 +349,9 @@ export const HomeScreen = () => {
                     maxLength={200}
                 />
                 
-                <View className="flex-row justify-between items-center pt-4 border-t border-gray-200 dark:border-white/10">
+                <Divider className="mb-4" />
+
+                <View className="flex-row justify-between items-center">
                     <Text className="text-gray-400 font-q-medium">
                         {charCount} / 200 symbols
                     </Text>
@@ -353,7 +359,8 @@ export const HomeScreen = () => {
                         onPress={handleSave}
                         disabled={loading}
                         delayPressIn={0}
-                        className="bg-primary px-8 py-2.5 rounded-xl shadow-sm active:scale-95 transition-transform min-h-[44px] justify-center"
+                        className="px-8 py-2.5 rounded-xl shadow-sm active:scale-95 transition-transform min-h-[44px] justify-center"
+                        style={{ backgroundColor: currentAccent.hex }}
                     >
                         <View className="items-center justify-center">
                             <Text className={`text-white font-q-bold text-base ${loading ? "opacity-0" : "opacity-100"}`}>
@@ -378,7 +385,7 @@ export const HomeScreen = () => {
                 {setupStep === 0 ? (
                     <View className="items-center w-full">
                         <MascotImage source={MASCOTS.THINK} className="w-40 h-40 mb-4" resizeMode="contain" />
-                        <Text className="text-xl font-q-bold text-primary text-center mb-1">Beautifully said!</Text>
+                        <Text className="text-xl font-q-bold text-center mb-1" style={{ color: currentAccent.hex }}>Beautifully said!</Text>
                         <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">
                             What should Cloudy call you?
                         </Text>
@@ -409,7 +416,7 @@ export const HomeScreen = () => {
                 ) : (
                     <View className="items-center w-full">
                         <MascotImage source={MASCOTS.WATCH} className="w-40 h-40 mb-4" resizeMode="contain" />
-                        <Text className="text-xl font-q-bold text-primary text-center mb-1 px-4">
+                        <Text className="text-xl font-q-bold text-center mb-1 px-4" style={{ color: currentAccent.hex }}>
                             {tempDisplayName ? `Nice to meet you, ${tempDisplayName}!` : "Nice to meet you!"}
                         </Text>
                         <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">
@@ -444,7 +451,7 @@ export const HomeScreen = () => {
             >
                 <View className="items-center w-full">
                     <MascotImage source={MASCOTS.STREAK} className="w-40 h-40 mb-4" resizeMode="contain" />
-                    <Text className="text-xl font-q-bold text-primary text-center mb-1">You're doing great!</Text>
+                    <Text className="text-xl font-q-bold text-center mb-1" style={{ color: currentAccent.hex }}>You're doing great!</Text>
                     <Text className="text-2xl font-q-bold text-text text-center mb-8 px-6">
                         Want to link an account so you never lose these memories?
                     </Text>
@@ -495,7 +502,7 @@ export const HomeScreen = () => {
             >
                 <View className="items-center w-full">
                     <MascotImage source={MASCOTS.HUG} className="w-40 h-40 mb-4" resizeMode="contain" />
-                    <Text className="text-xl font-q-bold text-primary text-center mb-1">{motivationContent.title}</Text>
+                    <Text className="text-xl font-q-bold text-center mb-1" style={{ color: currentAccent.hex }}>{motivationContent.title}</Text>
                     <Text className="text-2xl font-q-bold text-text text-center mb-8 px-6">
                         {motivationContent.body}
                     </Text>

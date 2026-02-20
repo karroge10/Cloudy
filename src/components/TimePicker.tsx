@@ -11,6 +11,7 @@ import {
     Pressable,
 } from 'react-native';
 import { haptics } from '../utils/haptics';
+import { useAccent } from '../context/AccentContext';
 
 /**
  * TIMEPICKER DESIGN RATIONALE:
@@ -89,7 +90,9 @@ const ScrollItem = memo(({
 });
 
 const ScrollWheel = ({ data, initialValue, onSelect, label }: ScrollWheelProps) => {
+    const { currentAccent } = useAccent();
     const scrollY = useRef(new Animated.Value(initialValue * ITEM_HEIGHT)).current;
+
     const flatListRef = useRef<FlatList>(null);
     const lastIdx = useRef(initialValue);
 
@@ -127,13 +130,13 @@ const ScrollWheel = ({ data, initialValue, onSelect, label }: ScrollWheelProps) 
     return (
         <View className="items-center">
             <View 
-                style={styles.wheelContainer}
-                className="bg-card rounded-[32px] border-2 border-primary/20 shadow-sm overflow-hidden"
+                style={[styles.wheelContainer, { borderColor: `${currentAccent.hex}33` }]} // ~20% opacity
+                className="bg-card rounded-[32px] border-2 shadow-sm overflow-hidden"
             >
                 {/* Horizontal Center Guide */}
                 <View 
-                    style={styles.highlightBar}
-                    className="absolute w-full bg-primary/5 border-y border-primary/10"
+                    style={[styles.highlightBar, { backgroundColor: `${currentAccent.hex}0D`, borderColor: `${currentAccent.hex}1A` }]} // 5% bg, 10% border
+                    className="absolute w-full border-y"
                     pointerEvents="none"
                 />
                 
@@ -174,6 +177,7 @@ const ScrollWheel = ({ data, initialValue, onSelect, label }: ScrollWheelProps) 
 };
 
 export const TimePicker: React.FC<TimePickerProps> = ({ value, onChange }) => {
+    const { currentAccent } = useAccent();
     const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
     const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
 
@@ -200,7 +204,7 @@ export const TimePicker: React.FC<TimePickerProps> = ({ value, onChange }) => {
                 />
                 
                 <View className="px-5 items-center justify-center mb-6">
-                    <Text className="text-5xl font-q-bold text-primary/30">:</Text>
+                    <Text className="text-5xl font-q-bold" style={{ color: `${currentAccent.hex}4D` }}>:</Text>
                 </View>
 
                 <ScrollWheel

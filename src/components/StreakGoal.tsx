@@ -9,6 +9,8 @@ import { Skeleton } from './Skeleton';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, withSpring } from 'react-native-reanimated';
 import { useTheme } from '../context/ThemeContext';
 
+import { useAccent } from '../context/AccentContext';
+
 interface StreakGoalProps {
     streak: number;
     maxStreak?: number;
@@ -19,6 +21,7 @@ interface StreakGoalProps {
 
 export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, maxStreak = 0, className, onPress, isLoading }) => {
     const { isDarkMode } = useTheme();
+    const { currentAccent } = useAccent();
     const progressValue = useSharedValue(0);
 
     const handlePress = () => {
@@ -56,6 +59,9 @@ export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, maxStreak = 0, c
 
     const containerClasses = `bg-card p-5 rounded-[32px] border border-inactive/10 ${className}`;
 
+    // Helper for faint background
+    const accentFaint = { backgroundColor: `${currentAccent.hex}1A` }; // ~10% opacity
+
     return (
         <View style={{
             shadowColor: isDarkMode ? '#000' : '#000',
@@ -72,7 +78,7 @@ export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, maxStreak = 0, c
             >
                 <View className="flex-row justify-between items-center mb-4">
                     <View className="flex-row items-center flex-1">
-                        <View className="bg-primary/10 p-2.5 rounded-2xl mr-3">
+                        <View className="p-2.5 rounded-2xl mr-3" style={accentFaint}>
                             {isLoading ? (
                                 <Skeleton width={32} height={32} borderRadius={8} />
                             ) : nextCompanion ? (
@@ -117,7 +123,7 @@ export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, maxStreak = 0, c
                             </>
                         ) : (
                             <>
-                                <Text className="text-primary font-q-bold text-2xl leading-7">{daysLeft}</Text>
+                                <Text className="font-q-bold text-2xl leading-7" style={{ color: currentAccent.hex }}>{daysLeft}</Text>
                                 <Text className="text-[10px] font-q-bold text-muted uppercase">days left</Text>
                             </>
                         )}
@@ -127,8 +133,8 @@ export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, maxStreak = 0, c
                 {/* Progress Bar */}
                 <View className="h-3 w-full bg-inactive/40 rounded-full overflow-hidden">
                     <Animated.View
-                        style={animatedProgressStyle}
-                        className="h-full bg-primary rounded-full"
+                        style={[animatedProgressStyle, { backgroundColor: currentAccent.hex }]}
+                        className="h-full rounded-full"
                     />
                 </View>
 
@@ -137,7 +143,7 @@ export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, maxStreak = 0, c
                         {isLoading ? (
                             <Skeleton width={6} height={6} borderRadius={3} style={{ marginRight: 6 }} />
                         ) : (
-                            <View className="w-1.5 h-1.5 rounded-full bg-primary mr-1.5" />
+                            <View className="w-1.5 h-1.5 rounded-full mr-1.5" style={{ backgroundColor: currentAccent.hex }} />
                         )}
                         {isLoading ? (
                             <Skeleton width={70} height={12} borderRadius={2} />

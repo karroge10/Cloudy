@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, InteractionManager, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, InteractionManager } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,7 +14,6 @@ import { encryption } from '../utils/encryption';
 import { useProfile } from '../context/ProfileContext';
 import { LockedFeature } from './LockedFeature';
 import { useTheme } from '../context/ThemeContext';
-import { Divider } from './Divider';
 
 interface InsightsProps {
     userId: string | undefined;
@@ -37,17 +36,12 @@ const STOP_WORDS = new Set([
     'the', 'and', 'to', 'of', 'a', 'in', 'that', 'is', 'was', 'he', 'for', 'it', 'with', 'as', 'his', 'on', 'be', 'at', 'by', 'i', 'this', 'had', 'not', 'are', 'but', 'from', 'or', 'have', 'an', 'they', 'which', 'one', 'you', 'were', 'her', 'all', 'she', 'there', 'would', 'their', 'we', 'him', 'been', 'has', 'when', 'who', 'will', 'no', 'if', 'out', 'so', 'said', 'what', 'up', 'its', 'about', 'into', 'than', 'them', 'can', 'only', 'other', 'new', 'some', 'could', 'time', 'these', 'two', 'may', 'then', 'do', 'first', 'any', 'my', 'now', 'such', 'like', 'our', 'over', 'man', 'me', 'even', 'most', 'made', 'after', 'also', 'did', 'many', 'before', 'must', 'through', 'back', 'years', 'where', 'much', 'your', 'way', 'well', 'down', 'should', 'because', 'each', 'just', 'those', 'people', 'mr', 'how', 'too', 'little', 'state', 'good', 'very', 'make', 'world', 'still', 'own', 'see', 'men', 'work', 'long', 'get', 'here', 'between', 'both', 'life', 'being', 'under', 'never', 'day', 'same', 'another', 'know', 'while', 'last', 'might', 'us', 'great', 'since', 'off', 'come', 'go', 'came', 'right', 'used', 'take', 'three', 'am', 'today', 'feeling', 'felt', 'feel'
 ]);
 
-import { useAccent } from '../context/AccentContext';
-
-
-
 export const Insights = ({ userId }: InsightsProps) => {
     const navigation = useNavigation<any>();
     const { entries: cachedEntries, rawStreakData } = useJournal();
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<InsightsData | null>(null);
     const [isSheetVisible, setIsSheetVisible] = useState(false);
-    const { currentAccent } = useAccent();
 
     // Unique key for caching all-time stats
     // We append the total entries count to the key to invalidate cache when new entries are added
@@ -97,9 +91,11 @@ export const Insights = ({ userId }: InsightsProps) => {
                 let entries: { text: string; created_at: string }[] = [];
 
                 // Use cached entries if we have them all, otherwise fetch all
+                // This might be expensive for users with thousands of entries, but necessary for all-time text stats
                 if (rawStreakData.length > 0 && rawStreakData.length === cachedEntries.length) {
                     entries = cachedEntries;
                 } else {
+                    // Fetch all
                      const { data: fetchedEntries, error } = await supabase
                         .from('posts')
                         .select('text, created_at')
@@ -135,6 +131,7 @@ export const Insights = ({ userId }: InsightsProps) => {
                 let firstEntryDate = new Date();
 
                 if (entries.length > 0) {
+                    // Find earliest date
                     const dates = entries.map(e => new Date(e.created_at).getTime());
                     firstEntryDate = new Date(Math.min(...dates));
                 }
@@ -227,12 +224,12 @@ export const Insights = ({ userId }: InsightsProps) => {
 
     const { profile } = useProfile();
     const { isDarkMode } = useTheme();
-    const isUnlocked = (profile?.max_streak || 0) >= 7;
+    const isUnlocked = (profile?.max_streak || 0) >= 14;
 
     if (loading) {
         return (
-            <View className="bg-card rounded-[32px] p-6 shadow-xl mb-8"
-                style={{ shadowColor: isDarkMode ? '#000' : '#0000000D', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}>
+            <View className="bg-card rounded-[32px] p-6 shadow-[#0000000D] shadow-xl mb-8"
+                style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}>
                 <View className="flex-row justify-between items-center mb-6">
                     <Skeleton width={120} height={20} borderRadius={10} />
                     <Skeleton width={60} height={32} borderRadius={16} />
@@ -247,127 +244,82 @@ export const Insights = ({ userId }: InsightsProps) => {
         );
     }
 
-    if (!data && isUnlocked) return null;
+    if (!isUnlocked) {
+        return (
+            <LockedFeature 
+                featureName="Insights" 
+                requiredStreak={14} 
+                currentStreak={profile?.max_streak || 0}
+                mascotAsset={MASCOTS.DOCTOR}
+                icon="bar-chart-outline"
+            />
+        );
+    }
+
+    if (!data) return null;
 
     return (
-        <View className="mb-8">
-            <TouchableOpacity 
-                className="bg-card rounded-[32px] p-6 shadow-xl"
-                style={{ 
-                    shadowColor: isDarkMode ? '#000' : '#0000000D', 
-                    shadowOffset: { width: 0, height: 0 }, 
-                    shadowOpacity: 1, 
-                    shadowRadius: 15, 
-                    elevation: 4 
-                }}
-                onPress={() => { 
-                    haptics.selection(); 
-                    if (!isUnlocked) {
-                        navigation.navigate('Progress');
-                        return;
-                    }
-                    if (data) {
-                        navigation.navigate('Statistics', { data });
-                    }
-                }}
-                activeOpacity={0.9}
-            >
-                {/* Header - Stays consistent or changes slightly */}
-                <View className="flex-row justify-between items-center mb-6">
-                    <Text className="text-lg font-q-bold text-text">Insights</Text>
-                    {isUnlocked ? (
-                        <View className="flex-row items-center">
-                            <Text className="text-sm font-q-medium text-muted mr-1">All Time</Text>
-                            <Ionicons name="chevron-forward" size={14} color={isDarkMode ? "#CBD5E1" : "#94A3B8"} />
-                        </View>
-                    ) : (
-                        <View className="bg-inactive/10 px-3 py-1 rounded-full flex-row items-center">
-                            <Ionicons name="lock-closed" size={10} color={isDarkMode ? "#94A3B8" : "#64748B"} />
-                            <Text className="text-[10px] font-q-bold text-muted ml-1 uppercase">Locked</Text>
-                        </View>
-                    )}
+        <>
+        <TouchableOpacity 
+            className="bg-card rounded-[32px] p-6 shadow-xl mb-8 border border-inactive/5"
+            style={{ shadowColor: isDarkMode ? '#000' : '#0000000D', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}
+            onPress={() => { 
+                haptics.selection(); 
+                if (data) {
+                    navigation.navigate('Statistics', { data });
+                }
+            }}
+            activeOpacity={0.9}
+        >
+            <View className="flex-row justify-between items-center mb-6">
+                <Text className="text-lg font-q-bold text-text">Insights</Text>
+                <View className="flex-row items-center">
+                    <Text className="text-sm font-q-medium text-muted mr-1">All Time</Text>
+                    <Ionicons name="chevron-forward" size={14} color={isDarkMode ? "#CBD5E1" : "#94A3B8"} />
                 </View>
+            </View>
 
-                {isUnlocked && data ? (
-                    <View>
-                        <View className="flex-row justify-between mb-6">
-                            <View className="items-center flex-1">
-                                <Text className="text-3xl font-q-bold mb-1" style={{ color: currentAccent.hex }}>{data.totalEntries}</Text>
-                                <Text className="text-xs font-q-medium text-muted">Entries</Text>
-                            </View>
-                            <Divider vertical className="mx-4" />
-                            <View className="items-center flex-1">
-                                <Text className="text-3xl font-q-bold mb-1" style={{ color: currentAccent.hex }}>{data.totalWords}</Text>
-                                <Text className="text-xs font-q-medium text-muted">Words</Text>
-                            </View>
-                            <Divider vertical className="mx-4" />
-                            <View className="items-center flex-1">
-                                <Text className="text-3xl font-q-bold mb-1" style={{ color: currentAccent.hex }}>{data.avgWordsPerEntry}</Text>
-                                <Text className="text-xs font-q-medium text-muted">Words / Entry</Text>
-                            </View>
-                        </View>
+            <View className="flex-row justify-between mb-6">
+                <View className="items-center flex-1">
+                    <Text className="text-3xl font-q-bold text-primary mb-1">{data.totalEntries}</Text>
+                    <Text className="text-xs font-q-medium text-muted">Entries</Text>
+                </View>
+                <View className="w-[1px] bg-inactive/20 mx-4" />
+                <View className="items-center flex-1">
+                    <Text className="text-3xl font-q-bold text-primary mb-1">{data.totalWords}</Text>
+                    <Text className="text-xs font-q-medium text-muted">Words</Text>
+                </View>
+                <View className="w-[1px] bg-inactive/20 mx-4" />
+                <View className="items-center flex-1">
+                    <Text className="text-3xl font-q-bold text-primary mb-1">{data.avgWordsPerEntry}</Text>
+                    <Text className="text-xs font-q-medium text-muted">Words / Entry</Text>
+                </View>
+            </View>
 
-                        {data.topWords.length > 0 && (
-                            <View>
-                                <Text className="text-xs font-q-bold text-muted mb-3 uppercase tracking-wider">Top Themes</Text>
-                                <ScrollView 
-                                    horizontal 
-                                    showsHorizontalScrollIndicator={false}
-                                    contentContainerStyle={{ gap: 8 }}
-                                    className="flex-row"
-                                >
-                                    {data.topWords.map((item) => (
-                                        <View 
-                                            key={item.word} 
-                                            className="px-4 py-2 rounded-full"
-                                            style={{ backgroundColor: `${currentAccent.hex}1A` }}
-                                        >
-                                            <Text className="font-q-semibold text-sm" style={{ color: currentAccent.hex }}>
-                                                {item.word} <Text className="text-xs" style={{ color: `${currentAccent.hex}99` }}>×{item.count}</Text>
-                                            </Text>
-                                        </View>
-                                    ))}
-                                </ScrollView>
+            {data.topWords.length > 0 && (
+                <View>
+                    <Text className="text-xs font-q-bold text-muted mb-3 uppercase tracking-wider">Top Themes</Text>
+                    <ScrollView 
+                        horizontal 
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ gap: 8 }}
+                        className="flex-row"
+                    >
+                        {data.topWords.map((item) => (
+                            <View 
+                                key={item.word} 
+                                className="bg-primary/10 px-4 py-2 rounded-full"
+                            >
+                                <Text className="text-primary font-q-semibold text-sm">
+                                    {item.word} <Text className="text-xs text-primary/60">×{item.count}</Text>
+                                </Text>
                             </View>
-                        )}
-                    </View>
-                ) : (
-                    <View className="items-center py-2 pb-6">
-                        <View className="bg-inactive/5 p-4 rounded-3xl mb-4">
-                            <Ionicons name="stats-chart" size={32} color={isDarkMode ? "#334155" : "#E2E8F0"} />
-                            <View className="absolute -right-1 -top-1 bg-card rounded-full p-1 border border-inactive/10">
-                                <Ionicons name="lock-closed" size={12} color={isDarkMode ? "#94A3B8" : "#64748B"} />
-                            </View>
-                        </View>
-                        
-                        <Text className="text-base font-q-bold text-text mb-2 text-center px-6">
-                            Reach 7 day streak to unlock.
-                        </Text>
-                        
-                        <View className="w-full max-w-[220px] mb-6">
-                            <View className="flex-row justify-between mb-2 px-1">
-                                <Text className="text-[10px] font-q-bold text-muted uppercase tracking-tight">Progress</Text>
-                                <Text className="text-[10px] font-q-bold font-q-bold" style={{ color: currentAccent.hex }}>{Math.min(profile?.max_streak || 0, 7)} / 7 days</Text>
-                            </View>
-                            <View className="w-full h-2 bg-inactive/10 rounded-full overflow-hidden">
-                                <View 
-                                    className="h-full rounded-full" 
-                                    style={{ 
-                                        width: `${Math.min(((profile?.max_streak || 0) / 7) * 100, 100)}%`,
-                                        backgroundColor: currentAccent.hex
-                                    }} 
-                                />
-                            </View>
-                        </View>
-
-                        <View className="flex-row items-center">
-                            <Text className="text-[11px] font-q-bold uppercase tracking-[0.15em]" style={{ color: currentAccent.hex }}>Track Progress</Text>
-                            <Ionicons name="chevron-forward" size={12} color={currentAccent.hex} style={{ marginLeft: 4 }} />
-                        </View>
-                    </View>
-                )}
-            </TouchableOpacity>
-        </View>
+                        ))}
+                    </ScrollView>
+                </View>
+            )}
+        </TouchableOpacity>
+        </>
     );
 };
 

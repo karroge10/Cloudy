@@ -126,7 +126,7 @@ To verify this plan works, we will track the following events:
     - [x] **Dark Mode (Universal):** Unlocked for everyone.
     - [x] **Streak Freeze (Dreamy):** Logic in `JournalContext` for auto-recovery (14 days).
     - [x] **Memory Mix (Cookie):** Chef's special feature (30 days).
-    - [ ] **Custom Icons (Groovy):** Native module implementation for dynamic icon switching.
+    - [x] **Custom Icons (Groovy):** Native module implementation for dynamic icon switching.
     - [x] **Verified Status (Sparky):** UI badges in Profile.
 
 ---

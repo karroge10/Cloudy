@@ -15,7 +15,9 @@ import { useTheme } from '../context/ThemeContext';
 import { MascotImage } from '../components/MascotImage';
 import { BottomSheet } from '../components/BottomSheet';
 import { Button } from '../components/Button';
+import { Divider } from '../components/Divider';
 import { navigationRef } from '../utils/navigation';
+import { useAccent } from '../context/AccentContext';
 import Animated, { 
     useSharedValue, 
     useAnimatedStyle, 
@@ -46,7 +48,8 @@ const MemoryItem = React.memo(({
     cardWidth, 
     screenWidth,
     getPrompt,
-    isDarkMode 
+    isDarkMode,
+    accentColor
 }: { 
     item: JournalEntry, 
     onToggleFavorite: (item: JournalEntry) => void, 
@@ -54,7 +57,8 @@ const MemoryItem = React.memo(({
     cardWidth: number,
     screenWidth: number,
     getPrompt: (item: JournalEntry) => string,
-    isDarkMode: boolean
+    isDarkMode: boolean,
+    accentColor: string
 }) => {
     const now = new Date();
     const entryDate = new Date(item.created_at);
@@ -78,9 +82,7 @@ const MemoryItem = React.memo(({
                 style={{ height: 380, width: cardWidth }}
             >
                 <View style={{ flex: 1 }}>
-                    <View className="absolute -top-4 -left-4">
-                        <Text className="text-[#FF9E7D15] text-7xl font-q-bold">"</Text>
-                    </View>
+
                     
                     <Text className="text-xl font-q-bold text-text mb-4 px-2 leading-7">
                         {getPrompt(item)}
@@ -92,10 +94,12 @@ const MemoryItem = React.memo(({
                         </Text>
                     </ScrollView>
 
-                    <View className="flex-row justify-between items-center pt-4 border-t border-primary/10 mt-2">
-                        <View className="flex-row items-center bg-[#FF9E7D10] px-4 py-2 rounded-full">
-                            <Ionicons name="time-outline" size={16} color="#FF9E7D" />
-                            <Text className="text-[#FF9E7D] font-q-semibold ml-2 text-sm">
+                    <Divider className="mt-2" />
+
+                    <View className="flex-row justify-between items-center pt-4">
+                        <View className="flex-row items-center px-4 py-2 rounded-full" style={{ backgroundColor: `${accentColor}1A` }}>
+                            <Ionicons name="time-outline" size={16} color={accentColor} />
+                            <Text className="font-q-semibold ml-2 text-sm" style={{ color: accentColor }}>
                                 {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
                             </Text>
                         </View>
@@ -108,7 +112,7 @@ const MemoryItem = React.memo(({
                                     <Ionicons 
                                         name={item.is_favorite ? "heart" : "heart-outline"} 
                                         size={22} 
-                                        color={item.is_favorite ? "#FF9E7D" : (isDarkMode ? "#E5E7EB" : "#333333")} 
+                                        color={item.is_favorite ? accentColor : (isDarkMode ? "#E5E7EB" : "#333333")} 
                                         style={{ opacity: item.is_favorite ? 1 : 0.4 }}
                                     />
                                 </Animated.View>
@@ -139,13 +143,15 @@ const MemoryItem = React.memo(({
            prev.item.text === next.item.text &&
            prev.cardWidth === next.cardWidth &&
            prev.screenWidth === next.screenWidth &&
-           prev.isDarkMode === next.isDarkMode;
+           prev.isDarkMode === next.isDarkMode &&
+           prev.accentColor === next.accentColor;
 });
 
 export const MemoryScreen = () => {
     const { width: SCREEN_WIDTH } = useWindowDimensions();
     const CARD_WIDTH = SCREEN_WIDTH - 48;
     const { isDarkMode } = useTheme();
+    const { currentAccent } = useAccent();
 
     const getNavigation = () => {
         try {
@@ -305,8 +311,9 @@ export const MemoryScreen = () => {
             screenWidth={SCREEN_WIDTH}
             getPrompt={getPromptForEntry}
             isDarkMode={isDarkMode}
+            accentColor={currentAccent.hex}
         />
-    ), [handleToggleFavorite, onDelete, CARD_WIDTH, SCREEN_WIDTH, getPromptForEntry, isDarkMode]);
+    ), [handleToggleFavorite, onDelete, CARD_WIDTH, SCREEN_WIDTH, getPromptForEntry, isDarkMode, currentAccent.hex]);
 
     if (!journalEntries || journalEntries.length === 0) {
         return (
@@ -396,7 +403,7 @@ export const MemoryScreen = () => {
                         disabled={currentIndex === 0}
                         className={`bg-card w-14 h-14 items-center justify-center rounded-full shadow-lg ${currentIndex === 0 ? 'opacity-20' : ''}`}
                     >
-                        <Ionicons name="chevron-back" size={24} color="#FF9E7D" />
+                        <Ionicons name="chevron-back" size={24} color={currentAccent.hex} />
                     </TouchableOpacity>
 
                     <View className="items-center">
@@ -413,7 +420,7 @@ export const MemoryScreen = () => {
                         disabled={currentIndex === totalCount - 1}
                         className={`bg-card w-14 h-14 items-center justify-center rounded-full shadow-lg ${currentIndex === totalCount - 1 ? 'opacity-20' : ''}`}
                     >
-                        <Ionicons name="chevron-forward" size={24} color="#FF9E7D" />
+                        <Ionicons name="chevron-forward" size={24} color={currentAccent.hex} />
                     </TouchableOpacity>
                 </View>
             </Layout>

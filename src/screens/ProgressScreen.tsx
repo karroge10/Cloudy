@@ -12,6 +12,8 @@ import { useProfile } from '../context/ProfileContext';
 import { Button } from '../components/Button';
 import { haptics } from '../utils/haptics';
 import { useTheme } from '../context/ThemeContext';
+import { Divider } from '../components/Divider';
+import { useAccent } from '../context/AccentContext';
 
 export const ProgressScreen = () => {
     const { isDarkMode } = useTheme();
@@ -19,6 +21,7 @@ export const ProgressScreen = () => {
     const { streak, refreshEntries, rawStreakData, loading: journalLoading } = useJournal();
     const { profile, loading: profileLoading } = useProfile();
     const [refreshing, setRefreshing] = useState(false);
+    const { currentAccent } = useAccent();
 
     const maxStreak = profile?.max_streak || streak;
     const effectiveStreak = maxStreak;
@@ -80,7 +83,7 @@ export const ProgressScreen = () => {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}
                 refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF9E7D" />
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={currentAccent.hex} />
                 }
             >
                 {/* Header Section */}
@@ -91,8 +94,11 @@ export const ProgressScreen = () => {
                     <Text className="text-3xl font-q-bold text-text mb-2">
                         {unlockedCompanions.length}/{COMPANIONS.length} Unlocked
                     </Text>
-                    <View className="bg-card px-6 py-2.5 rounded-2xl shadow-sm border border-primary/5 flex-row items-center">
-                        <Text className="text-primary font-q-bold text-base">
+                    <View 
+                        className="bg-card px-6 py-2.5 rounded-2xl shadow-sm border flex-row items-center"
+                        style={{ borderColor: `${currentAccent.hex}1A` }}
+                    >
+                        <Text className="font-q-bold text-base" style={{ color: currentAccent.hex }}>
                             Max Streak: {maxStreak} Days 🔥
                         </Text>
                     </View>
@@ -129,8 +135,11 @@ export const ProgressScreen = () => {
                                     }`}
                                 style={isUnlocked ? { shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 8 } : {}}
                             >
-                                <View className="flex-row items-center mb-1">
-                                    <View className={`p-4 rounded-[28px] mr-5 items-center justify-center ${isUnlocked ? 'bg-secondary' : 'bg-transparent'}`}>
+                                <View className="flex-row items-center mb-5">
+                                    <View 
+                                        className={`p-4 rounded-[28px] mr-5 items-center justify-center`}
+                                        style={isUnlocked ? { backgroundColor: `${currentAccent.hex}1A` } : { backgroundColor: 'transparent' }}
+                                    >
                                         <MascotImage
                                             source={companion.asset}
                                             className={`w-16 h-16 ${isUnlocked ? '' : 'grayscale opacity-30 scale-90'}`}
@@ -154,8 +163,8 @@ export const ProgressScreen = () => {
                                                          <Text className="text-[#FFD700] font-q-bold text-[10px] ml-1.5 uppercase tracking-widest">HERO</Text>
                                                      </View>
                                                  ) : (
-                                                     <View className="bg-primary/20 px-3 py-1 rounded-full">
-                                                         <Text className="text-primary font-q-bold text-[10px] uppercase tracking-[1px]">{companion.trait}</Text>
+                                                     <View className="px-3 py-1 rounded-full" style={{ backgroundColor: `${currentAccent.hex}33` }}>
+                                                         <Text className="font-q-bold text-[10px] uppercase tracking-[1px]" style={{ color: currentAccent.hex }}>{companion.trait}</Text>
                                                      </View>
                                                  )
                                              )}
@@ -169,16 +178,22 @@ export const ProgressScreen = () => {
 
                                 {/* Reward Section - Beautiful Integrated Pill */}
                                 {companion.id !== 'SUNNY' && companion.id !== 'CLOUDY' && (
-                                    <View className={`rounded-[28px] p-3 flex-row items-center mb-2 ${isUnlocked ? 'bg-secondary' : 'bg-secondary/30'}`}>
-                                        <View className={`w-12 h-12 rounded-2xl items-center justify-center ${isUnlocked ? 'bg-card' : 'bg-card/50'}`}>
+                                    <View 
+                                        className={`rounded-[28px] p-4 flex-row items-center mb-2`}
+                                        style={isUnlocked ? { backgroundColor: `${currentAccent.hex}1A` } : { backgroundColor: isDarkMode ? '#1E293B80' : '#F1F5F9' }}
+                                    >
+                                        <View className={`w-12 h-12 rounded-2xl items-center justify-center shadow-sm`} style={{ backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF' }}>
                                             <Ionicons 
                                                 name={isUnlocked ? "gift" : "gift-outline"} 
                                                 size={22} 
-                                                color={isUnlocked ? "#FF9E7D" : (isDarkMode ? "#64748B" : "#94A3B8")} 
+                                                color={isUnlocked ? currentAccent.hex : (isDarkMode ? "#64748B" : "#94A3B8")} 
                                             />
                                         </View>
                                         <View className="ml-4 flex-1">
-                                            <Text className={`font-q-bold text-xs uppercase tracking-widest ${isUnlocked ? 'text-primary' : 'text-text/30'}`}>
+                                            <Text 
+                                                className={`font-q-bold text-xs uppercase tracking-widest ${isUnlocked ? '' : 'text-text/30'}`}
+                                                style={isUnlocked ? { color: currentAccent.hex } : {}}
+                                            >
                                                 REWARD {isUnlocked ? 'UNLOCKED' : 'LOCKED'}
                                             </Text>
                                             <Text className={`font-q-bold text-base mt-0.5 ${isUnlocked ? 'text-text' : 'text-text/40'}`}>
@@ -193,15 +208,19 @@ export const ProgressScreen = () => {
 
                                 {/* Progress Indicator */}
                                 {!isUnlocked && (
-                                    <View className="mt-2 pt-2 border-t border-primary/5 px-2 mb-2">
+                                    <View className="mt-2 px-2 mb-2">
+                                        <Divider className="mb-4" />
                                         <View className="flex-row justify-between items-center mb-3">
                                             <Text className="font-q-bold text-xs text-muted/60 uppercase tracking-wider">Progress</Text>
-                                            <Text className="font-q-bold text-xs text-primary">{effectiveStreak}/{companion.requiredStreak} Days</Text>
+                                            <Text className="font-q-bold text-xs" style={{ color: currentAccent.hex }}>{effectiveStreak}/{companion.requiredStreak} Days</Text>
                                         </View>
-                                        <View className="h-2 bg-primary/10 rounded-full overflow-hidden">
+                                        <View className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: `${currentAccent.hex}1A` }}>
                                             <View
-                                                style={{ width: `${Math.min(1, effectiveStreak / companion.requiredStreak) * 100}%` }}
-                                                className="h-full bg-primary"
+                                                style={{ 
+                                                    width: `${Math.min(1, effectiveStreak / companion.requiredStreak) * 100}%`,
+                                                    backgroundColor: currentAccent.hex
+                                                }}
+                                                className="h-full"
                                             />
                                         </View>
                                     </View>
@@ -209,8 +228,11 @@ export const ProgressScreen = () => {
                                 
                                 {isUnlocked && detail?.unlockDate && (
                                     <View className="mt-6 flex-row items-center justify-center">
-                                        <Ionicons name="checkmark-circle" size={14} color="#FF9E7D" />
-                                        <Text className="font-q-bold text-[11px] text-primary/60 uppercase tracking-widest ml-2">
+                                        <Ionicons name="checkmark-circle" size={14} color={currentAccent.hex} />
+                                        <Text 
+                                            className="font-q-bold text-[11px] uppercase tracking-widest ml-2"
+                                            style={{ color: `${currentAccent.hex}99` }}
+                                        >
                                             Unlocked on {detail.unlockDate} • Day {dayIndex + 1}
                                         </Text>
                                     </View>

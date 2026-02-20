@@ -6,6 +6,7 @@ import { Button } from './Button';
 import { haptics } from '../utils/haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { useAccent } from '../context/AccentContext';
 
 interface MilestoneSheetProps {
     visible: boolean;
@@ -29,13 +30,14 @@ export const MilestoneSheet: React.FC<MilestoneSheetProps> = ({
     onViewProgress
 }) => {
     const { isDarkMode } = useTheme();
+    const { currentAccent } = useAccent();
 
     return (
         <BottomSheet visible={visible} onClose={onClose}>
             <View className="items-center w-full px-6 mb-4">
                 <View className="bg-card w-40 h-40 rounded-[40px] shadow-sm mb-6 items-center justify-center border border-secondary/20 relative">
                     <View className="absolute -top-3 -right-3 z-10 bg-secondary px-3 py-1 rounded-full shadow-sm">
-                        <Text className="text-primary font-q-bold text-xs uppercase tracking-widest">Unlocked!</Text>
+                        <Text className="font-q-bold text-xs uppercase tracking-widest" style={{ color: currentAccent.hex }}>Unlocked!</Text>
                     </View>
                     <MascotImage 
                         source={mascotAsset} 
@@ -54,10 +56,10 @@ export const MilestoneSheet: React.FC<MilestoneSheetProps> = ({
 
                 <View className="w-full bg-secondary rounded-[28px] p-5 mb-8 flex-row items-center">
                     <View className="bg-card w-12 h-12 rounded-2xl items-center justify-center mr-4">
-                        <Ionicons name="gift" size={24} color="#FF9E7D" />
+                        <Ionicons name="gift" size={24} color={currentAccent.hex} />
                     </View>
                     <View className="flex-1">
-                        <Text className="text-[10px] font-q-bold text-primary uppercase tracking-[2px] mb-1">
+                        <Text className="text-[10px] font-q-bold uppercase tracking-[2px] mb-1" style={{ color: currentAccent.hex }}>
                             REWARD UNLOCKED
                         </Text>
                         <Text className="text-base font-q-bold text-text">

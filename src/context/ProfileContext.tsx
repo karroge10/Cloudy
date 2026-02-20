@@ -72,7 +72,8 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
             return;
         }
 
-        if (!profile) setLoading(true);
+        // Prevent setting loading to true here because `profile` may be stale in closure
+        // and it causes visual flashes on simple updates.
         const fetchStartTime = Date.now();
 
         try {
@@ -356,6 +357,7 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
 
             // Clear state immediately to show skeleton during identity transition
             setProfile(null);
+            setLoading(true);
             fetchProfile();
         };
 

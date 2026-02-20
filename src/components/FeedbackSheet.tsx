@@ -8,6 +8,8 @@ import { haptics } from '../utils/haptics';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { useAlert } from '../context/AlertContext';
 
+import { supabase } from '../lib/supabase';
+
 interface FeedbackSheetProps {
     visible: boolean;
     onClose: () => void;
@@ -28,12 +30,23 @@ export const FeedbackSheet = ({ visible, onClose }: FeedbackSheetProps) => {
 
         setLoading(true);
         try {
-            // We use PostHog for feedback as it's the most efficient way to capture insights 
-            // without adding database complexity for now.
-            trackEvent('cloudy_whisper_feedback', {
-                message: feedback.trim(),
-                contact_email: email.trim() || undefined,
-                timestamp: new Date().toISOString()
+            const { data: { user } } = await supabase.auth.getUser();
+
+            const { error } = await supabase
+                .from('feedbacks')
+                .insert([
+                    {
+                        message: feedback.trim(),
+                        email: email.trim() || null,
+                        user_id: user?.id || null,
+                    }
+                ]);
+
+            if (error) throw error;
+
+            trackEvent('cloudy_whisper_feedback_sent', {
+                has_email: !!email.trim(),
+                is_authenticated: !!user,
             });
 
             haptics.success();
@@ -48,6 +61,7 @@ export const FeedbackSheet = ({ visible, onClose }: FeedbackSheetProps) => {
                 'success'
             );
         } catch (error) {
+            console.error('Feedback error:', error);
             showAlert('Oops', 'Could not send feedback. Please try again.', [{ text: 'Okay' }], 'error');
         } finally {
             setLoading(false);

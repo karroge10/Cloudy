@@ -9,13 +9,23 @@ import { MascotImage } from '../components/MascotImage';
 import { MASCOTS } from '../constants/Assets';
 import { haptics } from '../utils/haptics';
 import { TopNav } from '../components/TopNav';
+import { useAccent } from '../context/AccentContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-export const MemoryMixScreen = () => {
+// Seeded random for daily consistency
+const getSeededRandom = (seed: number) => {
+    let t = seed += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+};
+
+export const FlashbackScreen = () => {
     const navigation = useNavigation<any>();
-    const { entries, rawStreakData } = useJournal();
+    const { entries } = useJournal();
     const { isDarkMode } = useTheme();
+    const { currentAccent } = useAccent();
 
     const journalEntries = useMemo(() => 
         entries.filter(e => !e.deleted_at), 
@@ -28,12 +38,16 @@ export const MemoryMixScreen = () => {
         const firstEntry = new Date(Math.min(...dates));
         const lastEntry = new Date(Math.max(...dates));
         
-        // Memory Span (Days)
-        const spanDays = Math.ceil((lastEntry.getTime() - firstEntry.getTime()) / (1000 * 60 * 60 * 24)) || 1;
+        // Journey Length (Days)
+        const storyAge = Math.ceil((lastEntry.getTime() - firstEntry.getTime()) / (1000 * 60 * 60 * 24)) || 1;
         
         // Favorite Density
         const favorites = journalEntries.filter(e => e.is_favorite);
         const favoritePercent = Math.round((favorites.length / journalEntries.length) * 100);
+
+        // Active days for consistency
+        const activeDaysCount = new Set(journalEntries.map(e => new Date(e.created_at).toDateString())).size;
+        const consistency = Math.round((activeDaysCount / storyAge) * 100);
 
         // Longest Gap
         const sortedDates = [...dates].sort((a,b) => a - b);
@@ -43,44 +57,53 @@ export const MemoryMixScreen = () => {
             if (gap > maxGapDays) maxGapDays = Math.floor(gap);
         }
 
-        // Random Special
-        const dailySpecial = journalEntries[Math.floor(Math.random() * journalEntries.length)];
-        const fansFavorite = favorites.length > 0 ? favorites[Math.floor(Math.random() * favorites.length)] : null;
+        // Daily consistency logic
+        const now = new Date();
+        const seed = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
+        
+        const random1 = getSeededRandom(seed);
+        const random2 = getSeededRandom(seed + 12345);
+
+        const dailySpecial = journalEntries[Math.floor(random1 * journalEntries.length)];
+        const fansFavorite = favorites.length > 0 ? favorites[Math.floor(random2 * favorites.length)] : null;
         const firstCourse = journalEntries.find(e => new Date(e.created_at).getTime() === Math.min(...dates));
 
         return {
-            spanDays,
+            storyAge,
             favoritePercent,
             maxGapDays,
+            consistency,
             dailySpecial,
             fansFavorite,
-            firstCourse,
-            totalCount: journalEntries.length
+            firstCourse
         };
     }, [journalEntries]);
 
     if (!stats) {
         return (
             <Layout>
-                <TopNav title="Memory Mix" onBack={() => navigation.goBack()} />
+                <TopNav title="Flashback" onBack={() => navigation.goBack()} />
                 <View className="flex-1 items-center justify-center p-10">
                     <MascotImage source={MASCOTS.SAD} className="w-48 h-48 mb-6" />
-                    <Text className="text-lg font-q-bold text-muted text-center">Cookie needs more memories to start the mix!</Text>
+                    <Text className="text-lg font-q-bold text-muted text-center">Cookie needs more memories to start the flashback!</Text>
                 </View>
             </Layout>
         );
     }
 
-    const StatCard = ({ title, value, subtitle, icon, color }: any) => (
-        <View className="bg-card rounded-3xl p-5 mb-4 shadow-sm border border-inactive/5 flex-row items-center">
-            <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 bg-${color}/10`}>
-                <Ionicons name={icon} size={24} color={color === 'primary' ? '#FF9E7D' : '#94A3B8'} />
+    const StatCard = ({ title, value, subtitle, icon }: any) => (
+        <View className="bg-card rounded-3xl p-5 mb-4 shadow-sm border border-inactive/5 flex-row items-center h-28">
+            <View 
+                className="w-12 h-12 rounded-2xl items-center justify-center mr-4"
+                style={{ backgroundColor: `${currentAccent.hex}1A` }}
+            >
+                <Ionicons name={icon} size={24} color={currentAccent.hex} />
             </View>
             <View className="flex-1">
-                <Text className="text-xs font-q-bold text-muted uppercase tracking-wider mb-1">{title}</Text>
+                <Text className="text-[10px] font-q-bold text-muted uppercase tracking-wider mb-1" numberOfLines={1}>{title}</Text>
                 <View className="flex-row items-baseline">
-                    <Text className="text-2xl font-q-bold text-text mr-1">{value}</Text>
-                    <Text className="text-sm font-q-medium text-muted">{subtitle}</Text>
+                    <Text className="text-2xl font-q-bold text-text mr-1" numberOfLines={1}>{value}</Text>
+                    <Text className="text-sm font-q-medium text-muted" numberOfLines={1}>{subtitle}</Text>
                 </View>
             </View>
         </View>
@@ -96,8 +119,8 @@ export const MemoryMixScreen = () => {
                 className="bg-card rounded-[32px] p-6 mb-6 shadow-md border border-inactive/5"
             >
                 <View className="flex-row justify-between items-center mb-4">
-                    <View className="bg-primary/10 px-3 py-1 rounded-full">
-                        <Text className="text-primary font-q-bold text-[10px] uppercase tracking-widest">{label}</Text>
+                    <View className="px-3 py-1 rounded-full" style={{ backgroundColor: `${currentAccent.hex}1A` }}>
+                        <Text className="font-q-bold text-[10px] uppercase tracking-widest" style={{ color: currentAccent.hex }}>{label}</Text>
                     </View>
                     <Text className="text-xs font-q-bold text-muted">{date}</Text>
                 </View>
@@ -105,8 +128,8 @@ export const MemoryMixScreen = () => {
                     "{entry.text}"
                 </Text>
                 <View className="flex-row items-center mt-4">
-                    <Text className="text-primary font-q-bold text-xs uppercase tracking-wider">Taste this memory</Text>
-                    <Ionicons name="arrow-forward" size={12} color="#FF9E7D" style={{ marginLeft: 4 }} />
+                    <Text className="text-primary font-q-bold text-xs uppercase tracking-wider" style={{ color: currentAccent.hex }}>Taste this memory</Text>
+                    <Ionicons name="arrow-forward" size={12} color={currentAccent.hex} style={{ marginLeft: 4 }} />
                 </View>
             </TouchableOpacity>
         );
@@ -115,13 +138,13 @@ export const MemoryMixScreen = () => {
     return (
         <Layout useSafePadding={false}>
             <View className="px-6 pt-4">
-                <TopNav title="Memory Mix" onBack={() => navigation.goBack()} />
+                <TopNav title="Flashback" onBack={() => navigation.goBack()} />
             </View>
 
             <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
                 <View className="items-center my-6">
                     <MascotImage source={MASCOTS.CHEF} className="w-40 h-40" resizeMode="contain" />
-                    <Text className="text-2xl font-q-bold text-text mt-4">Cookie's Today Special</Text>
+                    <Text className="text-2xl font-q-bold text-text mt-4">Cookie's Daily Mix</Text>
                     <Text className="text-base font-q-medium text-muted text-center mt-1">A unique blend of your journey</Text>
                 </View>
 
@@ -134,16 +157,16 @@ export const MemoryMixScreen = () => {
                     <Text className="text-xs font-q-bold text-muted uppercase tracking-[0.2em] mb-4 ml-1">Menu Highlights</Text>
                     <View className="flex-row flex-wrap justify-between">
                         <View style={{ width: '48%' }}>
-                            <StatCard title="Memory Span" value={stats.spanDays} subtitle="days" icon="time-outline" color="primary" />
+                            <StatCard title="Account Age" value={stats.storyAge} subtitle="days" icon="time-outline" />
                         </View>
                         <View style={{ width: '48%' }}>
-                            <StatCard title="Longest Gap" value={stats.maxGapDays} subtitle="days" icon="pause-outline" color="muted" />
+                            <StatCard title="Longest Gap" value={stats.maxGapDays} subtitle="days" icon="pause-outline" />
                         </View>
                         <View style={{ width: '48%' }}>
-                            <StatCard title="Heart Ratio" value={`${stats.favoritePercent}%`} subtitle="loved" icon="heart-outline" color="primary" />
+                            <StatCard title="Love Meter" value={`${stats.favoritePercent}%`} subtitle="loved" icon="heart-outline" />
                         </View>
                         <View style={{ width: '48%' }}>
-                            <StatCard title="Total Plates" value={stats.totalCount} subtitle="logs" icon="layers-outline" color="muted" />
+                            <StatCard title="Consistency" value={`${stats.consistency}%`} subtitle="active" icon="checkmark-circle-outline" />
                         </View>
                     </View>
                 </View>
@@ -159,15 +182,6 @@ export const MemoryMixScreen = () => {
                     <Text className="text-xs font-q-bold text-muted uppercase tracking-[0.2em] mb-4 ml-1">The First Course</Text>
                     <MemoryPreview label="Where it began" entry={stats.firstCourse} />
                 </View>
-
-                <TouchableOpacity 
-                    onPress={() => { haptics.selection(); navigation.navigate('Memory', { filter: 'mix' }); }}
-                    className="bg-primary/10 p-6 rounded-[32px] items-center border border-primary/20 mt-4 active:scale-95 transition-transform"
-                >
-                    <Ionicons name="shuffle" size={32} color="#FF9E7D" />
-                    <Text className="text-lg font-q-bold text-primary mt-2">Shuffle All Memories</Text>
-                    <Text className="text-sm font-q-medium text-primary/60 mt-1">Visit the full Memory Mix Inspector</Text>
-                </TouchableOpacity>
             </ScrollView>
         </Layout>
     );

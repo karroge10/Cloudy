@@ -9,6 +9,7 @@ import { JourneyScreen } from '../screens/JourneyScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 
 import { useTheme } from '../context/ThemeContext';
+import { useAccent } from '../context/AccentContext';
 
 const Tab = createBottomTabNavigator();
 const { width } = Dimensions.get('window');
@@ -16,6 +17,7 @@ const { width } = Dimensions.get('window');
 const CustomTabBar = ({ state, descriptors, navigation }: any) => {
   const insets = useSafeAreaInsets();
   const { isDarkMode } = useTheme();
+  const { currentAccent } = useAccent();
   
   return (
     <View style={[
@@ -69,7 +71,7 @@ const CustomTabBar = ({ state, descriptors, navigation }: any) => {
           iconName = isFocused ? 'person' : 'person-outline';
         }
 
-        const activeColor = '#FF9E7D';
+        const activeColor = currentAccent.hex;
         const inactiveColor = isDarkMode ? '#64748B' : '#94A3B8';
 
         return (

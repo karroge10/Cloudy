@@ -1,8 +1,7 @@
 import PostHog from 'posthog-react-native';
 
-const POSTHOG_API_KEY = 'phc_tykDrHCqmBWyzTdzsrui9De9q45isA17Zev5qigCsP6';
-// Crucial: Use the ingest URL for EU region
-const POSTHOG_HOST = 'https://eu.i.posthog.com';
+const POSTHOG_API_KEY = process.env.EXPO_PUBLIC_POSTHOG_API_KEY!;
+const POSTHOG_HOST = process.env.EXPO_PUBLIC_POSTHOG_HOST || 'https://eu.i.posthog.com';
 
 export const posthog = new PostHog(POSTHOG_API_KEY, {
     host: POSTHOG_HOST,

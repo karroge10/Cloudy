@@ -14,6 +14,7 @@ import { useAlert } from '../context/AlertContext';
 import { Button } from '../components/Button';
 import { getFriendlyAuthErrorMessage } from '../utils/authErrors';
 import { useTheme } from '../context/ThemeContext';
+import { useAccent } from '../context/AccentContext';
 
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { identifyUser } from '../lib/posthog';
@@ -30,6 +31,7 @@ export const AuthScreen = () => {
     const { showAlert } = useAlert();
     const { trackEvent } = useAnalytics();
     const { isDarkMode } = useTheme();
+    const { currentAccent } = useAccent();
     const [email, setEmail] = useState('');
 
     const [password, setPassword] = useState('');
@@ -288,7 +290,7 @@ export const AuthScreen = () => {
                         >
                             <Text className="text-muted font-q-bold text-base">
                                 {isLogin ? "New here? " : "Already joined? "}
-                                <Text className="text-primary">
+                                <Text className="font-q-bold" style={{ color: currentAccent.hex }}>
                                     {isLogin ? 'Create Account' : 'Sign In'}
                                 </Text>
                             </Text>
