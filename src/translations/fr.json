@@ -263,7 +263,7 @@
     "uniqueBlend": "Un mélange unique de votre voyage",
     "dailyServing": "La Portion Quotidienne",
     "menuHighlights": "Points Forts du Menu",
-    "fanFavorite": "Favori des Fans",
+    "fanFavorite": "Favori personnel",
     "firstCourse": "Le Premier Plat",
     "dailySpecial": "Spécial du Jour",
     "topPick": "Meilleur Choix",
@@ -364,7 +364,7 @@
     "companion": "Votre petit compagnon pour un esprit plus clair."
   },
   "statistics": {
-    "title": "Plongée Profonde",
+    "title": "Aperçus",
     "analysis": "Analyse Cloudy",
     "description": "Patterns numériques de votre histoire",
     "keyMetrics": "Indicateurs Clés",

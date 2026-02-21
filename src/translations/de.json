@@ -263,7 +263,7 @@
     "uniqueBlend": "Eine einzigartige Mischung deiner Reise",
     "dailyServing": "Die tägliche Portion",
     "menuHighlights": "Menü-Highlights",
-    "fanFavorite": "Fan-Favorit",
+    "fanFavorite": "Persönlicher Favorit",
     "firstCourse": "Der erste Gang",
     "dailySpecial": "Tagesgericht",
     "topPick": "Top-Auswahl",
@@ -364,7 +364,7 @@
     "companion": "Dein kleiner Begleiter für einen klareren Geist."
   },
   "statistics": {
-    "title": "Tiefer Einblick",
+    "title": "Einblicke",
     "analysis": "Cloudy Analyse",
     "description": "Numerische Muster deiner Geschichte",
     "keyMetrics": "Kennzahlen",

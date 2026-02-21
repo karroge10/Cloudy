@@ -98,8 +98,12 @@ export const CustomSplashScreen = ({ onFinish, skipAnimation = false }: { onFini
             </Animated.View>
             
             <Animated.View style={{ opacity: textOpacity, marginTop: 40, alignItems: 'center', width: '100%', paddingHorizontal: 32 }}>
-                <Text className="text-4xl font-q-bold text-text text-center" numberOfLines={1} adjustsFontSizeToFit allowFontScaling={false}>Cloudy</Text>
-                <Text className="text-lg font-q-medium text-muted mt-2 text-center" allowFontScaling={false}>{t('splash.tagline')}</Text>
+                <Text className="text-4xl font-q-bold text-text text-center" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} allowFontScaling={false}>
+                    {t('common.appName')}
+                </Text>
+                <Text className="text-lg font-q-medium text-muted mt-2 text-center" numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.7} allowFontScaling={false}>
+                    {t('splash.tagline')}
+                </Text>
             </Animated.View>
         </Animated.View>
     );

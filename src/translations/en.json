@@ -73,7 +73,8 @@
     "okay": "Okay",
     "updateTime": "Update Time",
     "setPassword": "Set Password",
-    "locale_code": "en"
+    "locale_code": "en",
+    "appName": "Cloudy"
   },
   "home": {
     "dailyGratitude": "Daily Gratitude",
@@ -264,7 +265,7 @@
     "uniqueBlend": "A unique blend of your journey",
     "dailyServing": "The Daily Serving",
     "menuHighlights": "Menu Highlights",
-    "fanFavorite": "A Fan Favorite",
+    "fanFavorite": "Personal Favorite",
     "firstCourse": "The First Course",
     "dailySpecial": "Daily Special",
     "topPick": "Top Pick",
@@ -365,7 +366,7 @@
     "companion": "Your tiny companion for a clearer mind."
   },
   "statistics": {
-    "title": "Deep Dive",
+    "title": "Insight",
     "analysis": "Cloudy Analysis",
     "description": "Numerical patterns of your story",
     "keyMetrics": "Key Metrics",
@@ -472,6 +473,10 @@
     "title": "Don't sweat it!",
     "message": "You missed a day, but that's just part of the journey. Let's start a fresh streak today!",
     "button": "Let's Go"
+  },
+  "streakFreeze": {
+    "title": "Streak Protected! ❄️",
+    "message": "You missed a day, but Dreamy used magic to protect your streak. Keep the momentum going!"
   },
   "lockScreen": {
     "title": "Cloudy is Secure",

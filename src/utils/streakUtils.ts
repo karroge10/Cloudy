@@ -1,82 +1,84 @@
-export const calculateStreak = (entries: { created_at: string }[], maxStreak: number = 0): number => {
-    if (!entries || entries.length === 0) return 0;
+export interface StreakResult {
+    streak: number;
+    isFrozen: boolean;
+    frozenDates: string[];
+}
 
-    // Helper to get YYYY-MM-DD in local time
+export const calculateStreak = (entries: { created_at: string }[], currentMaxStreak: number = 0): StreakResult => {
+    if (!entries || entries.length === 0) return { streak: 0, isFrozen: false, frozenDates: [] };
+
+    // 1. Prepare unique sorted days (Local Time)
     const getLocalDate = (dateInput: string | Date) => {
         const d = new Date(dateInput);
         return d.toLocaleDateString('en-CA'); 
     };
 
-    const uniqueDays = new Set<string>();
-    entries.forEach(entry => {
-        uniqueDays.add(getLocalDate(entry.created_at));
-    });
-
-    const sortedDays = Array.from(uniqueDays).sort((a, b) => b.localeCompare(a));
-    if (sortedDays.length === 0) return 0;
+    const uniqueDaysArr = Array.from(new Set(entries.map(e => getLocalDate(e.created_at))))
+        .sort((a, b) => a.localeCompare(b));
+    
+    if (uniqueDaysArr.length === 0) return { streak: 0, isFrozen: false, frozenDates: [] };
 
     const today = getLocalDate(new Date());
-    const yesterdayDate = new Date();
-    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-    const yesterday = getLocalDate(yesterdayDate);
-
-    // Check if streak is active (entry today OR yesterday)
-    // Dreamy Logic: If freeze is available, we might even rescue a streak that "ended" days ago? 
-    // No, standard freeze only covers accidental holes. We still enforce "recency" somewhat.
-    // However, if I missed yesterday, and I have a freeze, my streak IS active.
-    // So we relax simple check.
+    const firstEntryDate = new Date(uniqueDaysArr[0]);
+    const lastEntryDate = new Date(uniqueDaysArr[uniqueDaysArr.length - 1]);
     
-    // Actually, we just start counting from Today/Yesterday. 
-    // If the loop finds holes, it attempts to patch them.
-    // If the loop returns > 0, the streak is alive.
+    // We scan up to Today or the last entry, whichever is later
+    const lastDateToScan = new Date(today) > lastEntryDate ? new Date(today) : lastEntryDate;
+
+    // 2. Simulation State
+    let rollingMax = 0;
+    let currentStreak = 0;
+    let lastGapClaimedTime: number | null = null;
+    let allFrozenDates: string[] = [];
     
-    let streak = 0;
-    let currentCheckDate = new Date(); // Start checking from Today
+    // Set for O(1) lookups
+    const entrySet = new Set(uniqueDaysArr);
 
-    if (!uniqueDays.has(today)) {
-        // If no entry today, check from yesterday
-        currentCheckDate.setDate(currentCheckDate.getDate() - 1);
-    }
-
-    let lastGapDate: Date | null = null;
-
-    // Now loop backwards
-    while (true) {
-        const dateStr = getLocalDate(currentCheckDate);
+    // 3. Forward Simulation
+    let cursor = new Date(firstEntryDate);
+    while (cursor <= lastDateToScan) {
+        const dateStr = getLocalDate(cursor);
+        const isToday = dateStr === today;
         
-        if (uniqueDays.has(dateStr)) {
-            streak++;
-            currentCheckDate.setDate(currentCheckDate.getDate() - 1);
+        if (entrySet.has(dateStr)) {
+            currentStreak++;
+            rollingMax = Math.max(rollingMax, currentStreak);
         } else {
-            // Missing day encountered
-            if (maxStreak >= 14) {
-                 const thisGapDate = new Date(currentCheckDate);
-                 
-                 if (lastGapDate === null) {
-                     // First/Most recent gap. Allow it.
-                     lastGapDate = thisGapDate;
-                     // Do NOT increment streak, just skip the day
-                     currentCheckDate.setDate(currentCheckDate.getDate() - 1);
-                 } else {
-                     // Subsequent gap. Check regeneration (30 days).
-                     // diff = Recent - Old
-                     const diffTime = Math.abs(lastGapDate.getTime() - thisGapDate.getTime());
-                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-                     
-                     if (diffDays >= 30) {
-                         // Regenerated. Allow this gap.
-                         lastGapDate = thisGapDate;
-                         currentCheckDate.setDate(currentCheckDate.getDate() - 1);
-                     } else {
-                         // Too close. Streak breaks.
-                         break;
-                     }
-                 }
-            } else {
-                break;
+            // GAP FOUND
+            const canFreeze = rollingMax >= 14 && (
+                lastGapClaimedTime === null || 
+                (cursor.getTime() - lastGapClaimedTime) >= (30 * 24 * 60 * 60 * 1000)
+            );
+
+            if (canFreeze) {
+                allFrozenDates.push(dateStr);
+                lastGapClaimedTime = cursor.getTime();
+                // currentStreak remains unchanged (the bridge)
+            } else if (!isToday) {
+                // Streak only breaks if the gap is in the PAST.
+                // If the gap is TODAY, we wait until the day is over.
+                currentStreak = 0;
             }
         }
+        cursor.setDate(cursor.getDate() + 1);
     }
 
-    return streak;
+    // 4. Final results
+    // The simulation already calculated the 'currentStreak' up to Today.
+    // If it's > 0, it means it's either from today's post, yesterday's post, 
+    // or a bridge that hasn't collapsed yet.
+    
+    const finalStreak = currentStreak;
+    const isFrozen = finalStreak > 0 && !entrySet.has(today) && allFrozenDates.includes(today);
+
+    // One last check: If the last post was more than 1 day ago (+ bridges), 
+    // and today wasn't a bridge, the streak should be dead.
+    // But the simulation loop handles this by setting currentStreak = 0 
+    // the moment it hits a gap it can't bridge.
+
+    return { 
+        streak: finalStreak, 
+        isFrozen, 
+        frozenDates: allFrozenDates 
+    };
 };

@@ -8,7 +8,9 @@
     "niceToMeetYouWithName": "만나서 반가워요, {{name}}님!",
     "cancel": "취소",
     "offlineError": "연결 끊김",
-    "offlineMessage": "오프라인 상태인 것 같습니다. 걱정하지 마세요, 입력하신 내용은 그대로 있습니다! 연결 상태를 확인하고 다시 저장해 주세요."
+    "offlineMessage": "오프라인 상태인 것 같습니다. 걱정하지 마세요, 입력하신 내용은 그대로 있습니다! 연결 상태를 확인하고 다시 저장해 주세요.",
+    "locale_code": "ko",
+    "appName": "Cloudy"
   },
   "home": {
     "dailyGratitude": "오늘의 감사",

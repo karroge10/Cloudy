@@ -264,7 +264,7 @@
     "uniqueBlend": "Una mezcla única de tu viaje",
     "dailyServing": "La Porción Diaria",
     "menuHighlights": "Lo más destacado",
-    "fanFavorite": "Favorito de los fans",
+    "fanFavorite": "Favorito personal",
     "firstCourse": "El primer plato",
     "dailySpecial": "Especial del día",
     "topPick": "Mejor selección",
@@ -365,7 +365,7 @@
     "companion": "Tu pequeño compañero para una mente más clara."
   },
   "statistics": {
-    "title": "Análisis Profundo",
+    "title": "Análisis",
     "analysis": "Análisis de Cloudy",
     "description": "Patrones numéricos de tu historia",
     "keyMetrics": "Métricas Clave",

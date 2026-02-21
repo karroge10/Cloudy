@@ -31,6 +31,8 @@ interface JournalContextType {
     loadingMore: boolean;
     hasMore: boolean;
     streak: number;
+    isFrozen: boolean;
+    frozenDates: string[];
     rawStreakData: { id: string, created_at: string }[];
     addEntry: (text: string) => Promise<void>;
     toggleFavorite: (id: string, isFavorite: boolean) => Promise<void>;
@@ -326,12 +328,15 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
     }, [session?.user?.id, refreshEntries, showAlert, refreshProfile]);
 
     // Derived streak calculation - synchronous with metadata updates
-    const streak = useMemo(() => {
-        if (metadata.length === 0) return 0;
-        const s = calculateStreak(metadata);
-        // console.log('[JournalContext] Recalculated streak:', s, 'Metadata count:', metadata.length);
-        return s;
-    }, [metadata]);
+    const streakResult = useMemo(() => {
+        if (metadata.length === 0) return { streak: 0, isFrozen: false, frozenDates: [] };
+        const res = calculateStreak(metadata, profile?.max_streak || 0);
+        return res;
+    }, [metadata, profile?.max_streak]);
+
+    const streak = streakResult.streak;
+    const isFrozen = streakResult.isFrozen;
+    const frozenDates = streakResult.frozenDates;
 
     // Side effect: sync max_streak to profile and cache
     useEffect(() => {
@@ -443,7 +448,7 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
                 return next;
             });
             
-            notifications.scheduleStreakProtection(data.created_at);
+            notifications.scheduleStreakProtection(data.created_at, profile?.max_streak || 0);
         }
     };
 
@@ -539,7 +544,9 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
         isMerging, 
         loadingMore,
         hasMore,
-        streak: dataMatchesUser ? streak : 0,
+        streak,
+        isFrozen,
+        frozenDates,
         rawStreakData: dataMatchesUser ? metadata : [],
         addEntry,
         toggleFavorite,

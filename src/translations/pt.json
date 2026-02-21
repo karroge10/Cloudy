@@ -73,7 +73,8 @@
     "okay": "OK",
     "updateTime": "Atualizar hora",
     "setPassword": "Definir senha",
-    "locale_code": "pt"
+    "locale_code": "pt",
+    "appName": "Cloudy"
   },
   "home": {
     "dailyGratitude": "Gratidão Diária",
@@ -264,7 +265,7 @@
     "uniqueBlend": "Uma mistura única da sua jornada",
     "dailyServing": "A Porção Diária",
     "menuHighlights": "Destaques do Menu",
-    "fanFavorite": "Favorito dos Fãs",
+    "fanFavorite": "Favorito Pessoal",
     "firstCourse": "O primeiro prato",
     "dailySpecial": "Especial do dia",
     "topPick": "Melhor escolha",
@@ -365,7 +366,7 @@
     "companion": "Seu pequeno companheiro para uma mente mais clara."
   },
   "statistics": {
-    "title": "Mergulho Profundo",
+    "title": "Análises",
     "analysis": "Análise do Cloudy",
     "description": "Padrões numéricos da sua história",
     "keyMetrics": "Métricas Chave",
@@ -472,6 +473,10 @@
     "title": "Não se preocupe!",
     "message": "Você perdeu um dia, mas isso faz parte da jornada. Vamos começar uma nova sequência hoje!",
     "button": "Vamos lá"
+  },
+  "streakFreeze": {
+    "title": "Sequência Protegida! ❄️",
+    "message": "Você perdeu um dia, mas Dreamy usou magia para proteger sua sequência. Continue com tudo!"
   },
   "lockScreen": {
     "title": "Cloudy está Seguro",

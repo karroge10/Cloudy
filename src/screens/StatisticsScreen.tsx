@@ -24,18 +24,35 @@ export const StatisticsScreen = () => {
     const accentTextStyle = { color: currentAccent.hex };
 
     const StatCard = ({ title, value, subtitle, icon }: any) => (
-        <View className="bg-card rounded-3xl p-5 mb-4 shadow-sm border border-inactive/5 flex-row items-center h-28">
+        <View className="bg-card rounded-3xl p-4 mb-4 shadow-sm border border-inactive/5 flex-row items-center min-h-[112px]">
             <View 
-                className="w-12 h-12 rounded-2xl items-center justify-center mr-4"
+                className="w-10 h-10 rounded-2xl items-center justify-center mr-3"
                 style={{ backgroundColor: `${currentAccent.hex}1A` }}
             >
-                <Ionicons name={icon} size={24} color={currentAccent.hex} />
+                <Ionicons name={icon} size={20} color={currentAccent.hex} />
             </View>
             <View className="flex-1">
-                <Text className="text-[10px] font-q-bold text-muted uppercase tracking-wider mb-1" numberOfLines={1}>{title}</Text>
-                <View className="flex-row items-baseline">
-                    <Text className="text-2xl font-q-bold text-text mr-1" numberOfLines={1}>{value}</Text>
-                    <Text className="text-sm font-q-medium text-muted" numberOfLines={1}>{subtitle}</Text>
+                <Text 
+                    className="text-[9px] font-q-bold text-muted uppercase tracking-wider mb-1" 
+                    numberOfLines={2}
+                >
+                    {title}
+                </Text>
+                <View className="flex-row items-baseline flex-wrap">
+                    <Text 
+                        className="text-xl font-q-bold text-text mr-1" 
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                    >
+                        {value}
+                    </Text>
+                    <Text 
+                        className="text-[11px] font-q-medium text-muted" 
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                    >
+                        {subtitle}
+                    </Text>
                 </View>
             </View>
         </View>

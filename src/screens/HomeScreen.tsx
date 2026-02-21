@@ -21,6 +21,7 @@ import { Button } from '../components/Button';
 import { COMPANIONS } from '../constants/Companions';
 import { ReviewNudge } from '../components/ReviewNudge';
 import { StreakLostSheet } from '../components/StreakLostSheet';
+import { StreakFreezeSheet } from '../components/StreakFreezeSheet';
 import { MilestoneSheet } from '../components/MilestoneSheet';
 import { Divider } from '../components/Divider';
 
@@ -30,7 +31,7 @@ import { useTranslation } from 'react-i18next';
 export const HomeScreen = () => {
     const { showAlert } = useAlert();
     const navigation = useNavigation<any>();
-    const { addEntry, streak, rawStreakData, loading: journalLoading, refreshEntries, isMerging } = useJournal();
+    const { addEntry, streak, isFrozen, rawStreakData, loading: journalLoading, refreshEntries, isMerging } = useJournal();
     const { profile, loading: profileLoading, updateProfile, isAnonymous, userId, refreshProfile } = useProfile();
     const { trackEvent } = useAnalytics();
     const { currentAccent } = useAccent();
@@ -43,6 +44,7 @@ export const HomeScreen = () => {
     const [showStreakNudge, setShowStreakNudge] = useState(false);
     const [showReviewNudge, setShowReviewNudge] = useState(false);
     const [showStreakLostSheet, setShowStreakLostSheet] = useState(false);
+    const [showStreakFreezeSheet, setShowStreakFreezeSheet] = useState(false);
     const [isSavingName, setIsSavingName] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [tempDisplayName, setTempDisplayName] = useState('');
@@ -83,10 +85,22 @@ export const HomeScreen = () => {
     };
 
     // Check for streak loss on mount/updates
-    // Check for streak loss on mount/updates
     useEffect(() => {
         const checkStreakLoss = async () => {
-             // Only show if user is fully loaded and has a past max streak of importance (e.g. >= 3)
+             // 1. Check for Streak Frozen (Perk used)
+             if (!journalLoading && isFrozen) {
+                const lastFrozenShownDate = await AsyncStorage.getItem('last_freeze_sheet_shown_for_date');
+                const todayStr = new Date().toDateString();
+
+                if (lastFrozenShownDate !== todayStr) {
+                    setShowStreakFreezeSheet(true);
+                    await AsyncStorage.setItem('last_freeze_sheet_shown_for_date', todayStr);
+                    trackEvent('streak_freeze_sheet_shown');
+                }
+                return; // Don't check for loss if we are frozen
+             }
+
+             // 2. Check for Streak Loss
              if (!journalLoading && streak === 0 && (profile?.max_streak || 0) >= 3) {
                  const lastShownEntryDate = await AsyncStorage.getItem('last_loss_sheet_shown_for_entry_date');
                  
@@ -109,7 +123,7 @@ export const HomeScreen = () => {
         });
         
         return () => task.cancel();
-    }, [streak, journalLoading, profile?.max_streak, rawStreakData]);
+    }, [streak, isFrozen, journalLoading, profile?.max_streak, rawStreakData]);
 
     const checkSecondaryNudges = async (likelyStreak: number) => {
         // Priority 1: Day 2 Streak Motivation
@@ -507,6 +521,11 @@ export const HomeScreen = () => {
             <StreakLostSheet 
                 visible={showStreakLostSheet}
                 onClose={() => setShowStreakLostSheet(false)}
+            />
+
+            <StreakFreezeSheet 
+                visible={showStreakFreezeSheet}
+                onClose={() => setShowStreakFreezeSheet(false)}
             />
             <BottomSheet 
                 visible={showMotivationSheet} 

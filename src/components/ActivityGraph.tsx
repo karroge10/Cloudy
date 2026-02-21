@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { View, Text, ScrollView, Dimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 
 import { useAccent } from '../context/AccentContext';
@@ -8,10 +9,11 @@ import { useTranslation } from 'react-i18next';
 
 interface ActivityGraphProps {
     entries?: { created_at: string }[]; // Array of objects with ISO date strings
+    frozenDates?: string[];
     maxStreak?: number;
 }
 
-export const ActivityGraph: React.FC<ActivityGraphProps> = ({ entries, maxStreak }) => {
+export const ActivityGraph: React.FC<ActivityGraphProps> = ({ entries, frozenDates, maxStreak }) => {
     const { currentAccent } = useAccent();
     const { t } = useTranslation();
     const scrollViewRef = useRef<ScrollView>(null);
@@ -68,6 +70,8 @@ export const ActivityGraph: React.FC<ActivityGraphProps> = ({ entries, maxStreak
              counts.set(key, (counts.get(key) || 0) + 1);
         });
 
+        const frozenSet = new Set(frozenDates || []);
+
         // Generate days backwards from endOfCurrentWeek
         for (let i = totalDays - 1; i >= 0; i--) {
             const d = new Date(endOfCurrentWeek);
@@ -77,6 +81,8 @@ export const ActivityGraph: React.FC<ActivityGraphProps> = ({ entries, maxStreak
             // Don't show future days logic?
             if (d > today) {
                 data.push(-1); // Future
+            } else if (count === 0 && frozenSet.has(key)) {
+                data.push(-2); // Frozen
             } else {
                 data.push(Math.min(count, 3)); 
             }
@@ -91,6 +97,7 @@ export const ActivityGraph: React.FC<ActivityGraphProps> = ({ entries, maxStreak
 
     const getColorStyle = (intensity: number) => {
         if (intensity === -1) return { backgroundColor: 'transparent' }; 
+        if (intensity === -2) return { backgroundColor: isDarkMode ? '#1E293B' : '#F0F9FF', borderColor: '#38BDF8', borderWidth: 1 }; // Frozen
         if (intensity === 0) return { backgroundColor: isDarkMode ? '#334155' : '#E2E8F0', opacity: 0.3 }; // inactive color
         
         // Use accent color with varying opacity
@@ -135,9 +142,13 @@ export const ActivityGraph: React.FC<ActivityGraphProps> = ({ entries, maxStreak
                                 {week.map((intensity, dayIndex) => (
                                     <View
                                         key={dayIndex}
-                                        className="w-3.5 h-3.5 rounded-sm"
+                                        className="w-3.5 h-3.5 rounded-sm items-center justify-center overflow-hidden"
                                         style={getColorStyle(intensity)}
-                                    />
+                                    >
+                                        {intensity === -2 && (
+                                            <Ionicons name="snow" size={8} color="#38BDF8" />
+                                        )}
+                                    </View>
                                 ))}
                             </View>
                         ))}

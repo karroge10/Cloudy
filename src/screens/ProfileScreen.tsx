@@ -38,7 +38,7 @@ const GENDERS = ['Female', 'Male', 'Non-binary', 'Prefer not to say'];
 import { useAccent } from '../context/AccentContext';
 
 export const ProfileScreen = () => {
-    const { streak, rawStreakData, refreshEntries } = useJournal();
+    const { streak, isFrozen, frozenDates, rawStreakData, refreshEntries } = useJournal();
     const { profile, loading: profileLoading, updateProfile, isAnonymous, userId, logout } = useProfile();
     const { isDarkMode } = useTheme();
     const { trackEvent } = useAnalytics();
@@ -307,7 +307,7 @@ export const ProfileScreen = () => {
                      </TouchableOpacity>
                  </View>
 
-                 <ActivityGraph entries={rawStreakData} maxStreak={profile?.max_streak || streak} />
+                 <ActivityGraph entries={rawStreakData} frozenDates={frozenDates} maxStreak={profile?.max_streak || streak} />
 
                  <Insights userId={userId || undefined} />
                  
@@ -567,9 +567,7 @@ export const ProfileScreen = () => {
                                 onPress={() => {
                                     haptics.selection();
                                     if (selectedGoals.includes(goal)) {
-                                        if (selectedGoals.length > 1) {
-                                            setSelectedGoals(selectedGoals.filter(g => g !== goal));
-                                        }
+                                        setSelectedGoals(selectedGoals.filter(g => g !== goal));
                                     } else {
                                         setSelectedGoals([...selectedGoals, goal]);
                                     }

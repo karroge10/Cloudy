@@ -355,7 +355,7 @@ class NotificationService {
      * If I don't post Tue, streak is lost Wed morning.
      * So we schedule for Wed 09:00 AM.
      */
-    async scheduleStreakProtection(lastEntryDate: string) {
+    async scheduleStreakProtection(lastEntryDate: string, maxStreak: number = 0) {
         // Don't prompt, silently fail if no perms
         const hasPermission = await this.requestPermissions(false);
         if (!hasPermission) return;
@@ -378,18 +378,24 @@ class NotificationService {
         triggerDate.setDate(triggerDate.getDate() + 2);
         triggerDate.setHours(9, 0, 0, 0); // 9 AM
 
+        const canFreeze = maxStreak >= 14;
+        const title = canFreeze ? "Streak Frozen! ❄️" : "Oh no! Your streak reset 😢";
+        const body = canFreeze 
+            ? "You missed yesterday, but Cloudy used your monthly freeze. Post today to keep it active!" 
+            : "You missed a day, but don't worry! Start a new streak today and keep the momentum going.";
+
         await Notifications.scheduleNotificationAsync({
             identifier: 'streak-protection',
             content: {
-                title: "Oh no! Your streak reset 😢",
-                body: "You missed a day, but don't worry! Start a new streak today and keep the momentum going.",
+                title,
+                body,
                 sound: true,
                 data: { type: 'STREAK_LOST' }
             },
             trigger: triggerDate as any,
         });
 
-        // if (__DEV__) console.log(`[NotificationService] Streak protection scheduled for ${triggerDate.toDateString()} 09:00`);
+        // if (__DEV__) console.log(`[NotificationService] Streak protection scheduled for ${triggerDate.toDateString()} 09:00 (Freeze: ${canFreeze})`);
     }
 
     async cancelAllNotifications() {

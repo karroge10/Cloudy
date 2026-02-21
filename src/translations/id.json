@@ -8,7 +8,9 @@
     "niceToMeetYouWithName": "Senang bertemu denganmu, {{name}}!",
     "cancel": "Batal",
     "offlineError": "Koneksi Terputus",
-    "offlineMessage": "Sepertinya Anda sedang offline. Jangan khawatir, teks Anda masih ada di sini! Silakan periksa koneksi Anda dan coba simpan lagi."
+    "offlineMessage": "Sepertinya Anda sedang offline. Jangan khawatir, teks Anda masih ada di sini! Silakan periksa koneksi Anda dan coba simpan lagi.",
+    "locale_code": "id",
+    "appName": "Cloudy"
   },
   "home": {
     "dailyGratitude": "Rasa Syukur Harian",
