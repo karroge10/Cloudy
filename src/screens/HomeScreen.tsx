@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, Keyboard, Animated, Pressable, ScrollView, RefreshControl, InteractionManager } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, Keyboard, Animated, Pressable, ScrollView, RefreshControl, InteractionManager, KeyboardAvoidingView, Platform } from 'react-native';
 import { MASCOTS } from '../constants/Assets';
 import { Ionicons } from '@expo/vector-icons';
 import { Layout } from '../components/Layout';
@@ -330,51 +330,55 @@ export const HomeScreen = () => {
                 }}
             />
             
-            
-
-            {/* Main Writing Card */}
-            <View className="bg-card rounded-[32px] p-6 shadow-[#0000000D] shadow-xl mb-6 flex-1 min-h-[300px]" style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 20, elevation: 5 }}>
-                <Text className="text-xl font-q-bold text-text mb-4 text-center">
-                    Daily Gratitude
-                </Text>
-                <TextInput
-                    ref={inputRef}
-                    multiline
-                    placeholder="What's on your mind today?"
-                    placeholderTextColor="#999"
-                    className="text-text font-q-regular text-lg flex-1 mb-4"
-                    textAlignVertical="top"
-                    value={text}
-                    onChangeText={setText}
-                    maxLength={200}
-                />
-                
-                <Divider className="mb-4" />
-
-                <View className="flex-row justify-between items-center">
-                    <Text className="text-gray-400 font-q-medium">
-                        {charCount} / 200 symbols
+            <KeyboardAvoidingView 
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+                style={{ flex: 1 }}
+            >
+                {/* Main Writing Card */}
+                <View className="bg-card rounded-[32px] p-6 shadow-[#0000000D] shadow-xl mb-6 flex-1 min-h-[300px]" style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 20, elevation: 5 }}>
+                    <Text className="text-xl font-q-bold text-text mb-4 text-center">
+                        Daily Gratitude
                     </Text>
-                    <TouchableOpacity 
-                        onPress={handleSave}
-                        disabled={loading}
-                        delayPressIn={0}
-                        className="px-8 py-2.5 rounded-xl shadow-sm active:scale-95 transition-transform min-h-[44px] justify-center"
-                        style={{ backgroundColor: currentAccent.hex }}
-                    >
-                        <View className="items-center justify-center">
-                            <Text className={`text-white font-q-bold text-base ${loading ? "opacity-0" : "opacity-100"}`}>
-                                Save
-                            </Text>
-                            {loading && (
-                                <View className="absolute inset-0 items-center justify-center">
-                                    <ActivityIndicator color="white" size="small" />
-                                </View>
-                            )}
-                        </View>
-                    </TouchableOpacity>
+                    <TextInput
+                        ref={inputRef}
+                        multiline
+                        placeholder="What's on your mind today?"
+                        placeholderTextColor="#999"
+                        className="text-text font-q-regular text-lg flex-1 mb-4"
+                        textAlignVertical="top"
+                        value={text}
+                        onChangeText={setText}
+                        maxLength={200}
+                    />
+                    
+                    <Divider className="mb-4" />
+
+                    <View className="flex-row justify-between items-center">
+                        <Text className="text-gray-400 font-q-medium">
+                            {charCount} / 200 symbols
+                        </Text>
+                        <TouchableOpacity 
+                            onPress={handleSave}
+                            disabled={loading}
+                            delayPressIn={0}
+                            className="px-8 py-2.5 rounded-xl shadow-sm active:scale-95 transition-transform min-h-[44px] justify-center"
+                            style={{ backgroundColor: currentAccent.hex }}
+                        >
+                            <View className="items-center justify-center">
+                                <Text className={`text-white font-q-bold text-base ${loading ? "opacity-0" : "opacity-100"}`}>
+                                    Save
+                                </Text>
+                                {loading && (
+                                    <View className="absolute inset-0 items-center justify-center">
+                                        <ActivityIndicator color="white" size="small" />
+                                    </View>
+                                )}
+                            </View>
+                        </TouchableOpacity>
+                    </View>
                 </View>
-            </View>
+            </KeyboardAvoidingView>
             </ScrollView>
 
             {/* Post-Save Setup Sheet */}

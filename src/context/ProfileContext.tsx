@@ -384,16 +384,18 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
         }
     };
 
+    const value = React.useMemo(() => ({ 
+        profile: dataMatchesUser ? profile : null, 
+        isAnonymous, 
+        userId: userId || session?.user?.id || null, 
+        loading: loading || !dataMatchesUser, 
+        refreshProfile: fetchProfile, 
+        updateProfile,
+        logout 
+    }), [dataMatchesUser, profile, isAnonymous, userId, session?.user?.id, loading, fetchProfile, updateProfile, logout]);
+
     return (
-        <ProfileContext.Provider value={{ 
-            profile: dataMatchesUser ? profile : null, 
-            isAnonymous, 
-            userId: userId || session?.user?.id || null, 
-            loading: loading || !dataMatchesUser, 
-            refreshProfile: fetchProfile, 
-            updateProfile,
-            logout 
-        }}>
+        <ProfileContext.Provider value={value}>
             {children}
         </ProfileContext.Provider>
     );

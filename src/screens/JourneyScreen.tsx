@@ -241,20 +241,26 @@ export const JourneyScreen = () => {
     const insets = useSafeAreaInsets();
     const TAB_BAR_HEIGHT = 80 + insets.bottom;
 
-    useFocusEffect(
-        useCallback(() => {
+    React.useEffect(() => {
+        const unsubscribeFocus = navigation.addListener('focus', () => {
             skipResetRef.current = false;
-            return () => {
-                if (skipResetRef.current) {
-                    return;
-                }
-                setFilterMode('all');
-                setSelectedDate(null);
-                setShowCalendar(false);
-                fetchEntriesForDate(null);
-            };
-        }, [fetchEntriesForDate])
-    );
+        });
+
+        const unsubscribeBlur = navigation.addListener('blur', () => {
+            if (skipResetRef.current) {
+                return;
+            }
+            setFilterMode('all');
+            setSelectedDate(null);
+            setShowCalendar(false);
+            fetchEntriesForDate(null);
+        });
+
+        return () => {
+            unsubscribeFocus();
+            unsubscribeBlur();
+        };
+    }, [navigation, setFilterMode, fetchEntriesForDate]);
 
     // ... handleEntryPress, handleDateSelect, markedDates, deletion logic ...
     const handleEntryPress = useCallback((entryId: string) => {

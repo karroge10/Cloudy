@@ -55,8 +55,10 @@ export const AlertProvider = ({ children }: { children: ReactNode }) => {
         setState(prev => ({ ...prev, visible: false }));
     }, []);
 
+    const value = React.useMemo(() => ({ showAlert, hideAlert }), [showAlert, hideAlert]);
+
     return (
-        <AlertContext.Provider value={{ showAlert, hideAlert }}>
+        <AlertContext.Provider value={value}>
             {children}
             <CustomAlert
                 visible={state.visible}

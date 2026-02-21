@@ -58,6 +58,7 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
     const [filterMode, setFilterModeState] = useState<'all' | 'favorites'>('all');
     const [isMerging, setIsMerging] = useState(false);
     const mergeInProgress = useRef(false);
+    const lastSyncedUserIdRef = useRef<string | null>(null);
     const prevSessionRef = useRef(session);
 
     // Initial load - Note: Initial streak is derived from metadata or cache.
@@ -230,6 +231,7 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
                     
                     mergeInProgress.current = false;
                     setIsMerging(false); // Release guards
+                    lastSyncedUserIdRef.current = currentUserId;
 
                     if (!error) {
                         setTimeout(() => {
@@ -244,7 +246,11 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
                     return;
                 }
 
-                // 2. Standard Session Sync
+                if (lastSyncedUserIdRef.current === currentUserId) {
+                    return;
+                }
+
+                lastSyncedUserIdRef.current = currentUserId;
                 activeUserIdRef.current = currentUserId; // Sync ref before refresh
                 mergeInProgress.current = false;
                 setIsMerging(false);
@@ -379,61 +385,65 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
 
     const toggleFavorite = async (id: string, isFavorite: boolean) => {
         // Optimistic UI update
-        setEntries(prev => prev.map(e => e.id === id ? { ...e, is_favorite: isFavorite } : e));
+        const previousEntries = [...entries];
+        setEntries(prev => {
+            if (filterMode === 'favorites' && !isFavorite) {
+                return prev.filter(e => e.id !== id);
+            }
+            return prev.map(e => e.id === id ? { ...e, is_favorite: isFavorite } : e);
+        });
         
         if (isFavorite) {
             haptics.success();
             posthog.capture('journal_entry_favorited', { entry_id: id });
         } else {
             posthog.capture('journal_entry_unfavorited', { entry_id: id });
-            
-            // If we are in favorites mode and we unfavorite, remove it from the list immediately
-            if (filterMode === 'favorites') {
-                setEntries(prev => prev.filter(e => e.id !== id));
-            }
         }
 
         const { error } = await supabase
-
             .from('posts')
             .update({ is_favorite: isFavorite })
             .eq('id', id);
 
         if (error) {
-            setEntries(prev => prev.map(e => e.id === id ? { ...e, is_favorite: !isFavorite } : e));
+            console.error('[Journal] toggleFavorite error:', error);
+            setEntries(previousEntries);
             throw error;
         }
     };
 
     const deleteEntry = async (id: string, soft: boolean = true) => {
         // Optimistic UI update
+        const previousEntries = [...entries];
+        const previousMetadata = [...metadata];
         const now = new Date().toISOString();
+
         setEntries(prev => prev.filter(e => e.id !== id));
         setMetadata(prev => prev.filter(e => e.id !== id));
         
         posthog.capture('journal_entry_deleted', { entry_id: id, is_soft: soft });
 
-        if (soft) {
+        try {
+            if (soft) {
+                const { error } = await supabase
+                    .from('posts')
+                    .update({ deleted_at: now })
+                    .eq('id', id);
 
-            const { error } = await supabase
-                .from('posts')
-                .update({ deleted_at: now })
-                .eq('id', id);
+                if (error) throw error;
+            } else {
+                const { error } = await supabase
+                    .from('posts')
+                    .delete()
+                    .eq('id', id);
 
-            if (error) {
-                refreshEntries();
-                throw error;
+                if (error) throw error;
             }
-        } else {
-            const { error } = await supabase
-                .from('posts')
-                .delete()
-                .eq('id', id);
-
-            if (error) {
-                refreshEntries();
-                throw error;
-            }
+        } catch (error) {
+            console.error('[Journal] deleteEntry error:', error);
+            setEntries(previousEntries);
+            setMetadata(previousMetadata);
+            throw error;
         }
     };
 

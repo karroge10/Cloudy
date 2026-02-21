@@ -43,17 +43,17 @@ export const InfoCard = ({
         <Container 
             onPress={handlePress}
             activeOpacity={onPress ? 0.7 : 1}
-            className={`bg-card border rounded-[32px] overflow-hidden ${className}`}
+            className={`bg-card border rounded-[32px] ${className}`}
             style={{ 
                 borderColor: `${currentAccent.hex}33`, // 20% opacity
             }}
         >
             <View className="p-6 flex-row items-center" style={{ backgroundColor: `${currentAccent.hex}0D` }}>
                 <View 
-                    className="p-3 rounded-2xl items-center justify-center w-12 h-12"
+                    className="p-3 rounded-2xl items-center justify-center w-14 h-14"
                     style={{ backgroundColor: finalIconBackgroundColor }}
                 >
-                     <Ionicons name={icon} size={24} color={finalIconColor} />
+                     <Ionicons name={icon} size={28} color={finalIconColor} />
                 </View>
                 <View className="ml-4 flex-1 justify-center">
                     <Text className="text-lg font-q-bold text-text mb-0.5">

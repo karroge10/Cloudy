@@ -95,9 +95,9 @@ export const CustomSplashScreen = ({ onFinish, skipAnimation = false }: { onFini
                 />
             </Animated.View>
             
-            <Animated.View style={{ opacity: textOpacity, marginTop: 40, alignItems: 'center', width: '100%' }}>
-                <Text className="text-4xl font-q-bold text-text text-center px-4" allowFontScaling={false}>Cloudy</Text>
-                <Text className="text-lg font-q-medium text-muted mt-2 text-center px-8" allowFontScaling={false}>Your tiny companion for a clearer mind.</Text>
+            <Animated.View style={{ opacity: textOpacity, marginTop: 40, alignItems: 'center', width: '100%', paddingHorizontal: 32 }}>
+                <Text className="text-4xl font-q-bold text-text text-center" numberOfLines={1} adjustsFontSizeToFit allowFontScaling={false}>Cloudy</Text>
+                <Text className="text-lg font-q-medium text-muted mt-2 text-center" allowFontScaling={false}>Your tiny companion for a clearer mind.</Text>
             </Animated.View>
         </Animated.View>
     );
