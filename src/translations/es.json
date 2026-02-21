@@ -73,7 +73,8 @@
     "okay": "Vale",
     "updateTime": "Actualizar hora",
     "setPassword": "Establecer contraseña",
-    "locale_code": "es"
+    "locale_code": "es",
+    "appName": "Cloudy"
   },
   "home": {
     "dailyGratitude": "Gratitud Diaria",
@@ -472,6 +473,10 @@
     "title": "¡No te preocupes!",
     "message": "Perdiste un día, pero eso es parte del viaje. ¡Empecemos una nueva racha hoy!",
     "button": "Vamos"
+  },
+  "streakFreeze": {
+    "title": "¡Racha Protegida! ❄️",
+    "message": "Te saltaste un día, pero Dreamy usó su magia para proteger tu racha. ¡Sigue así!"
   },
   "lockScreen": {
     "title": "Cloudy está Seguro",

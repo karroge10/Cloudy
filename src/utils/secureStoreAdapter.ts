@@ -26,13 +26,11 @@ export const SecureStoreAdapter = {
 
       const chunks = await Promise.all(chunkPromises);
       if (chunks.some(c => c === null)) {
-        console.warn(`[SecureStore] Found manifest but chunks are missing for: ${key}`);
         return null;
       }
 
       return chunks.join('');
     } catch (e) {
-      console.error('[SecureStore] getItem failure:', e);
       return null;
     }
   },
@@ -61,7 +59,6 @@ export const SecureStoreAdapter = {
       // 3. Clean up primary key
       await SecureStore.deleteItemAsync(key);
     } catch (e) {
-      console.error('[SecureStore] setItem failure:', e);
     }
   },
 
@@ -79,7 +76,6 @@ export const SecureStoreAdapter = {
       }
       await SecureStore.deleteItemAsync(key);
     } catch (e) {
-      console.error('[SecureStore] removeItem failure:', e);
     }
   },
 };

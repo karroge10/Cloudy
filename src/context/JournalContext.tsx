@@ -72,7 +72,6 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
         try {
             await AsyncStorage.setItem(JOURNAL_CACHE_KEY(uid), JSON.stringify(data));
         } catch (e) {
-            console.error('[Journal] Cache persist error (entries):', e);
         }
     }, []);
 
@@ -80,7 +79,6 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
         try {
             await AsyncStorage.setItem(METADATA_CACHE_KEY(uid), JSON.stringify(data));
         } catch (e) {
-            console.error('[Journal] Cache persist error (metadata):', e);
         }
     }, []);
 
@@ -99,11 +97,9 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
             }
             
             if (cachedEntries || cachedMeta) {
-                console.log('[Journal] Loaded from local cache');
                 setLoading(false); // Short circuit loading state if we have cached data
             }
         } catch (e) {
-            console.error('[Journal] Cache load error:', e);
         }
     }, []);
 
@@ -140,10 +136,7 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
         if (!error && data && activeUserIdRef.current === currentUserId) {
             setMetadata(data);
             persistMetadata(currentUserId, data);
-            const duration = (Date.now() - start) / 1000;
-            console.log(`[Journal] Metadata loaded in ${duration.toFixed(3)}s`);
         } else if (error) {
-            console.warn(`[Journal] fetchMetadata error:`, error);
         }
     }, []);
 
@@ -175,7 +168,6 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
                     const decryptedText = await encryption.decrypt(entry.text);
                     return { ...entry, text: decryptedText };
                 } catch (e) {
-                    console.error(`[Journal] Decryption error for entry ${entry.id}:`, e);
                     return entry;
                 }
             }));
@@ -190,8 +182,6 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
             });
 
             setHasMore(data.length === PAGE_SIZE);
-            const duration = (Date.now() - start) / 1000;
-            console.log(`[Journal] Page ${pageNum} loaded in ${duration.toFixed(3)}s`);
         }
         
         if (activeUserIdRef.current === currentUserId) {
@@ -269,7 +259,6 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
                     });
                     
                     if (error) {
-                        console.error('[Journal] Merge RPC failed:', error.message);
                     } else {
                         
                         // IMPORTANT: Sync ref immediately so the subsequent fetches are accepted
@@ -318,7 +307,6 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
                 await refreshEntries();
 
             } catch (err) {
-                console.error('[Journal] syncSessionData error:', err);
                 mergeInProgress.current = false;
                 setIsMerging(false);
             }
@@ -346,10 +334,10 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
                 updateProfile({ max_streak: streak });
             }
             if (userId) {
-                AsyncStorage.setItem(`user_streak_cache_${userId}`, streak.toString()).catch(console.warn);
+                AsyncStorage.setItem(`user_streak_cache_${userId}`, streak.toString()).catch(() => {});
             }
         } else if (!loading && userId) {
-            AsyncStorage.setItem(`user_streak_cache_${userId}`, '0').catch(console.warn);
+            AsyncStorage.setItem(`user_streak_cache_${userId}`, '0').catch(() => {});
         }
     }, [streak, profile?.max_streak, session?.user?.id, loading]);
 
@@ -426,7 +414,6 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
             .single();
 
         if (error) {
-            console.error('[Journal] Add Entry Failed:', error.code, error.message);
             throw error;
         }
         if (data) {
@@ -475,7 +462,6 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
             .eq('id', id);
 
         if (error) {
-            console.error('[Journal] toggleFavorite error:', error);
             setEntries(previousEntries);
             throw error;
         } else {
@@ -515,7 +501,6 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
                 if (error) throw error;
             }
         } catch (error) {
-            console.error('[Journal] deleteEntry error:', error);
             setEntries(previousEntries);
             setMetadata(previousMetadata);
             throw error;

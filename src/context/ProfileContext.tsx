@@ -49,7 +49,6 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
         try {
             await AsyncStorage.setItem(PROFILE_CACHE_KEY(uid), JSON.stringify(data));
         } catch (e) {
-            console.error('[Profile] Cache persist error:', e);
         }
     }, []);
 
@@ -61,10 +60,8 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
                 setProfile(parsed);
                 // If we have a cached profile, we can stop the skeleton loading state
                 setLoading(false);
-                console.log('[Profile] Loaded from local cache');
             }
         } catch (e) {
-            console.error('[Profile] Cache load error:', e);
         }
     }, [session?.user?.id]);
 
@@ -231,7 +228,6 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
                 }
             }
             const duration = (Date.now() - fetchStartTime) / 1000;
-            console.log(`[ProfileContext] Profile loaded in ${duration.toFixed(3)}s`);
         } finally {
             operationInFlight.current = null;
             setLoading(false);
@@ -411,7 +407,6 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
             setProfile(null);
             // Session update should be handled by onAuthStateChange in App.tsx
         } catch (error) {
-            console.error('Error logging out:', error);
         }
     };
 

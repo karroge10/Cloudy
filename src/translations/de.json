@@ -72,7 +72,8 @@
     "great": "Super",
     "updateTime": "Zeit aktualisieren",
     "setPassword": "Passwort festlegen",
-    "locale_code": "de"
+    "locale_code": "de",
+    "appName": "Cloudy"
   },
   "home": {
     "dailyGratitude": "Tägliche Dankbarkeit",
@@ -471,6 +472,10 @@
     "title": "Kein Problem!",
     "message": "Du hast einen Tag verpasst, aber das ist Teil der Reise. Lass uns heute eine neue Serie starten!",
     "button": "Los geht's"
+  },
+  "streakFreeze": {
+    "title": "Serie Geschützt! ❄️",
+    "message": "Du hast einen Tag verpasst, aber Dreamy hat Magie benutzt, um deine Serie zu schützen. Weiter so!"
   },
   "lockScreen": {
     "title": "Cloudy ist Gesichert",

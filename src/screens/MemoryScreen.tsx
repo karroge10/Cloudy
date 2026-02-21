@@ -281,7 +281,6 @@ export const MemoryScreen = () => {
                 navigation.goBack();
             }
         } catch (error) {
-            console.error('[MemoryScreen] Delete error:', error);
         } finally {
             setIsDeleting(false);
         }
@@ -295,7 +294,6 @@ export const MemoryScreen = () => {
                 message: `Journal Entry (${dateStr}): "${item.text}"`,
             });
         } catch (error) {
-            console.error('[MemoryScreen] Share error:', error);
         }
     };
 

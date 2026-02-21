@@ -91,7 +91,6 @@ export const ProfileScreen = () => {
     try {
         navigation = useNavigation<any>();
     } catch (e) {
-        console.error('[ProfileScreen] Navigation context missing!');
     }
     const [isRefreshing, setIsRefreshing] = useState(false);
     
@@ -134,13 +133,6 @@ export const ProfileScreen = () => {
         : (COMPANIONS.find(c => c.name === currentMascotName) || COMPANIONS[0]);
 
     useEffect(() => {
-        console.log('[ProfileScreen] Profile effect triggered:', { 
-            hasProfile: !!profile, 
-            loading: profileLoading, 
-            displayName: profile?.display_name,
-            onboardingCompleted: profile?.onboarding_completed
-        });
-
         if (profile) {
             setTempName(profile.display_name || '');
             setTempAge(profile.age ? profile.age.toString() : '');
@@ -153,12 +145,6 @@ export const ProfileScreen = () => {
             // Auto-trigger onboarding based on completion flag.
             // If user has a name but no completion flag -> jump to step 1 (Reminder).
             // If they have no name -> step 0.
-            console.log('[ProfileScreen] Check onboarding:', { 
-                completed: profile.onboarding_completed, 
-                name: profile.display_name,
-                isAnon: isAnonymous 
-            });
-
             const checkOnboardingStatus = async () => {
                 const storageKey = `profile_setup_seen_v2_${profile.id}`;
                 const hasSeen = await AsyncStorage.getItem(storageKey);
@@ -184,7 +170,6 @@ export const ProfileScreen = () => {
             checkOnboardingStatus();
         } else if (!profileLoading && isAnonymous) {
             // Fresh anonymous user has no profile record yet -> Start onboarding
-            console.log('[ProfileScreen] No profile found (Anonymous), starting onboarding');
             setOnboardingStep(0);
             setShowOnboarding(true);
         }
@@ -744,7 +729,7 @@ export const ProfileScreen = () => {
                     } else {
                         // Fully close
                         setShowOnboarding(false);
-                        updateProfile({ onboarding_completed: true }).catch(console.warn);
+                        updateProfile({ onboarding_completed: true }).catch(() => {});
                         if (profile?.id) {
                             AsyncStorage.setItem(`profile_setup_seen_v2_${profile.id}`, 'true');
                         }
@@ -781,7 +766,6 @@ export const ProfileScreen = () => {
                                     setOnboardingStep(1);
                                     haptics.success();
                                 } catch (e) {
-                                    console.warn(e);
                                 } finally {
                                     setIsSavingOnboarding(false);
                                 }
@@ -831,7 +815,6 @@ export const ProfileScreen = () => {
                                     hasDismissedOnboarding.current = true;
                                     haptics.success();
                                 } catch (e) {
-                                    console.warn(e);
                                 } finally {
                                     setIsSavingOnboarding(false);
                                 }
@@ -842,7 +825,7 @@ export const ProfileScreen = () => {
                              onPress={() => { 
                                 haptics.selection(); 
                                 setShowOnboarding(false);
-                                updateProfile({ onboarding_completed: true }).catch(console.warn);
+                                updateProfile({ onboarding_completed: true }).catch(() => {});
                                 if (profile?.id) {
                                     AsyncStorage.setItem(`profile_setup_seen_v2_${profile.id}`, 'true');
                                 }

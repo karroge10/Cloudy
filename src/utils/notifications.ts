@@ -61,7 +61,6 @@ class NotificationService {
         }
 
         if (finalStatus !== 'granted') {
-            // if (__DEV__ && ask) console.log('[NotificationService] Permission not granted after request');
             return false;
         }
 
@@ -100,8 +99,6 @@ class NotificationService {
             const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
             const randomTitle = REMINDER_TITLES[Math.floor(Math.random() * REMINDER_TITLES.length)];
 
-            // Daily Cap Mechanism: 
-            // If we already sent a reminder today, we must ensure the next one is tomorrow.
             const today = new Date().toDateString();
             const lastSent = await AsyncStorage.getItem(STORAGE_KEYS.LAST_REMINDER_SENT_DATE);
             
@@ -112,35 +109,21 @@ class NotificationService {
                 type: Notifications.SchedulableTriggerInputTypes.DAILY,
             };
 
-            // If we already sent today, or if the time for today has passed,
-            // we should ideally schedule starting from tomorrow. 
-            // Expo's DAILY trigger handles "past time" by default, but we need to
-            // handle the "already sent" case specifically.
             if (lastSent === today) {
-                // if (__DEV__) console.log('[NotificationService] Already sent today. Pushing next to tomorrow.');
-                // To force "starting tomorrow", we can use a date trigger for the first one.
-                const tomorrow = new Date();
-                tomorrow.setDate(tomorrow.getDate() + 1);
-                tomorrow.setHours(h, m, 0, 0);
-                
-                // We schedule a one-time for tomorrow, and the daily repetition will pick up.
-                // Actually, the most reliable way in Expo is to just use the DAILY trigger.
-                // If lastSent === today AND the time is in the future today, 
-                // we have a problem.
-                
                 const now = new Date();
                 const targetToday = new Date();
                 targetToday.setHours(h, m, 0, 0);
                 
                 if (targetToday > now) {
-                    // It's in the future today, but we already sent one.
+                    const tomorrow = new Date();
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    tomorrow.setHours(h, m, 0, 0);
                     const seconds = Math.floor((tomorrow.getTime() - Date.now()) / 1000);
                     trigger = {
                         type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
                         seconds,
                         repeats: false,
                     };
-                    // if (__DEV__) console.log(`[NotificationService] Overriding DAILY trigger with ${seconds}s delay to respect cap.`);
                 }
             }
 
@@ -152,18 +135,11 @@ class NotificationService {
                     sound: true,
                     priority: Notifications.AndroidNotificationPriority.HIGH,
                     data: { type: 'DAILY_REMINDER', sent_at: new Date().toISOString() },
-                    // Explicit channel for Android safety
                     ...(Platform.OS === 'android' ? { channelId: 'default' } : {})
                 },
                 trigger,
             });
 
-            const isRepeating = !!(trigger as any).repeats;
-            // if (__DEV__) console.log(`[NotificationService] Daily nudge scheduled for ${h}:${m} (Repeating: ${isRepeating})`);
-
-
-            // Phase 2: The Streak Rescue (Safety Net)
-            // Logic: IF reminder_time < 20:00 (8 PM): Schedule Rescue at 22:00 (10 PM).
             await Notifications.cancelScheduledNotificationAsync('daily-safety-net');
             if (h < 20) {
                 const rescueMsg = RESCUE_MESSAGES[Math.floor(Math.random() * RESCUE_MESSAGES.length)];
@@ -184,46 +160,35 @@ class NotificationService {
                         type: Notifications.SchedulableTriggerInputTypes.DAILY,
                     } as any,
                 });
-                // if (__DEV__) console.log('[NotificationService] Safety net scheduled for 22:00');
             }
         } catch (error) {
-            console.error('[NotificationService] Error scheduling daily nudge:', error);
         }
     }
 
     async markReminderAsSent() {
         const today = new Date().toDateString();
         await AsyncStorage.setItem(STORAGE_KEYS.LAST_REMINDER_SENT_DATE, today);
-        // if (__DEV__) console.log('[NotificationService] Marked daily reminder as sent for today.');
     }
 
-    /**
-     * The Cloudy Algorithm: Runs on app open.
-     * Checks for meaningful memories to show tomorrow.
-     */
     async performBackgroundCheck(entries: any[]) {
         const now = new Date();
         const todayStr = now.toDateString();
         
         await AsyncStorage.setItem(STORAGE_KEYS.LAST_APP_OPEN, now.toISOString());
-        await this.scheduleRescueNudges(); // Always reset rescue timers on app open
+        await this.scheduleRescueNudges();
 
-        // Don't check for flashbacks more than once a day
         const lastCheck = await AsyncStorage.getItem(STORAGE_KEYS.LAST_FLASHBACK_CHECK);
         if (lastCheck === todayStr) return;
 
         await AsyncStorage.setItem(STORAGE_KEYS.LAST_FLASHBACK_CHECK, todayStr);
 
-        // Check if a flashback is already pending
         const scheduled = await Notifications.getAllScheduledNotificationsAsync();
         const hasFlashback = scheduled.some(n => n.identifier.startsWith('flashback-'));
         
         if (hasFlashback) {
-            // if (__DEV__) console.log('[NotificationService] Flashback already in queue.');
             return;
         }
 
-        // Clean up delivered notifications and track reminder sent status
         const delivered = await Notifications.getPresentedNotificationsAsync();
         const hasDeliveredReminder = delivered.some(n => n.request.content.data?.type === 'DAILY_REMINDER');
         if (hasDeliveredReminder) {
@@ -237,7 +202,6 @@ class NotificationService {
             return entries.find(e => new Date(e.created_at).toDateString() === targetStr);
         };
 
-        // Priority logic: 1yr -> 6mo -> 1mo
         let match = findEntry(12);
         let type = '1 year ago today';
         
@@ -258,7 +222,6 @@ class NotificationService {
 
         if (match) {
             await this.scheduleFlashback(match.id, match.text, type);
-            
             const reminderTime = await AsyncStorage.getItem('cloudy_reminder_time');
             if (reminderTime) {
                 this.scheduleDailyReminder(reminderTime, false);
@@ -267,7 +230,6 @@ class NotificationService {
     }
 
     private async scheduleFlashback(entryId: string, content: string, label: string) {
-        // Flashbacks are automated; never prompt from here
         const hasPermission = await this.requestPermissions(false);
         if (!hasPermission) return;
 
@@ -289,20 +251,12 @@ class NotificationService {
             },
             trigger: triggerDate as any,
         });
-        
-        // if (__DEV__) console.log(`[NotificationService] Flashback scheduled for tomorrow at ${triggerDate.getHours()}:00`);
     }
 
-
-    /**
-     * Multi-Stage Rescue Nudges: Schedules a sequence of notifications
-     * to pull inactive users back (Day 3, 7, 14, 30).
-     */
     async scheduleRescueNudges() {
         const hasPermission = await this.requestPermissions(false);
         if (!hasPermission) return;
 
-        // Cancel all existing rescue nudges first
         const stages = [3, 7, 14, 30];
         for (const stage of stages) {
             await Notifications.cancelScheduledNotificationAsync(`rescue-nudge-${stage}`);
@@ -318,7 +272,7 @@ class NotificationService {
         for (const nudge of nudges) {
             const triggerDate = new Date();
             triggerDate.setDate(triggerDate.getDate() + nudge.day);
-            triggerDate.setHours(11, 0, 0, 0); // Scheduled for 11 AM
+            triggerDate.setHours(11, 0, 0, 0);
 
             await Notifications.scheduleNotificationAsync({
                 identifier: `rescue-nudge-${nudge.day}`,
@@ -331,13 +285,8 @@ class NotificationService {
                 trigger: triggerDate as any,
             });
         }
-
-        // if (__DEV__) console.log('[NotificationService] Multi-stage rescue nudges scheduled (Day 3, 7, 14, 30)');
     }
 
-    /**
-     * Legacy wrapper for backward compatibility
-     */
     async scheduleRescueNotification() {
         await this.scheduleRescueNudges();
     }
@@ -349,34 +298,15 @@ class NotificationService {
         }
     }
 
-    /**
-     * Streak Protection: Schedules a notification for when the streak is about to be lost.
-     * Logic: If I posted today (e.g. Mon), I am safe for Mon. I must post Tue. 
-     * If I don't post Tue, streak is lost Wed morning.
-     * So we schedule for Wed 09:00 AM.
-     */
     async scheduleStreakProtection(lastEntryDate: string, maxStreak: number = 0) {
-        // Don't prompt, silently fail if no perms
         const hasPermission = await this.requestPermissions(false);
         if (!hasPermission) return;
 
-        // Cancel previous protection
         await Notifications.cancelScheduledNotificationAsync('streak-protection');
 
-        const entryDate = new Date(lastEntryDate);
-        // Start from the entry date. 
-        // Streak lasts for 1 day gap usually. 
-        // Day 0: Entry 
-        // Day 1: Must post (Streak active)
-        // Day 2: Streak lost if no post on Day 1.
-        
-        // So we warn on Day 2 morning.
-        const triggerDate = new Date(); // Use NOW to be safe relating to current time, but logic uses entryDate reference?
-        // Actually, simpler: Just set it for "Day after tomorrow" relative to NOW if the entry was just made NOW.
-        // Assuming this is called right after adding an entry.
-        
+        const triggerDate = new Date();
         triggerDate.setDate(triggerDate.getDate() + 2);
-        triggerDate.setHours(9, 0, 0, 0); // 9 AM
+        triggerDate.setHours(9, 0, 0, 0);
 
         const canFreeze = maxStreak >= 14;
         const title = canFreeze ? "Streak Frozen! ❄️" : "Oh no! Your streak reset 😢";
@@ -394,8 +324,6 @@ class NotificationService {
             },
             trigger: triggerDate as any,
         });
-
-        // if (__DEV__) console.log(`[NotificationService] Streak protection scheduled for ${triggerDate.toDateString()} 09:00 (Freeze: ${canFreeze})`);
     }
 
     async cancelAllNotifications() {
@@ -405,4 +333,3 @@ class NotificationService {
 }
 
 export const notifications = new NotificationService();
-

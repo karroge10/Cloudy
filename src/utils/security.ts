@@ -35,7 +35,6 @@ class SecurityService {
 
             return results.success;
         } catch (error) {
-            console.error('[SecurityService] Authentication error:', error);
             return false;
         }
     }

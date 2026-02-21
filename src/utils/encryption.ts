@@ -31,7 +31,6 @@ class EncryptionService {
                 
                 this.masterKey = key;
             } catch (error) {
-                console.error('[Encryption] Initialization failed:', error);
             } finally {
                 this.initPromise = null;
             }
@@ -70,13 +69,11 @@ class EncryptionService {
             const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
             
             if (!decryptedText) {
-                console.warn('[Encryption] Decryption resulted in empty string, returning original.');
                 return encryptedText;
             }
             
             return decryptedText;
         } catch (error) {
-            console.error('[Encryption] Decryption failed:', error);
             return encryptedText;
         }
     }

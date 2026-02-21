@@ -9,9 +9,7 @@ import { InteractionManager } from 'react-native';
  * This should be awaited before hiding the splash screen.
  */
 export const preloadCriticalAssets = async () => {
-    const start = Date.now();
     try {
-        console.log('[AssetLoader] Starting critical asset preload...');
         // Load what's needed for Home screen, Tab menu, and Privacy overlay
         await Promise.all([
             Asset.loadAsync([
@@ -25,11 +23,7 @@ export const preloadCriticalAssets = async () => {
             ]),
             Font.loadAsync(Ionicons.font)
         ]);
-        
-        const duration = (Date.now() - start) / 1000;
-        console.log(`[AssetLoader] Critical assets loaded in ${duration.toFixed(3)}s`);
     } catch (error) {
-        console.error('[AssetLoader] Error preloading critical assets:', error);
     }
 };
 
@@ -53,8 +47,6 @@ export const preloadBackgroundAssets = async () => {
             MASCOTS.ENVELOPE
         ];
         const remaining = mascotAssets.filter(m => !criticalMascots.includes(m));
-
-        console.log(`[AssetLoader] Starting background preload for ${remaining.length} assets...`);
         
         // Load in smaller batches to avoid "bunching up"
         const BATCH_SIZE = 3;
@@ -65,10 +57,6 @@ export const preloadBackgroundAssets = async () => {
             // Small gap between batches to let other tasks run
             await new Promise(resolve => setTimeout(resolve, 100));
         }
-        
-        console.log('[AssetLoader] Background assets preloaded successfully');
     } catch (error) {
-        console.error('[AssetLoader] Error preloading background assets:', error);
     }
 };
-

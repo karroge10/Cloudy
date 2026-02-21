@@ -187,7 +187,6 @@ export const HomeScreen = () => {
             if (unlockedMascot && likelyStreak > currentMax) {
                 setPendingNudgeStreak(likelyStreak);
                 setMilestoneMascot(unlockedMascot);
-                // console.log('[HomeScreen] Mascot Unlocked:', unlockedMascot.name, 'Streak:', likelyStreak);
                 trackEvent('mascot_unlocked', { mascot: unlockedMascot.name });
             } else {
                 // 2. Check for Secondary Nudges (Setup, Day 3 prompts, etc.)
@@ -217,7 +216,6 @@ export const HomeScreen = () => {
             ]);
             haptics.selection();
         } catch (error) {
-            console.error('[HomeScreen] Refresh error:', error);
         } finally {
             setIsRefreshing(false);
         }
@@ -283,10 +281,8 @@ export const HomeScreen = () => {
 
         // Fire and forget persistence
         updateProfile({ onboarding_completed: true }).catch(err => {
-            console.warn('[HomeScreen] Failed to mark onboarding complete:', err);
         });
         AsyncStorage.setItem('has_seen_first_entry', 'true').catch(err => {
-            console.warn('[HomeScreen] Failed to set first entry flag:', err);
         });
         trackEvent('setup_sheet_dismissed');
     };

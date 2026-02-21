@@ -114,12 +114,6 @@ const RootNavigator = ({ session, isBioLocked, isColdStartWithSession, isAuthLoa
     })();
 
     if (nextViewMode !== viewMode) {
-        console.log(`[RootNavigator] Changing viewMode: ${viewMode} -> ${nextViewMode}`, { 
-            session: !!session, 
-            profile: !!profile, 
-            onboarding: profile?.onboarding_completed,
-            profileLoading
-        });
         setViewMode(nextViewMode);
     }
   }, [session, profileLoading, profile?.onboarding_completed, isAuthLoading, fontsLoaded, isBioLocked, viewMode]);
@@ -320,14 +314,10 @@ export default function App() {
                 // Signal critical path complete
                 setAssetsLoaded(true);
 
-                const duration = (Date.now() - start) / 1000;
-                console.log(`[App] Critical init complete in ${duration.toFixed(3)}s`);
-
                 // STAGE 2: Background tasks
                 preloadBackgroundAssets();
                 posthog.capture('app_session_start');
             } catch (error) {
-                console.error('[App] Init error:', error);
                 setIsAuthLoading(false);
                 setAssetsLoaded(true); // Fallback to let user in
             }

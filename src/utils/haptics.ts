@@ -23,7 +23,7 @@ class HapticService {
 
     private run(impact: () => Promise<void>, label: string) {
         if (!this.enabled) return;
-        impact().catch(e => console.warn('Haptic failed', e));
+        impact().catch(() => {});
     }
 
     light() {

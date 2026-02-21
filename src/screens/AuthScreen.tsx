@@ -187,7 +187,6 @@ export const AuthScreen = () => {
                 });
                 
                 if (error) {
-                    console.error('[Auth] Supabase sign in error:', error);
                     throw error;
                 }
 
@@ -209,7 +208,6 @@ export const AuthScreen = () => {
                 throw new Error('No ID Token found');
             }
         } catch (error: any) {
-            console.error('[Auth] Google Sign-In Error:', error);
             // Only show alert if it's not a cancellation or operation in progress
             if (error.code !== statusCodes.IN_PROGRESS && error.code !== statusCodes.SIGN_IN_CANCELLED) {
                 const { title, message } = getFriendlyAuthErrorMessage(error);
