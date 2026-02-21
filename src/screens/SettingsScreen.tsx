@@ -23,6 +23,8 @@ import { LogoutSheet } from '../components/LogoutSheet';
 import { Divider } from '../components/Divider';
 import { useAccent, ACCENT_COLORS } from '../context/AccentContext';
 import { useAppLogout } from '../hooks/useAppLogout';
+import { Linking } from 'react-native';
+import { LINKS } from '../constants/Links';
 
 export const SettingsScreen = () => {
     const navigation = useNavigation<any>();
@@ -317,6 +319,22 @@ export const SettingsScreen = () => {
                             value={profile?.security_lock_enabled ?? false}
                         />
                     </View>
+
+                    <Divider />
+
+                    <Divider />
+
+                    {/* Official Website */}
+                    <TouchableOpacity
+                        onPress={() => { haptics.selection(); Linking.openURL(LINKS.WEBSITE); }}
+                        className="flex-row items-center justify-between py-4"
+                    >
+                        <View>
+                            <Text className="text-lg font-q-bold text-text">Our Home</Text>
+                            <Text className="text-muted font-q-medium text-xs">Visit cloudyapp.vercel.app</Text>
+                        </View>
+                        <Ionicons name="globe-outline" size={22} color={currentAccent.hex} />
+                    </TouchableOpacity>
 
                     <Divider />
 
