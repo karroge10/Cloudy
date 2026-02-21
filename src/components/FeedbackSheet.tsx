@@ -7,6 +7,7 @@ import { Button } from './Button';
 import { haptics } from '../utils/haptics';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { useAlert } from '../context/AlertContext';
+import { useTranslation } from 'react-i18next';
 
 import { supabase } from '../lib/supabase';
 
@@ -21,10 +22,11 @@ export const FeedbackSheet = ({ visible, onClose }: FeedbackSheetProps) => {
     const [loading, setLoading] = useState(false);
     const { trackEvent } = useAnalytics();
     const { showAlert } = useAlert();
+    const { t } = useTranslation();
 
     const handleSubmit = async () => {
         if (!feedback.trim()) {
-            showAlert('Wait!', 'Please write something before sending.', [{ text: 'Okay' }], 'info');
+            showAlert(t('feedback.waitTitle'), t('feedback.waitMessage'), [{ text: t('common.okay') }], 'info');
             return;
         }
 
@@ -55,14 +57,14 @@ export const FeedbackSheet = ({ visible, onClose }: FeedbackSheetProps) => {
             onClose();
             
             showAlert(
-                'Thank You!',
-                'Your feedback reached my cloud. I appreciate you!',
-                [{ text: 'You’re welcome!' }],
+                t('feedback.successTitle'),
+                t('feedback.successMessage'),
+                [{ text: t('feedback.successButton') }],
                 'success'
             );
         } catch (error) {
             console.error('Feedback error:', error);
-            showAlert('Oops', 'Could not send feedback. Please try again.', [{ text: 'Okay' }], 'error');
+            showAlert(t('feedback.errorTitle'), t('feedback.errorMessage'), [{ text: t('common.okay') }], 'error');
         } finally {
             setLoading(false);
         }
@@ -73,17 +75,17 @@ export const FeedbackSheet = ({ visible, onClose }: FeedbackSheetProps) => {
             <View className="items-center w-full">
                 <MascotImage source={MASCOTS.ENVELOPE} className="w-32 h-32 mb-4" resizeMode="contain" />
                 <Text className="text-2xl font-q-bold text-text text-center mb-2 px-6">
-                    Cloudy Whisper
+                    {t('feedback.title')}
                 </Text>
                 <Text className="text-base font-q-medium text-muted text-center mb-8 px-4 leading-5">
-                    Found a bug? Have an idea? Or just want to say hi? I'm all ears! You can also reach out via our website.
+                    {t('feedback.description')}
                 </Text>
 
                 <TextInput
                     multiline
                     numberOfLines={4}
                     className="w-full bg-card px-6 py-5 rounded-[24px] font-q-medium text-lg text-text border-2 border-inactive/10 mb-4 min-h-[120px]"
-                    placeholder="Tell me everything..."
+                    placeholder={t('feedback.placeholder')}
                     placeholderTextColor="#CBD5E1"
                     onChangeText={setFeedback}
                     value={feedback}
@@ -93,7 +95,7 @@ export const FeedbackSheet = ({ visible, onClose }: FeedbackSheetProps) => {
 
                 <TextInput
                     className="w-full bg-card px-6 py-4 rounded-[20px] font-q-medium text-base text-text border-2 border-inactive/10 mb-8"
-                    placeholder="Email for reply (optional)"
+                    placeholder={t('feedback.emailPlaceholder')}
                     placeholderTextColor="#CBD5E1"
                     onChangeText={setEmail}
                     value={email}
@@ -102,7 +104,7 @@ export const FeedbackSheet = ({ visible, onClose }: FeedbackSheetProps) => {
                 />
 
                 <Button 
-                    label="Send to the Cloud"
+                    label={t('feedback.sendButton')}
                     onPress={handleSubmit}
                     loading={loading}
                 />
@@ -111,7 +113,7 @@ export const FeedbackSheet = ({ visible, onClose }: FeedbackSheetProps) => {
                     onPress={() => { haptics.selection(); onClose(); }} 
                     className="mt-4 py-2 active:scale-95 transition-transform"
                 >
-                    <Text className="text-muted font-q-bold text-base">Maybe later</Text>
+                    <Text className="text-muted font-q-bold text-base">{t('common.maybeLater')}</Text>
                 </TouchableOpacity>
             </View>
         </BottomSheet>

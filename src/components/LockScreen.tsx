@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MASCOTS } from '../constants/Assets';
 import { MascotImage } from './MascotImage';
 import { useTheme } from '../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 /**
  * LockScreen: A premium security gate that protects the user's journal.
@@ -32,6 +33,7 @@ export const LockScreen = ({
 }) => {
     const { profile, loading } = useProfile();
     const { isDarkMode } = useTheme();
+    const { t } = useTranslation();
     const [isLocked, setIsLocked] = useState(initialLocked);
     const [isAuthenticating, setIsAuthenticating] = useState(false);
     
@@ -166,8 +168,8 @@ export const LockScreen = ({
                         resizeMode="contain" 
                     />
                     
-                    <Text style={[styles.title, { color: isDarkMode ? '#E5E7EB' : '#2D3436' }]}>Cloudy is Secure</Text>
-                    <Text style={[styles.subtitle, { color: isDarkMode ? '#CBD5E1' : '#636E72' }]}>Unlock to continue your journey</Text>
+                    <Text style={[styles.title, { color: isDarkMode ? '#E5E7EB' : '#2D3436' }]}>{t('lockScreen.title')}</Text>
+                    <Text style={[styles.subtitle, { color: isDarkMode ? '#CBD5E1' : '#636E72' }]}>{t('lockScreen.subtitle')}</Text>
                     
                     <TouchableOpacity 
                         style={styles.button}
@@ -176,7 +178,7 @@ export const LockScreen = ({
                         disabled={isAuthenticating}
                     >
                         <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-                            <Text style={[styles.buttonText, { opacity: isAuthenticating ? 0 : 1 }]}>Unlock</Text>
+                            <Text style={[styles.buttonText, { opacity: isAuthenticating ? 0 : 1 }]}>{t('lockScreen.button')}</Text>
                             {isAuthenticating && (
                                 <View style={StyleSheet.absoluteFill}>
                                     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -188,7 +190,7 @@ export const LockScreen = ({
                     </TouchableOpacity>
                 </View>
                 
-                <Text style={styles.footer}>Your memories are private & encrypted</Text>
+                <Text style={styles.footer}>{t('lockScreen.footer')}</Text>
             </LinearGradient>
         </View>
     );

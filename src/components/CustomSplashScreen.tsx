@@ -3,6 +3,7 @@ import { View, Text, Animated, Dimensions } from 'react-native';
 import { MASCOTS } from '../constants/Assets';
 import { MascotImage } from './MascotImage';
 import { useTheme } from '../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 
@@ -12,6 +13,7 @@ const { width } = Dimensions.get('window');
  */
 export const CustomSplashScreen = ({ onFinish, skipAnimation = false }: { onFinish: () => void, skipAnimation?: boolean }) => {
     const { isDarkMode } = useTheme();
+    const { t } = useTranslation();
     const fadeAnim = useRef(new Animated.Value(1)).current;
     const mascotScale = useRef(new Animated.Value(0.8)).current;
     const mascotTranslateY = useRef(new Animated.Value(0)).current;
@@ -97,7 +99,7 @@ export const CustomSplashScreen = ({ onFinish, skipAnimation = false }: { onFini
             
             <Animated.View style={{ opacity: textOpacity, marginTop: 40, alignItems: 'center', width: '100%', paddingHorizontal: 32 }}>
                 <Text className="text-4xl font-q-bold text-text text-center" numberOfLines={1} adjustsFontSizeToFit allowFontScaling={false}>Cloudy</Text>
-                <Text className="text-lg font-q-medium text-muted mt-2 text-center" allowFontScaling={false}>Your tiny companion for a clearer mind.</Text>
+                <Text className="text-lg font-q-medium text-muted mt-2 text-center" allowFontScaling={false}>{t('splash.tagline')}</Text>
             </Animated.View>
         </Animated.View>
     );

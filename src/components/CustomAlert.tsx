@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { haptics } from '../utils/haptics';
 import { useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 
 const { width } = Dimensions.get('window');
@@ -31,6 +32,7 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
     type = 'info'
 }) => {
     const { isDarkMode } = useTheme();
+    const { t } = useTranslation();
     
     useEffect(() => {
         if (visible) {
@@ -109,7 +111,7 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
                                 onPress={() => { haptics.selection(); onClose(); }}
                                 className="bg-primary py-4 rounded-full items-center"
                             >
-                                <Text className="text-white font-q-bold text-lg">Okay</Text>
+                                <Text className="text-white font-q-bold text-lg">{t('common.okay')}</Text>
                             </TouchableOpacity>
                         )}
                     </View>

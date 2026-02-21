@@ -1,0 +1,185 @@
+{
+  "common": {
+    "save": "保存",
+    "okay": "好的",
+    "error": "错误",
+    "maybeLater": "稍后再说",
+    "niceToMeetYou": "很高兴见到你！",
+    "niceToMeetYouWithName": "很高兴见到你，{{name}}！",
+    "cancel": "取消",
+    "offlineError": "连接中断",
+    "offlineMessage": "您似乎处于离线状态。别担心，您的文字还在！请检查网络连接并重试保存。"
+  },
+  "home": {
+    "dailyGratitude": "每日感悟",
+    "placeholder": "今天有什么想分享的吗？",
+    "today": "今天",
+    "charCount": "{{count}} / 200 字",
+    "emptyEntryTitle": "内容为空",
+    "emptyEntryMessage": "写点什么再保存吧。",
+    "saveError": "保存失败。",
+    "setup": {
+      "beautifullySaid": "说得真好！",
+      "callYou": "Cloudy 该怎么称呼你？",
+      "namePlaceholder": "你的名字",
+      "saveProfile": "保存个人资料",
+      "reminderTitle": "什么时候提醒你记录心情？",
+      "setReminder": "设置提醒",
+      "noThanks": "不用了，我自己能记住"
+    }
+  },
+  "navigation": {
+    "entry": "记录",
+    "journey": "时光",
+    "profile": "我的"
+  },
+  "profile": {
+    "title": "个人资料",
+    "hi": "你好，{{name}}！",
+    "streakDay": "{{count}} 天",
+    "streakTitle": "连续记录!",
+    "sections": {
+      "name": "姓名",
+      "age": "年龄",
+      "gender": "性别",
+      "location": "地区",
+      "goals": "目标",
+      "struggles": "困扰"
+    },
+    "placeholders": {
+      "setName": "设置姓名",
+      "setAge": "设置年龄",
+      "setGender": "设置性别",
+      "setCountry": "设置国家/地区",
+      "setGoals": "设置目标",
+      "setStruggles": "设置困扰"
+    },
+    "logout": "退出登录"
+  },
+  "settings": {
+    "title": "设置",
+    "dailyReminder": "每日提醒",
+    "hapticFeedback": "触感反馈",
+    "hapticDescription": "交互时的轻微震动",
+    "nightTheme": "深色模式",
+    "nightDescription": "切换到宁静的深色色调",
+    "accentColor": "主题色",
+    "accentDescription": "个性化应用的主题颜色",
+    "lockCloud": "应用锁",
+    "lockDescription": "为你的日记提供生物识别保护",
+    "ourHome": "官方网站",
+    "visitWebsite": "访问我们的官方网站",
+    "privacySecurity": "隐私与安全",
+    "cloudyWhisper": "Cloudy 私语",
+    "feedbackDescription": "发送反馈或报告问题",
+    "language": "语言",
+    "languageDescription": "选择你偏好的语言"
+  },
+  "journey": {
+    "title": "心灵旅程",
+    "all": "全部",
+    "favorites": "收藏",
+    "loading": "加载中...",
+    "noMemories": "旅程才刚刚开始。",
+    "noFavorites": "还没有收藏的记录。",
+    "noMemoriesForDate": "{{date}} 没有记录。",
+    "viewAll": "查看全部记录",
+    "deleteTitle": "确定要删除吗？",
+    "deleteMessage": "这篇回忆将被永久删除，确定吗？",
+    "confirmDelete": "确定删除",
+    "cancelDelete": "保留",
+    "tooLateTitle": "无法删除",
+    "tooLateMessage": "记录发布超过 24 小时后将无法删除。"
+  },
+  "feedback": {
+    "title": "反馈与支持",
+    "description": "发现了错误？有想法？或者只是想打个招呼？我随时倾听！您也可以通过我们的网站联系。",
+    "placeholder": "告诉我一切...",
+    "emailPlaceholder": "回复邮箱（可选）",
+    "sendButton": "发送到云端",
+    "waitTitle": "等等！",
+    "waitMessage": "发送前请先写点什么。",
+    "successTitle": "谢谢！",
+    "successMessage": "您的反馈已送达我的云端。感谢您！",
+    "successButton": "不客气！",
+    "errorTitle": "哎呀",
+    "errorMessage": "无法发送反馈，请重试。"
+  },
+  "review": {
+    "delight": "喜悦时刻 ✨",
+    "enjoyingTitle": "您喜欢与 Cloudy 的旅程吗？",
+    "enjoyingMessage": "您的连续记录太棒了！分享评论可以帮助其他人找到内心的平静。",
+    "rateButton": "很喜欢！立即评分"
+  },
+  "auth": {
+    "welcomeBack": "欢迎回来！",
+    "saveJourney": "保存您的旅程",
+    "missedYou": "Cloudy 想念您了。",
+    "secureProgress": "创建账户以保护您的进度和回忆。",
+    "emailLabel": "邮箱",
+    "passwordLabel": "密码",
+    "signInButton": "登录",
+    "signUpButton": "注册",
+    "newHere": "新用户？",
+    "alreadyJoined": "已有账户？",
+    "createAccount": "创建账户",
+    "orDivider": "或",
+    "continueWithGoogle": "使用 Google 继续",
+    "missingInfoTitle": "信息缺失",
+    "missingInfoMessage": "请输入邮箱和密码。",
+    "accountExistsTitle": "账户已存在",
+    "accountExistsMessage": "要登录现有账户吗？当前的临时数据将不会合并。",
+    "cancelButton": "取消",
+    "logInButton": "登录",
+    "successTitle": "成功",
+    "journeySecured": "您的旅程已受到保护！",
+    "confirmEmail": "请检查您的邮箱以确认账户。"
+  },
+  "journalEntry": {
+    "title": "日记",
+    "header": "专注于美好。",
+    "subheader": "今天您感激的一件小事是什么？",
+    "placeholder": "我感激...",
+    "saveButton": "保存记录",
+    "savedTitle": "感谢已保存！",
+    "savedMessage": "明天见！",
+    "errorTitle": "错误",
+    "errorMessage": "无法保存您的记录。"
+  },
+  "profileNudge": {
+    "title": "保护您的旅程",
+    "message": "将进度保存到云端，这样您永远不会失去珍贵的回忆。"
+  },
+  "ranks": {
+    "beginner": "新手",
+    "expert": "专家",
+    "master": "大师",
+    "dedicated": "专注者",
+    "legend": "传奇",
+    "hero": "HERO"
+  },
+  "streakLost": {
+    "title": "别担心！",
+    "message": "你错过了一天，但这只是旅程的一部分。今天开始新的连续记录吧！",
+    "button": "开始吧"
+  },
+  "lockScreen": {
+    "title": "Cloudy 很安全",
+    "subtitle": "解锁以继续您的旅程",
+    "button": "解锁",
+    "footer": "您的回忆是私密且加密的"
+  },
+  "splash": {
+    "tagline": "您通往清晰心灵的小伴侣。"
+  },
+  "lockedFeature": {
+    "locked": "已锁定",
+    "unlockMessage": "解锁此功能需达到一次{{required}}天连续记录。您目前有{{current}}天！",
+    "seeProgress": "查看进度"
+  },
+  "journalMerge": {
+    "successTitle": "成功",
+    "welcomeBack": "欢迎回来，{{name}}！我们已将您最近的回忆添加到日记中。",
+    "great": "太棒了！"
+  }
+}

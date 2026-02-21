@@ -7,6 +7,7 @@ import { haptics } from '../utils/haptics';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useAccent } from '../context/AccentContext';
+import { useTranslation } from 'react-i18next';
 
 interface LockedFeatureProps {
     featureName: string;
@@ -26,6 +27,7 @@ export const LockedFeature = ({
     const navigation = useNavigation<any>();
     const { isDarkMode } = useTheme();
     const { currentAccent } = useAccent();
+    const { t } = useTranslation();
 
     return (
         <View className="bg-card rounded-[32px] p-8 shadow-xl mb-8 items-center border-2 border-dashed border-inactive/20"
@@ -42,11 +44,11 @@ export const LockedFeature = ({
             />
 
             <Text className="text-2xl font-q-bold text-text text-center mb-2">
-                {featureName} Locked
+                {featureName} {t('lockedFeature.locked')}
             </Text>
             
             <Text className="text-base font-q-medium text-muted text-center mb-8 px-4">
-                Unlock this feature by reaching a {requiredStreak}-day streak once. You're at {currentStreak} days!
+                {t('lockedFeature.unlockMessage', { required: requiredStreak, current: currentStreak })}
             </Text>
 
             <TouchableOpacity 
@@ -57,7 +59,7 @@ export const LockedFeature = ({
                 className="px-8 py-4 rounded-[20px] active:scale-95 transition-transform"
                 style={{ backgroundColor: currentAccent.hex }}
             >
-                <Text className="text-white font-q-bold text-lg">See Progress</Text>
+                <Text className="text-white font-q-bold text-lg">{t('lockedFeature.seeProgress')}</Text>
             </TouchableOpacity>
         </View>
     );

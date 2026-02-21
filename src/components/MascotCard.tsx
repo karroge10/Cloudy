@@ -4,6 +4,7 @@ import { MascotImage } from './MascotImage';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useAccent } from '../context/AccentContext';
+import { useTranslation } from 'react-i18next';
 
 interface MascotCardProps {
     name: string;
@@ -18,6 +19,7 @@ interface MascotCardProps {
 export const MascotCard = ({ name, asset, isSelected, isLocked, requiredStreak, unlockPerk, onPress }: MascotCardProps) => {
     const { isDarkMode } = useTheme();
     const { currentAccent } = useAccent();
+    const { t } = useTranslation();
     const handlePress = () => {
         haptics.selection();
         onPress();
@@ -71,7 +73,7 @@ export const MascotCard = ({ name, asset, isSelected, isLocked, requiredStreak, 
                 className={`font-q-bold text-[10px] mt-2 uppercase ${isLocked ? 'text-muted/50' : isSelected ? '' : 'text-muted'}`}
                 style={!isLocked && isSelected ? { color: currentAccent.hex } : undefined}
             >
-                {isLocked ? (requiredStreak !== undefined ? `${requiredStreak} Days` : 'Locked') : name}
+                {isLocked ? (requiredStreak !== undefined ? t('common.daysCount', { count: requiredStreak }) : t('insights.locked')) : name}
             </Text>
             {isLocked && unlockPerk && (
                 <Text 

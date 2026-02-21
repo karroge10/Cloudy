@@ -1,4 +1,5 @@
 import "./global.css";
+import "./src/lib/i18n";
 import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -7,7 +8,7 @@ import { useFonts, Quicksand_400Regular, Quicksand_500Medium, Quicksand_600SemiB
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Session } from '@supabase/supabase-js';
-import { DeviceEventEmitter, View, ActivityIndicator, AppState, AppStateStatus, StyleSheet } from 'react-native';
+import { DeviceEventEmitter, View, ActivityIndicator, AppState, AppStateStatus, StyleSheet, BackHandler, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -194,6 +195,38 @@ const AppNavigator = ({
 }) => {
   const { isDarkMode } = useTheme();
   const theme = React.useMemo(() => getCloudyTheme(isDarkMode), [isDarkMode]);
+
+  // Global Android back button handler
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+
+    const onBackPress = () => {
+      if (!navigationRef.isReady()) return false;
+
+      // Get the current route
+      const currentRoute = navigationRef.getCurrentRoute()?.name;
+      
+      // Screens that should exit the app when back is pressed
+      const exitScreens = ['Entry', 'Welcome', 'InitialLoading'];
+      
+      // If we're on an exit screen, let the app close
+      if (exitScreens.includes(currentRoute || '')) {
+        return false;
+      }
+
+      // Check if there's something to go back to
+      if (navigationRef.canGoBack()) {
+        navigationRef.goBack();
+        return true;
+      }
+
+      // No back history - let app exit
+      return false;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => backHandler.remove();
+  }, []);
 
   return (
     <View className={`flex-1 ${isDarkMode ? 'dark' : ''}`} style={{ backgroundColor: isDarkMode ? '#111427' : (session && isBioLocked ? '#111427' : '#FFF9F0') }}>

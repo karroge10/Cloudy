@@ -1,0 +1,185 @@
+{
+  "common": {
+    "save": "Simpan",
+    "okay": "Oke",
+    "error": "Kesalahan",
+    "maybeLater": "Mungkin nanti",
+    "niceToMeetYou": "Senang bertemu denganmu!",
+    "niceToMeetYouWithName": "Senang bertemu denganmu, {{name}}!",
+    "cancel": "Batal",
+    "offlineError": "Koneksi Terputus",
+    "offlineMessage": "Sepertinya Anda sedang offline. Jangan khawatir, teks Anda masih ada di sini! Silakan periksa koneksi Anda dan coba simpan lagi."
+  },
+  "home": {
+    "dailyGratitude": "Rasa Syukur Harian",
+    "placeholder": "Apa yang ada di pikiranmu hari ini?",
+    "today": "HARI INI",
+    "charCount": "{{count}} / 200 simbol",
+    "emptyEntryTitle": "Entri Kosong",
+    "emptyEntryMessage": "Harap tulis sesuatu untuk disimpan.",
+    "saveError": "Tidak dapat menyimpan entri Anda.",
+    "setup": {
+      "beautifullySaid": "Kata-kata yang indah!",
+      "callYou": "Apa panggilan yang kamu inginkan dari Cloudy?",
+      "namePlaceholder": "Nama Kamu",
+      "saveProfile": "Simpan Profil",
+      "reminderTitle": "Kapan aku harus mengingatkanmu untuk merenung?",
+      "setReminder": "Atur Pengingat",
+      "noThanks": "Tidak terima kasih, aku akan ingat sendiri"
+    }
+  },
+  "navigation": {
+    "entry": "Entri",
+    "journey": "Jurnal",
+    "profile": "Profil"
+  },
+  "profile": {
+    "title": "Profil",
+    "hi": "Halo, {{name}}!",
+    "streakDay": "{{count}} Hari",
+    "streakTitle": "Runtun!",
+    "sections": {
+      "name": "Nama",
+      "age": "Usia",
+      "gender": "Jenis Kelamin",
+      "location": "Lokasi",
+      "goals": "Tujuan",
+      "struggles": "Kesulitan"
+    },
+    "placeholders": {
+      "setName": "Atur Nama",
+      "setAge": "Atur Usia",
+      "setGender": "Atur Jenis Kelamin",
+      "setCountry": "Atur Negara",
+      "setGoals": "Atur Tujuan",
+      "setStruggles": "Atur Kesulitan"
+    },
+    "logout": "Keluar"
+  },
+  "settings": {
+    "title": "Pengaturan",
+    "dailyReminder": "Pengingat Harian",
+    "hapticFeedback": "Umpan Balik Haptik",
+    "hapticDescription": "Getaran lembut untuk interaksi",
+    "nightTheme": "Tema Malam Berawan",
+    "nightDescription": "Beralih ke palet gelap yang menenangkan",
+    "accentColor": "Warna Aksen",
+    "accentDescription": "Personalisasi warna utama aplikasi Anda",
+    "lockCloud": "Kunci Cloud saya",
+    "lockDescription": "Perlindungan biometrik untuk buku harian Anda",
+    "ourHome": "Beranda Kami",
+    "visitWebsite": "Kunjungi situs web kami",
+    "privacySecurity": "Privasi & Keamanan",
+    "cloudyWhisper": "Bisikan Cloudy",
+    "feedbackDescription": "Kirim umpan balik atau laporkan bug",
+    "language": "Bahasa",
+    "languageDescription": "Pilih bahasa pilihan Anda"
+  },
+  "journey": {
+    "title": "Jurnal Kamu",
+    "all": "Semua",
+    "favorites": "Favorit",
+    "loading": "Memuat kenangan...",
+    "noMemories": "Jurnal kamu baru saja dimulai.",
+    "noFavorites": "Belum ada entri favorit.",
+    "noMemoriesForDate": "Tidak ada kenangan ditemukan untuk {{date}}.",
+    "viewAll": "Lihat semua entri",
+    "deleteTitle": "Tunggu, kamu yakin?",
+    "deleteMessage": "Kesalahan bisa terjadi! Kamu yakin ingin melepaskan kenangan ini?",
+    "confirmDelete": "Ya, Hapus",
+    "cancelDelete": "Tidak, Simpan",
+    "tooLateTitle": "Terlambat",
+    "tooLateMessage": "Kamu hanya bisa menghapus kenangan dalam waktu 24 jam setelah membuatnya."
+  },
+  "feedback": {
+    "title": "Umpan Balik & Dukungan",
+    "description": "Menemukan bug? Punya ide? Atau hanya ingin menyapa? Aku siap mendengarkan! Kamu juga bisa menghubungi melalui website kami.",
+    "placeholder": "Ceritakan semuanya...",
+    "emailPlaceholder": "Email untuk balasan (opsional)",
+    "sendButton": "Kirim ke Cloud",
+    "waitTitle": "Tunggu!",
+    "waitMessage": "Tulis sesuatu sebelum mengirim.",
+    "successTitle": "Terima Kasih!",
+    "successMessage": "Umpan balikmu telah sampai di cloudku. Aku menghargaimu!",
+    "successButton": "Sama-sama!",
+    "errorTitle": "Oops",
+    "errorMessage": "Tidak dapat mengirim umpan balik. Silakan coba lagi."
+  },
+  "review": {
+    "delight": "Momen Kebahagiaan ✨",
+    "enjoyingTitle": "Apakah kamu menikmati perjalananmu dengan Cloudy?",
+    "enjoyingMessage": "Runtunmu luar biasa! Berbagi ulasan membantu orang lain menemukan kedamaian mereka.",
+    "rateButton": "Suka! Nilai Sekarang"
+  },
+  "auth": {
+    "welcomeBack": "Selamat Datang Kembali!",
+    "saveJourney": "Simpan Perjalananmu",
+    "missedYou": "Cloudy merindukanmu.",
+    "secureProgress": "Buat akun untuk mengamankan progres dan kenanganmu.",
+    "emailLabel": "Email",
+    "passwordLabel": "Kata Sandi",
+    "signInButton": "Masuk",
+    "signUpButton": "Daftar",
+    "newHere": "Baru di sini? ",
+    "alreadyJoined": "Sudah bergabung? ",
+    "createAccount": "Buat Akun",
+    "orDivider": "ATAU",
+    "continueWithGoogle": "Lanjutkan dengan Google",
+    "missingInfoTitle": "Informasi kurang",
+    "missingInfoMessage": "Masukkan email dan kata sandi.",
+    "accountExistsTitle": "Akun sudah ada",
+    "accountExistsMessage": "Ingin masuk ke perjalanan yang sudah ada? Data sementara saat ini tidak akan digabungkan.",
+    "cancelButton": "Batal",
+    "logInButton": "Masuk",
+    "successTitle": "Berhasil",
+    "journeySecured": "Perjalananmu aman!",
+    "confirmEmail": "Silakan periksa email untuk mengonfirmasi akunmu."
+  },
+  "journalEntry": {
+    "title": "Jurnal",
+    "header": "Fokus pada hal baik.",
+    "subheader": "Apa satu hal kecil yang kamu syukuri hari ini?",
+    "placeholder": "Saya bersyukur untuk...",
+    "saveButton": "Simpan Entri",
+    "savedTitle": "Rasa Syukur Tersimpan!",
+    "savedMessage": "Sampai besok!",
+    "errorTitle": "Kesalahan",
+    "errorMessage": "Tidak dapat menyimpan entrimu."
+  },
+  "profileNudge": {
+    "title": "Amankan perjalananmu",
+    "message": "Simpan progres ke cloud agar tidak pernah kehilangan kenangan."
+  },
+  "ranks": {
+    "beginner": "Pemula",
+    "expert": "Ahli",
+    "master": "Master",
+    "dedicated": "Berdedikasi",
+    "legend": "Legenda",
+    "hero": "HERO"
+  },
+  "streakLost": {
+    "title": "Jangan khawatir!",
+    "message": "Kamu melewatkan sehari, tapi itu bagian dari perjalanan. Mari mulai runtun baru hari ini!",
+    "button": "Ayo Mulai"
+  },
+  "lockScreen": {
+    "title": "Cloudy Aman",
+    "subtitle": "Buka kunci untuk melanjutkan perjalananmu",
+    "button": "Buka Kunci",
+    "footer": "Kenanganmu bersifat pribadi & terenkripsi"
+  },
+  "splash": {
+    "tagline": "Teman kecilmu untuk pikiran yang lebih jernih."
+  },
+  "lockedFeature": {
+    "locked": "Terkunci",
+    "unlockMessage": "Buka kunci fitur ini dengan mencapai runtun {{required}} hari sekali. Kamu di {{current}} hari!",
+    "seeProgress": "Lihat Kemajuan"
+  },
+  "journalMerge": {
+    "successTitle": "Berhasil",
+    "welcomeBack": "Selamat datang kembali, {{name}}! Kami telah menambahkan kenangan terbaru ke jurnalmu.",
+    "great": "Bagus!"
+  }
+}

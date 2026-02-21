@@ -29,6 +29,8 @@ import { useProfile } from '../context/ProfileContext';
 import { CalendarView } from '../components/CalendarView';
 import { useTheme } from '../context/ThemeContext';
 import { useAccent } from '../context/AccentContext';
+import { useTranslation } from 'react-i18next';
+import i18n from '../lib/i18n';
 
 const ITEM_HEIGHT = 190;
 
@@ -111,7 +113,7 @@ const TimelineItem = ({
                     >
                         <View className="items-center justify-center">
                             <Text className="text-[10px] font-q-bold text-text">
-                                {new Date(item.created_at).toLocaleDateString('en-US', { month: 'short' })}
+                                {new Date(item.created_at).toLocaleDateString(i18n.language, { month: 'short' })}
                             </Text>
                             <Text className="text-xl font-q-bold text-text">
                                 {new Date(item.created_at).getDate()}
@@ -143,7 +145,7 @@ const TimelineItem = ({
                             <View className="flex-row items-center px-3 py-1 rounded-full" style={{ backgroundColor: `${accentColor}1A` }}>
                                 <Ionicons name="time-outline" size={14} color={accentColor} />
                                 <Text className="font-q-semibold ml-2 text-xs" style={{ color: accentColor }}>
-                                    {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                                    {new Date(item.created_at).toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit', hour12: false })}
                                 </Text>
                             </View>
                             <View className="flex-row items-center space-x-2">
@@ -217,6 +219,7 @@ export const JourneyScreen = () => {
     const { isDarkMode } = useTheme();
     const { profile, isAnonymous, loading: profileLoading } = useProfile();
     const { currentAccent } = useAccent();
+    const { t } = useTranslation();
     const { 
         entries, 
         loading, 
@@ -331,9 +334,9 @@ export const JourneyScreen = () => {
 
         if (diffInHours > 24) {
             showAlert(
-                "Too Late", 
-                "You can only delete memories within 24 hours of creating them.", 
-                [{ text: "Okay" }],
+                t('journey.tooLateTitle'), 
+                t('journey.tooLateMessage'), 
+                [{ text: t('common.okay') }],
                 'info'
             );
             return;
@@ -410,7 +413,7 @@ export const JourneyScreen = () => {
                             }}
                         >
                             <Text className={`font-q-bold text-sm ${filterMode === 'all' ? 'text-white' : 'text-muted'}`}>
-                                All
+                                {t('journey.all')}
                             </Text>
                         </TouchableOpacity>
                         <TouchableOpacity 
@@ -429,7 +432,7 @@ export const JourneyScreen = () => {
                                 style={{ marginRight: 4 }}
                             />
                             <Text className={`font-q-bold text-sm ${filterMode === 'favorites' ? 'text-white' : 'text-muted'}`}>
-                                Favorites
+                                {t('journey.favorites')}
                             </Text>
                         </TouchableOpacity>
                     </View>
@@ -477,17 +480,17 @@ export const JourneyScreen = () => {
             {loading ? (
                 <View className="items-center">
                     <ActivityIndicator size="large" color={currentAccent.hex} />
-                    <Text className="text-muted font-q-bold mt-4">Loading memories...</Text>
+                    <Text className="text-muted font-q-bold mt-4">{t('journey.loading')}</Text>
                 </View>
             ) : (
                 <>
                     <Ionicons name="journal-outline" size={48} color="#E0E0E0" />
                     <Text className="text-lg font-q-medium text-muted mt-4 text-center px-6">
                         {selectedDate 
-                            ? `No memories found for ${new Date(selectedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}.`
+                            ? t('journey.noMemoriesForDate', { date: new Date(selectedDate).toLocaleDateString(i18n.language, { month: 'long', day: 'numeric', year: 'numeric' }) })
                             : filterMode === 'favorites' 
-                                ? "No favorite entries yet." 
-                                : "Your journey is just beginning."
+                                ? t('journey.noFavorites') 
+                                : t('journey.noMemories')
                         }
                     </Text>
                     {selectedDate && (
@@ -495,7 +498,7 @@ export const JourneyScreen = () => {
                             onPress={() => handleDateSelect(null)}
                             className="mt-4"
                         >
-                            <Text className="font-q-bold" style={{ color: currentAccent.hex }}>View all entries</Text>
+                            <Text className="font-q-bold" style={{ color: currentAccent.hex }}>{t('journey.viewAll')}</Text>
                         </TouchableOpacity>
                     )}
                 </>
@@ -507,7 +510,7 @@ export const JourneyScreen = () => {
         loadingMore && !loading && !selectedDate ? (
             <View className="py-8 items-center">
                 <ActivityIndicator color={currentAccent.hex} size="large" />
-                <Text className="text-muted font-q-bold mt-4">Loading memories...</Text>
+                <Text className="text-muted font-q-bold mt-4">{t('journey.loading')}</Text>
             </View>
         ) : (
             <View className="h-24" />
@@ -521,7 +524,7 @@ export const JourneyScreen = () => {
         <Layout noScroll={true} isTabScreen={true} useSafePadding={false}>
             <StatusBar style="auto" backgroundColor={showCalendar ? 'rgba(0,0,0,0.4)' : 'transparent'} translucent />
             <View className="px-6 pt-4">
-                <TopNav title="Your Journey" />
+                <TopNav title={t('journey.title')} />
             </View>
 
             <FlashList<JournalEntry>
@@ -589,13 +592,13 @@ export const JourneyScreen = () => {
         >
             <View className="items-center w-full">
                 <Image source={MASCOTS.SAD} className="w-32 h-32 mb-4" resizeMode="contain" />
-                <Text className="text-2xl font-q-bold text-text text-center mb-4 px-6">Wait, are you sure?</Text>
+                <Text className="text-2xl font-q-bold text-text text-center mb-4 px-6">{t('journey.deleteTitle')}</Text>
                 <Text className="text-lg font-q-medium text-muted text-center mb-8 px-4 leading-6">
-                    Mistakes happen! Are you sure you want to let this memory go?
+                    {t('journey.deleteMessage')}
                 </Text>
 
                 <Button 
-                    label="Yes, Delete It"
+                    label={t('journey.confirmDelete')}
                     onPress={confirmDelete}
                     haptic="heavy"
                 />
@@ -604,7 +607,7 @@ export const JourneyScreen = () => {
                     onPress={() => { haptics.selection(); setDeletingId(null); }}
                     className="mt-4 py-2 active:scale-95 transition-transform"
                 >
-                    <Text className="text-muted font-q-bold text-base">No, Keep It</Text>
+                    <Text className="text-muted font-q-bold text-base">{t('journey.cancelDelete')}</Text>
                 </TouchableOpacity>
             </View>
         </BottomSheet>

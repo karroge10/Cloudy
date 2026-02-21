@@ -25,6 +25,7 @@ import { MilestoneSheet } from '../components/MilestoneSheet';
 import { Divider } from '../components/Divider';
 
 import { useAccent } from '../context/AccentContext';
+import { useTranslation } from 'react-i18next';
 
 export const HomeScreen = () => {
     const { showAlert } = useAlert();
@@ -33,6 +34,7 @@ export const HomeScreen = () => {
     const { profile, loading: profileLoading, updateProfile, isAnonymous, userId, refreshProfile } = useProfile();
     const { trackEvent } = useAnalytics();
     const { currentAccent } = useAccent();
+    const { t, i18n } = useTranslation();
 
     
     const [text, setText] = useState('');
@@ -57,7 +59,7 @@ export const HomeScreen = () => {
     const TAB_BAR_HEIGHT = 80 + insets.bottom;
 
     const today = new Date();
-    const formattedDate = today.toLocaleDateString('en-US', {
+    const formattedDate = today.toLocaleDateString(i18n.language, {
         weekday: 'long',
         month: 'long',
         day: 'numeric'
@@ -116,8 +118,11 @@ export const HomeScreen = () => {
             const strugglesStr = profile?.struggles?.length ? profile.struggles[0] : 'stress';
             
             setMotivationContent({
-                title: "Keep the momentum!",
-                body: `You're doing amazing! Sticking with this for even just 2 minutes a day helps ${strugglesStr} fade away and brings you closer to ${goalsStr}. Stick with it to unlock more friends and rewards!`
+                title: t('home.motivationTitle'),
+                body: t('home.motivationBody', { 
+                    struggle: strugglesStr.toLowerCase(),
+                    goal: goalsStr.toLowerCase()
+                })
             });
             setShowMotivationSheet(true);
             trackEvent('motivation_sheet_shown');
@@ -148,7 +153,7 @@ export const HomeScreen = () => {
 
     const handleSave = async () => {
         if (!text.trim()) {
-            showAlert('Empty Entry', 'Please write something to save.', [{ text: 'Okay' }], 'info');
+            showAlert(t('home.emptyEntryTitle'), t('home.emptyEntryMessage'), [{ text: t('common.okay') }], 'info');
             return;
         }
 
@@ -175,7 +180,13 @@ export const HomeScreen = () => {
                 checkSecondaryNudges(likelyStreak);
             }
         } catch (error: any) {
-            showAlert('Error', error.message || 'Could not save your entry.', [{ text: 'Okay' }], 'error');
+            const isNetworkError = error.message?.toLowerCase().includes('network') || error.message?.toLowerCase().includes('fetch');
+            
+            if (isNetworkError) {
+                showAlert(t('common.offlineError'), t('common.offlineMessage'), [{ text: t('common.okay') }], 'info');
+            } else {
+                showAlert(t('common.error'), error.message || t('home.saveError'), [{ text: t('common.okay') }], 'error');
+            }
         } finally {
             setLoading(false);
         }
@@ -200,7 +211,7 @@ export const HomeScreen = () => {
 
     const handleSaveProfile = async () => {
         if (!tempDisplayName.trim()) {
-            showAlert('Name Required', 'Please let us know what to call you.', [{ text: 'Okay' }], 'info');
+            showAlert(t('home.setup.callYou'), t('home.setup.callYou'), [{ text: t('common.okay') }], 'info');
             return;
         }
 
@@ -216,7 +227,7 @@ export const HomeScreen = () => {
             haptics.success();
 
         } catch (error: any) {
-            showAlert('Error', error.message, [{ text: 'Okay' }], 'error');
+            showAlert(t('common.error'), error.message, [{ text: t('common.okay') }], 'error');
         } finally {
             setIsSavingName(false);
         }
@@ -244,7 +255,7 @@ export const HomeScreen = () => {
             trackEvent('setup_sheet_completed');
             setText('');
         } catch (error: any) {
-            showAlert('Error', error.message, [{ text: 'Okay' }], 'error');
+            showAlert(t('common.error'), error.message, [{ text: t('common.okay') }], 'error');
         } finally {
             setIsSavingName(false);
         }
@@ -298,7 +309,7 @@ export const HomeScreen = () => {
                 </Pressable>
                 <View className="items-end">
                     <View className="flex-row items-center">
-                        <Text className="text-lg text-muted font-q-bold">TODAY</Text>
+                        <Text className="text-lg text-muted font-q-bold">{t('home.today')}</Text>
                         <TouchableOpacity 
                             onPress={() => { haptics.selection(); navigation.navigate('Profile'); }} 
                             className="ml-3 active:scale-90 transition-transform"
@@ -338,12 +349,12 @@ export const HomeScreen = () => {
                 {/* Main Writing Card */}
                 <View className="bg-card rounded-[32px] p-6 shadow-[#0000000D] shadow-xl mb-6 flex-1 min-h-[300px]" style={{ shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 20, elevation: 5 }}>
                     <Text className="text-xl font-q-bold text-text mb-4 text-center">
-                        Daily Gratitude
+                        {t('home.dailyGratitude')}
                     </Text>
                     <TextInput
                         ref={inputRef}
                         multiline
-                        placeholder="What's on your mind today?"
+                        placeholder={t('home.placeholder')}
                         placeholderTextColor="#999"
                         className="text-text font-q-regular text-lg flex-1 mb-4"
                         textAlignVertical="top"
@@ -356,7 +367,7 @@ export const HomeScreen = () => {
 
                     <View className="flex-row justify-between items-center">
                         <Text className="text-gray-400 font-q-medium">
-                            {charCount} / 200 symbols
+                            {t('home.charCount', { count: charCount })}
                         </Text>
                         <TouchableOpacity 
                             onPress={handleSave}
@@ -367,7 +378,7 @@ export const HomeScreen = () => {
                         >
                             <View className="items-center justify-center">
                                 <Text className={`text-white font-q-bold text-base ${loading ? "opacity-0" : "opacity-100"}`}>
-                                    Save
+                                    {t('common.save')}
                                 </Text>
                                 {loading && (
                                     <View className="absolute inset-0 items-center justify-center">
@@ -389,14 +400,14 @@ export const HomeScreen = () => {
                 {setupStep === 0 ? (
                     <View className="items-center w-full">
                         <MascotImage source={MASCOTS.THINK} className="w-40 h-40 mb-4" resizeMode="contain" />
-                        <Text className="text-xl font-q-bold text-center mb-1" style={{ color: currentAccent.hex }}>Beautifully said!</Text>
+                        <Text className="text-xl font-q-bold text-center mb-1" style={{ color: currentAccent.hex }}>{t('home.setup.beautifullySaid')}</Text>
                         <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">
-                            What should Cloudy call you?
+                            {t('home.setup.callYou')}
                         </Text>
                         
                         <TextInput
                             className="w-full bg-card px-6 py-5 rounded-[24px] font-q-bold text-lg text-text border-2 border-secondary mb-8"
-                            placeholder="Your Name"
+                            placeholder={t('home.setup.namePlaceholder')}
                             placeholderTextColor="#CBD5E1"
                             onChangeText={setTempDisplayName}
                             value={tempDisplayName}
@@ -405,7 +416,7 @@ export const HomeScreen = () => {
                         />
 
                         <Button 
-                            label="Save Profile"
+                            label={t('home.setup.saveProfile')}
                             onPress={handleSaveProfile}
                             loading={isSavingName}
                         />
@@ -414,17 +425,17 @@ export const HomeScreen = () => {
                             onPress={() => { haptics.selection(); handleMaybeLater(); }}
                             className="mt-4 py-2 active:scale-95 transition-transform"
                         >
-                            <Text className="text-muted font-q-bold text-base">Maybe later</Text>
+                            <Text className="text-muted font-q-bold text-base">{t('common.maybeLater')}</Text>
                         </TouchableOpacity>
                     </View>
                 ) : (
                     <View className="items-center w-full">
                         <MascotImage source={MASCOTS.WATCH} className="w-40 h-40 mb-4" resizeMode="contain" />
                         <Text className="text-xl font-q-bold text-center mb-1 px-4" style={{ color: currentAccent.hex }}>
-                            {tempDisplayName ? `Nice to meet you, ${tempDisplayName}!` : "Nice to meet you!"}
+                            {tempDisplayName ? t('common.niceToMeetYouWithName', { name: tempDisplayName }) : t('common.niceToMeetYou')}
                         </Text>
                         <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">
-                            When should I remind you to reflect?
+                            {t('home.setup.reminderTitle')}
                         </Text>
 
                         <View className="w-full mb-8">
@@ -432,7 +443,7 @@ export const HomeScreen = () => {
                         </View>
 
                         <Button 
-                            label="Set Reminder"
+                            label={t('home.setup.setReminder')}
                             onPress={handleEnableNotifications}
                             loading={isSavingName}
                         />
@@ -441,7 +452,7 @@ export const HomeScreen = () => {
                             onPress={() => { haptics.selection(); handleMaybeLater(); }}
                             className="mt-4 py-2 active:scale-95 transition-transform"
                         >
-                            <Text className="text-muted font-q-bold text-base">No thanks, I'll remember</Text>
+                            <Text className="text-muted font-q-bold text-base">{t('home.setup.noThanks')}</Text>
                         </TouchableOpacity>
                     </View>
                 )}
@@ -455,13 +466,13 @@ export const HomeScreen = () => {
             >
                 <View className="items-center w-full">
                     <MascotImage source={MASCOTS.STREAK} className="w-40 h-40 mb-4" resizeMode="contain" />
-                    <Text className="text-xl font-q-bold text-center mb-1" style={{ color: currentAccent.hex }}>You're doing great!</Text>
+                    <Text className="text-xl font-q-bold text-center mb-1" style={{ color: currentAccent.hex }}>{t('home.streakNudgeTitle')}</Text>
                     <Text className="text-2xl font-q-bold text-text text-center mb-8 px-6">
-                        Want to link an account so you never lose these memories?
+                        {t('home.streakNudgeBody')}
                     </Text>
 
                     <Button 
-                        label="Link Account"
+                        label={t('common.linkAccount')}
                         onPress={() => {
                             haptics.medium();
                             trackEvent('conversion_nudge_clicked');
@@ -480,7 +491,7 @@ export const HomeScreen = () => {
                        }}
                        className="mt-4 py-2 active:scale-95 transition-transform"
                     >
-                        <Text className="text-muted font-q-bold text-base">Maybe later</Text>
+                        <Text className="text-muted font-q-bold text-base">{t('common.maybeLater')}</Text>
                     </TouchableOpacity>
                 </View>
             </BottomSheet>
@@ -512,7 +523,7 @@ export const HomeScreen = () => {
                     </Text>
 
                     <Button 
-                        label="Keep it up!"
+                        label={t('common.keepItUp')}
                         onPress={() => {
                             haptics.medium();
                             setShowMotivationSheet(false);
@@ -524,10 +535,7 @@ export const HomeScreen = () => {
 
             <MilestoneSheet 
                 visible={!!milestoneMascot}
-                mascotName={milestoneMascot?.name || ''}
-                description={milestoneMascot?.description || ''}
-                perk={milestoneMascot?.unlockPerk || ''}
-                perkDescription={milestoneMascot?.unlockPerkDescription || ''}
+                companionId={milestoneMascot?.id || ''}
                 mascotAsset={milestoneMascot?.asset}
                 onClose={() => {
                     const streakToNudge = pendingNudgeStreak;

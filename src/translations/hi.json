@@ -1,0 +1,185 @@
+{
+  "common": {
+    "save": "सहेजें",
+    "okay": "ठीक है",
+    "error": "त्रुटि",
+    "maybeLater": "बाद में",
+    "niceToMeetYou": "आपसे मिलकर अच्छा लगा!",
+    "niceToMeetYouWithName": "आपसे मिलकर अच्छा लगा, {{name}}!",
+    "cancel": "रद्द करें",
+    "offlineError": "कनेक्शन टूटा",
+    "offlineMessage": "ऐसा लगता है कि आप ऑफलाइन हैं। चिंता न करें, आपका टेक्स्ट यहीं है! कृपया अपना कनेक्शन जांचें और फिर से सेव करने का प्रयास करें।"
+  },
+  "home": {
+    "dailyGratitude": "दैनिक आभार",
+    "placeholder": "आज आपके मन में क्या है?",
+    "today": "आज",
+    "charCount": "{{count}} / 200 प्रतीक",
+    "emptyEntryTitle": "खाली प्रविष्टि",
+    "emptyEntryMessage": "कृपया सहेजने के लिए कुछ लिखें।",
+    "saveError": "आपकी प्रविष्टि सहेजी नहीं जा सकी।",
+    "setup": {
+      "beautifullySaid": "खूबसूरत बात!",
+      "callYou": "Cloudy आपको क्या कहकर बुलाए?",
+      "namePlaceholder": "आपका नाम",
+      "saveProfile": "प्रोफ़ाइल सहेजें",
+      "reminderTitle": "मुझे आपको चिंतन करने के लिए कब याद दिलाना चाहिए?",
+      "setReminder": "रिमाइंडर सेट करें",
+      "noThanks": "नहीं धन्यवाद, मुझे याद रहेगा"
+    }
+  },
+  "navigation": {
+    "entry": "प्रविष्टि",
+    "journey": "यात्रा",
+    "profile": "प्रोफ़ाइल"
+  },
+  "profile": {
+    "title": "प्रोफ़ाइल",
+    "hi": "नमस्ते, {{name}}!",
+    "streakDay": "{{count}} दिन",
+    "streakTitle": "सिलसिला!",
+    "sections": {
+      "name": "नाम",
+      "age": "आयु",
+      "gender": "लिंग",
+      "location": "स्थान",
+      "goals": "लक्ष्य",
+      "struggles": "संघर्ष"
+    },
+    "placeholders": {
+      "setName": "नाम सेट करें",
+      "setAge": "आयु सेट करें",
+      "setGender": "लिंग सेट करें",
+      "setCountry": "देश सेट करें",
+      "setGoals": "लक्ष्य सेट करें",
+      "setStruggles": "संघर्ष सेट करें"
+    },
+    "logout": "लॉग आउट"
+  },
+  "settings": {
+    "title": "सेटिंग्स",
+    "dailyReminder": "दैनिक रिमाइंडर",
+    "hapticFeedback": "हैप्टिक फीडबैक",
+    "hapticDescription": "इंटरैक्शन के लिए नरम कंपन",
+    "nightTheme": "Cloudy नाइट थीम",
+    "nightDescription": "एक शांत डार्क पैलेट पर स्विच करें",
+    "accentColor": "एक्सेंट रंग",
+    "accentDescription": "अपने ऐप के प्राथमिक रंग को निजीकृत करें",
+    "lockCloud": "मेरे क्लाउड को लॉक करें",
+    "lockDescription": "आपकी डायरी के लिए बायोमेट्रिक सुरक्षा",
+    "ourHome": "हमारा घर",
+    "visitWebsite": "हमारी वेबसाइट पर जाएँ",
+    "privacySecurity": "गोपनीयता और सुरक्षा",
+    "cloudyWhisper": "Cloudy विस्पर",
+    "feedbackDescription": "फीडबैक भेजें या बग रिपोर्ट करें",
+    "language": "भाषा",
+    "languageDescription": "अपनी पसंदीदा भाषा चुनें"
+  },
+  "journey": {
+    "title": "आपकी यात्रा",
+    "all": "सभी",
+    "favorites": "पसंदीदा",
+    "loading": "यादें लोड हो रही हैं...",
+    "noMemories": "आपकी यात्रा अभी शुरू हो रही है।",
+    "noFavorites": "अभी तक कोई पसंदीदा प्रविष्टि नहीं है।",
+    "noMemoriesForDate": "{{date}} के लिए कोई यादें नहीं मिलीं।",
+    "viewAll": "सभी प्रविष्टियां देखें",
+    "deleteTitle": "रुको, क्या आप सुनिश्चित हैं?",
+    "deleteMessage": "गलतियाँ होती हैं! क्या आप वाकई इस याद को जाने देना चाहते हैं?",
+    "confirmDelete": "हाँ, इसे हटा दें",
+    "cancelDelete": "नहीं, इसे रखें",
+    "tooLateTitle": "बहुत देर हो चुकी",
+    "tooLateMessage": "आप प्रविष्टियां बनाने के 24 घंटों के भीतर ही उन्हें हटा सकते हैं।"
+  },
+  "feedback": {
+    "title": "फीडबैक और सहायता",
+    "description": "कोई बग मिला? कोई विचार है? या बस हाय कहना चाहते हैं? मैं सब सुनने को तैयार हूं! आप हमारी वेबसाइट के माध्यम से भी संपर्क कर सकते हैं।",
+    "placeholder": "मुझे सब बताएं...",
+    "emailPlaceholder": "जवाब के लिए ईमेल (वैकल्पिक)",
+    "sendButton": "क्लाउड में भेजें",
+    "waitTitle": "रुको!",
+    "waitMessage": "भेजने से पहले कुछ लिखें।",
+    "successTitle": "धन्यवाद!",
+    "successMessage": "आपका फीडबैक मेरे क्लाउड तक पहुंचा। मैं आपकी सराहना करता हूं!",
+    "successButton": "आपका स्वागत है!",
+    "errorTitle": "ओह",
+    "errorMessage": "फीडबैक नहीं भेजा जा सका। कृपया पुनः प्रयास करें।"
+  },
+  "review": {
+    "delight": "खुशी का क्षण ✨",
+    "enjoyingTitle": "क्या आप Cloudy के साथ अपनी यात्रा का आनंद ले रहे हैं?",
+    "enjoyingMessage": "आपका सिलसिला अद्भुत है! रिव्यू साझा करने से दूसरों को भी अपनी शांति खोजने में मदद मिलती है।",
+    "rateButton": "बहुत पसंद! अभी रेट करें"
+  },
+  "auth": {
+    "welcomeBack": "वापसी पर स्वागत है!",
+    "saveJourney": "अपनी यात्रा सहेजें",
+    "missedYou": "Cloudy को आपकी याद आई।",
+    "secureProgress": "अपनी प्रगति और यादों को सुरक्षित करने के लिए एक खाता बनाएं।",
+    "emailLabel": "ईमेल",
+    "passwordLabel": "पासवर्ड",
+    "signInButton": "साइन इन करें",
+    "signUpButton": "साइन अप करें",
+    "newHere": "नए हैं? ",
+    "alreadyJoined": "पहले से शामिल हैं? ",
+    "createAccount": "खाता बनाएं",
+    "orDivider": "या",
+    "continueWithGoogle": "Google से जारी रखें",
+    "missingInfoTitle": "जानकारी अधूरी",
+    "missingInfoMessage": "कृपया ईमेल और पासवर्ड दोनों दर्ज करें।",
+    "accountExistsTitle": "खाता पहले से मौजूद है",
+    "accountExistsMessage": "क्या आप अपनी मौजूदा यात्रा में लॉग इन करना चाहेंगे? आपका वर्तमान अस्थायी डेटा मर्ज नहीं किया जाएगा।",
+    "cancelButton": "रद्द करें",
+    "logInButton": "लॉग इन करें",
+    "successTitle": "सफल",
+    "journeySecured": "आपकी यात्रा सुरक्षित है!",
+    "confirmEmail": "अपना खाता कन्फर्म करने के लिए अपना ईमेल जांचें।"
+  },
+  "journalEntry": {
+    "title": "जर्नल",
+    "header": "अच्छी बातों पर ध्यान दें।",
+    "subheader": "आज आप किस एक छोटी चीज के लिए आभारी हैं?",
+    "placeholder": "मैं आभारी हूं...",
+    "saveButton": "प्रविष्टि सहेजें",
+    "savedTitle": "आभार सहेजा गया!",
+    "savedMessage": "कल मिलते हैं!",
+    "errorTitle": "त्रुटि",
+    "errorMessage": "आपकी प्रविष्टि सहेजी नहीं जा सकी।"
+  },
+  "profileNudge": {
+    "title": "अपनी यात्रा सुरक्षित करें",
+    "message": "अपनी प्रगति क्लाउड में सहेजें ताकि आप कभी भी अपनी यादें न खोएं।"
+  },
+  "ranks": {
+    "beginner": "शुरुआती",
+    "expert": "विशेषज्ञ",
+    "master": "मास्टर",
+    "dedicated": "समर्पित",
+    "legend": "दिग्गज",
+    "hero": "HERO"
+  },
+  "streakLost": {
+    "title": "चिंता न करें!",
+    "message": "आपने एक दिन छोड़ दिया, लेकिन यह यात्रा का हिस्सा है। आज एक नया सिलसिला शुरू करें!",
+    "button": "चलो शुरू करें"
+  },
+  "lockScreen": {
+    "title": "Cloudy सुरक्षित है",
+    "subtitle": "अपनी यात्रा जारी रखने के लिए अनलॉक करें",
+    "button": "अनलॉक करें",
+    "footer": "आपकी यादें निजी और एन्क्रिप्टेड हैं"
+  },
+  "splash": {
+    "tagline": "स्पष्ट मन के लिए आपका छोटा साथी।"
+  },
+  "lockedFeature": {
+    "locked": "लॉक किया गया",
+    "unlockMessage": "इस सुविधा को अनलॉक करने के लिए एक बार {{required}}-दिन का सिलसिला पूरा करें। आप {{current}} दिन पर हैं!",
+    "seeProgress": "प्रगति देखें"
+  },
+  "journalMerge": {
+    "successTitle": "सफल",
+    "welcomeBack": "वापसी पर स्वागत है, {{name}}! हमने आपकी हाल की यादों को आपके जर्नल में जोड़ दिया है।",
+    "great": "बहुत अच्छा!"
+  }
+}

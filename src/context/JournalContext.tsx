@@ -12,6 +12,7 @@ import { useAnalytics } from '../hooks/useAnalytics';
 import { DeviceEventEmitter } from 'react-native';
 import { encryption } from '../utils/encryption';
 import { useProfile } from './ProfileContext';
+import { useTranslation } from 'react-i18next';
 
 
 export interface JournalEntry {
@@ -49,6 +50,7 @@ const JournalContext = createContext<JournalContextType | undefined>(undefined);
 export const JournalProvider: React.FC<{ children: React.ReactNode, session: Session | null }> = ({ children, session }) => {
     const { showAlert } = useAlert();
     const { profile, updateProfile, refreshProfile } = useProfile();
+    const { t } = useTranslation();
     const [entries, setEntries] = useState<JournalEntry[]>([]);
     const [metadata, setMetadata] = useState<{ id: string, created_at: string }[]>([]);
     const [loading, setLoading] = useState(true);
@@ -60,6 +62,48 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
     const mergeInProgress = useRef(false);
     const lastSyncedUserIdRef = useRef<string | null>(null);
     const prevSessionRef = useRef(session);
+
+    const JOURNAL_CACHE_KEY = (uid: string) => `journal_entries_cache_${uid}`;
+    const METADATA_CACHE_KEY = (uid: string) => `journal_metadata_cache_${uid}`;
+
+    const persistEntries = useCallback(async (uid: string, data: JournalEntry[]) => {
+        try {
+            await AsyncStorage.setItem(JOURNAL_CACHE_KEY(uid), JSON.stringify(data));
+        } catch (e) {
+            console.error('[Journal] Cache persist error (entries):', e);
+        }
+    }, []);
+
+    const persistMetadata = useCallback(async (uid: string, data: { id: string, created_at: string }[]) => {
+        try {
+            await AsyncStorage.setItem(METADATA_CACHE_KEY(uid), JSON.stringify(data));
+        } catch (e) {
+            console.error('[Journal] Cache persist error (metadata):', e);
+        }
+    }, []);
+
+    const loadCache = useCallback(async (uid: string) => {
+        try {
+            const [cachedEntries, cachedMeta] = await Promise.all([
+                AsyncStorage.getItem(JOURNAL_CACHE_KEY(uid)),
+                AsyncStorage.getItem(METADATA_CACHE_KEY(uid))
+            ]);
+
+            if (cachedEntries && activeUserIdRef.current === uid) {
+                setEntries(JSON.parse(cachedEntries));
+            }
+            if (cachedMeta && activeUserIdRef.current === uid) {
+                setMetadata(JSON.parse(cachedMeta));
+            }
+            
+            if (cachedEntries || cachedMeta) {
+                console.log('[Journal] Loaded from local cache');
+                setLoading(false); // Short circuit loading state if we have cached data
+            }
+        } catch (e) {
+            console.error('[Journal] Cache load error:', e);
+        }
+    }, []);
 
     // Initial load - Note: Initial streak is derived from metadata or cache.
     // For a cold start, metadata will initially be empty. 
@@ -93,6 +137,7 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
 
         if (!error && data && activeUserIdRef.current === currentUserId) {
             setMetadata(data);
+            persistMetadata(currentUserId, data);
             const duration = (Date.now() - start) / 1000;
             console.log(`[Journal] Metadata loaded in ${duration.toFixed(3)}s`);
         } else if (error) {
@@ -133,7 +178,15 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
                 }
             }));
             
-            setEntries(prev => clearExisting ? decryptedData : [...prev, ...decryptedData]);
+            setEntries(prev => {
+                const next = clearExisting ? decryptedData : [...prev, ...decryptedData];
+                // Only cache the first page (most recent) for performance and simplicity
+                if (pageNum === 0 && mode === 'all') {
+                    persistEntries(currentUserId, decryptedData);
+                }
+                return next;
+            });
+
             setHasMore(data.length === PAGE_SIZE);
             const duration = (Date.now() - start) / 1000;
             console.log(`[Journal] Page ${pageNum} loaded in ${duration.toFixed(3)}s`);
@@ -236,9 +289,9 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
                     if (!error) {
                         setTimeout(() => {
                             showAlert(
-                                'Success', 
-                                `Welcome back, ${userName || 'friend'}! We've added your recent memories to your journal.`,
-                                [{ text: 'Great!' }],
+                                t('journalMerge.successTitle'), 
+                                t('journalMerge.welcomeBack', { name: userName || t('profile.friend') }),
+                                [{ text: t('journalMerge.great') }],
                                 'success'
                             );
                         }, 100);
@@ -255,6 +308,11 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
                 mergeInProgress.current = false;
                 setIsMerging(false);
                 identifyUser(currentUserId, currentUserEmail || undefined);
+                
+                // Load from cache first for instant UI
+                await loadCache(currentUserId);
+                
+                // Then refresh from network
                 await refreshEntries();
 
             } catch (err) {
@@ -369,16 +427,22 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
         if (data) {
             posthog.capture('journal_entry_saved', { 
                 length: text.length,
-                current_streak: streak + 1 // +1 because the streak recalculation happens in useEffect after this
+                current_streak: streak + 1 
             });
             
-            // For local state, keep the unencrypted text
             const localEntry = { ...data, text: text };
-            setEntries(prev => [localEntry, ...prev]);
+            setEntries(prev => {
+                const next = [localEntry, ...prev];
+                persistEntries(session.user.id, next.slice(0, PAGE_SIZE)); // Keep cache in sync
+                return next;
+            });
 
-            setMetadata(prev => [{ id: data.id, created_at: data.created_at }, ...prev]);
+            setMetadata(prev => {
+                const next = [{ id: data.id, created_at: data.created_at }, ...prev];
+                persistMetadata(session.user.id, next);
+                return next;
+            });
             
-            // Protect streak: Schedule warning for streak loss
             notifications.scheduleStreakProtection(data.created_at);
         }
     };
@@ -409,6 +473,12 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
             console.error('[Journal] toggleFavorite error:', error);
             setEntries(previousEntries);
             throw error;
+        } else {
+            // Update cache after success
+            setEntries(prev => {
+                persistEntries(session!.user.id, prev.slice(0, PAGE_SIZE));
+                return prev;
+            });
         }
     };
 
@@ -444,6 +514,10 @@ export const JournalProvider: React.FC<{ children: React.ReactNode, session: Ses
             setEntries(previousEntries);
             setMetadata(previousMetadata);
             throw error;
+        } finally {
+            // Persist the UI removal (optimistic) or restoration (on error)
+            persistEntries(session!.user.id, entries.slice(0, PAGE_SIZE));
+            persistMetadata(session!.user.id, metadata);
         }
     };
 

@@ -9,6 +9,7 @@ import { Button } from '../components/Button';
 import { MascotImage } from '../components/MascotImage';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { useJournal } from '../context/JournalContext';
+import { useTranslation } from 'react-i18next';
 
 
 
@@ -18,6 +19,7 @@ export const JournalEntryScreen = () => {
     const navigation = useNavigation();
     const { addEntry } = useJournal();
     const { trackEvent } = useAnalytics();
+    const { t } = useTranslation();
 
 
 
@@ -29,20 +31,20 @@ export const JournalEntryScreen = () => {
             setGratitude('');
             
             showAlert(
-                "Gratitude Saved!", 
-                "See you tomorrow!", 
-                [{ text: "Okay", onPress: () => navigation.goBack() }],
+                t('journalEntry.savedTitle'), 
+                t('journalEntry.savedMessage'), 
+                [{ text: t('common.okay'), onPress: () => navigation.goBack() }],
                 'success'
             );
         } catch (error: any) {
-            showAlert('Error', 'Could not save your entry.', [{ text: 'Okay' }], 'error');
+            showAlert(t('journalEntry.errorTitle'), t('journalEntry.errorMessage'), [{ text: t('common.okay') }], 'error');
         }
     };
 
     return (
         <Layout noScroll={true} useSafePadding={false}>
             <View className="px-6 pt-4">
-                <TopNav title="Journal" />
+                <TopNav title={t('journalEntry.title')} />
             </View>
             <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -61,10 +63,10 @@ export const JournalEntryScreen = () => {
                             resizeMode="contain"
                         />
                         <Text className="text-2xl font-q-bold text-text text-center">
-                            Focus on the good.
+                            {t('journalEntry.header')}
                         </Text>
                         <Text className="text-base text-text text-center font-q-regular mt-2 opacity-80">
-                            What is one small thing you are grateful for today?
+                            {t('journalEntry.subheader')}
                         </Text>
                     </View>
 
@@ -74,7 +76,7 @@ export const JournalEntryScreen = () => {
                     >
                         <TextInput
                             className="flex-1 text-lg text-text font-q-regular text-left align-top"
-                            placeholder="I am grateful for..."
+                            placeholder={t('journalEntry.placeholder')}
                             placeholderTextColor="#999"
                             multiline
                             textAlignVertical="top"
@@ -86,7 +88,7 @@ export const JournalEntryScreen = () => {
 
                     <View className="mt-8">
                         <Button
-                            label="Save Entry"
+                            label={t('journalEntry.saveButton')}
                             onPress={handleSave}
                             disabled={gratitude.trim().length === 0}
                             haptic="heavy"

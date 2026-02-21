@@ -1,14 +1,13 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, BackHandler } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { haptics } from '../utils/haptics';
 import { HomeScreen } from '../screens/HomeScreen';
 import { JourneyScreen } from '../screens/JourneyScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
-import { useCallback } from 'react';
 
 import { useTheme } from '../context/ThemeContext';
 import { useAccent } from '../context/AccentContext';
@@ -20,6 +19,7 @@ const CustomTabBar = ({ state, descriptors, navigation }: any) => {
   const insets = useSafeAreaInsets();
   const { isDarkMode } = useTheme();
   const { currentAccent } = useAccent();
+  const { t } = useTranslation();
   
   return (
     <View style={[
@@ -107,28 +107,7 @@ const CustomTabBar = ({ state, descriptors, navigation }: any) => {
 };
 
 export const MainTabNavigator = () => {
-  const navigation = useNavigation<any>();
-
-  useFocusEffect(
-    useCallback(() => {
-      const onBackPress = () => {
-        const state = navigation.getState();
-        const tabRoute = state.routes.find((r: any) => r.name === 'MainApp');
-        const tabState = tabRoute?.state;
-        const currentTabIndex = tabState?.index || 0;
-
-        if (currentTabIndex !== 0) {
-          // Explicitly target the nested screen in the MainApp navigator
-          navigation.navigate('MainApp', { screen: 'Entry' });
-          return true;
-        }
-        return false;
-      };
-
-      const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () => backHandler.remove();
-    }, [navigation])
-  );
+  const { t } = useTranslation();
 
   return (
     <Tab.Navigator
@@ -137,9 +116,21 @@ export const MainTabNavigator = () => {
         headerShown: false,
       }}
     >
-      <Tab.Screen name="Entry" component={HomeScreen} />
-      <Tab.Screen name="Journey" component={JourneyScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen 
+        name="Entry" 
+        component={HomeScreen} 
+        options={{ title: t('navigation.entry') }} 
+      />
+      <Tab.Screen 
+        name="Journey" 
+        component={JourneyScreen} 
+        options={{ title: t('navigation.journey') }} 
+      />
+      <Tab.Screen 
+        name="Profile" 
+        component={ProfileScreen} 
+        options={{ title: t('navigation.profile') }} 
+      />
     </Tab.Navigator>
   );
 };

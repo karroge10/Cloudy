@@ -15,6 +15,7 @@ import { useProfile } from '../context/ProfileContext';
 import { LockedFeature } from './LockedFeature';
 import { useTheme } from '../context/ThemeContext';
 import { Divider } from './Divider';
+import { useTranslation } from 'react-i18next';
 
 interface InsightsProps {
     userId: string | undefined;
@@ -48,6 +49,7 @@ export const Insights = ({ userId }: InsightsProps) => {
     const [data, setData] = useState<InsightsData | null>(null);
     const [isSheetVisible, setIsSheetVisible] = useState(false);
     const { currentAccent } = useAccent();
+    const { t } = useTranslation();
 
     // Unique key for caching all-time stats
     // We append the total entries count to the key to invalidate cache when new entries are added
@@ -274,16 +276,16 @@ export const Insights = ({ userId }: InsightsProps) => {
             >
                 {/* Header - Stays consistent or changes slightly */}
                 <View className="flex-row justify-between items-center mb-6">
-                    <Text className="text-lg font-q-bold text-text">Insights</Text>
+                    <Text className="text-lg font-q-bold text-text">{t('insights.title')}</Text>
                     {isUnlocked ? (
                         <View className="flex-row items-center">
-                            <Text className="text-sm font-q-medium text-muted mr-1">All Time</Text>
+                            <Text className="text-sm font-q-medium text-muted mr-1">{t('insights.allTime')}</Text>
                             <Ionicons name="chevron-forward" size={14} color={isDarkMode ? "#CBD5E1" : "#94A3B8"} />
                         </View>
                     ) : (
                         <View className="bg-inactive/10 px-3 py-1 rounded-full flex-row items-center">
                             <Ionicons name="lock-closed" size={10} color={isDarkMode ? "#94A3B8" : "#64748B"} />
-                            <Text className="text-[10px] font-q-bold text-muted ml-1 uppercase">Locked</Text>
+                            <Text className="text-[10px] font-q-bold text-muted ml-1 uppercase">{t('insights.locked')}</Text>
                         </View>
                     )}
                 </View>
@@ -293,23 +295,23 @@ export const Insights = ({ userId }: InsightsProps) => {
                         <View className="flex-row justify-between mb-6">
                             <View className="items-center flex-1">
                                 <Text className="text-3xl font-q-bold mb-1" style={{ color: currentAccent.hex }}>{data.totalEntries}</Text>
-                                <Text className="text-xs font-q-medium text-muted">Entries</Text>
+                                <Text className="text-xs font-q-medium text-muted">{t('insights.entries')}</Text>
                             </View>
                             <Divider vertical className="mx-4" />
                             <View className="items-center flex-1">
                                 <Text className="text-3xl font-q-bold mb-1" style={{ color: currentAccent.hex }}>{data.totalWords}</Text>
-                                <Text className="text-xs font-q-medium text-muted">Words</Text>
+                                <Text className="text-xs font-q-medium text-muted">{t('insights.words')}</Text>
                             </View>
                             <Divider vertical className="mx-4" />
                             <View className="items-center flex-1">
-                                <Text className="text-3xl font-q-bold mb-1" style={{ color: currentAccent.hex }}>{data.avgWordsPerEntry}</Text>
-                                <Text className="text-xs font-q-medium text-muted">Words / Entry</Text>
+                                <Text className="text-3xl font-q-bold mb-1" style={{ color: currentAccent.hex }}>{data.totalWords > 0 ? (data.totalWords / data.totalEntries).toFixed(0) : 0}</Text>
+                                <Text className="text-xs font-q-medium text-muted">{t('insights.wordsPerEntry')}</Text>
                             </View>
                         </View>
 
                         {data.topWords.length > 0 && (
                             <View>
-                                <Text className="text-xs font-q-bold text-muted mb-3 uppercase tracking-wider">Top Themes</Text>
+                                <Text className="text-xs font-q-bold text-muted mb-3 uppercase tracking-wider">{t('insights.topThemes')}</Text>
                                 <ScrollView 
                                     horizontal 
                                     showsHorizontalScrollIndicator={false}
@@ -341,13 +343,13 @@ export const Insights = ({ userId }: InsightsProps) => {
                         </View>
                         
                         <Text className="text-base font-q-bold text-text mb-2 text-center px-6">
-                            Reach 7 day streak to unlock.
+                            {t('insights.unlockDesc')}
                         </Text>
                         
                         <View className="w-full max-w-[220px] mb-6">
                             <View className="flex-row justify-between mb-2 px-1">
-                                <Text className="text-[10px] font-q-bold text-muted uppercase tracking-tight">Progress</Text>
-                                <Text className="text-[10px] font-q-bold font-q-bold" style={{ color: currentAccent.hex }}>{Math.min(profile?.max_streak || 0, 7)} / 7 days</Text>
+                                <Text className="text-[10px] font-q-bold text-muted uppercase tracking-tight">{t('common.progress')}</Text>
+                                <Text className="text-[10px] font-q-bold font-q-bold" style={{ color: currentAccent.hex }}>{t('common.activeDays', { count: Math.min(profile?.max_streak || 0, 7) })} / {t('common.daysGoal', { count: 7 })}</Text>
                             </View>
                             <View className="w-full h-2 bg-inactive/10 rounded-full overflow-hidden">
                                 <View 
@@ -361,7 +363,7 @@ export const Insights = ({ userId }: InsightsProps) => {
                         </View>
 
                         <View className="flex-row items-center">
-                            <Text className="text-[11px] font-q-bold uppercase tracking-[0.15em]" style={{ color: currentAccent.hex }}>Track Progress</Text>
+                            <Text className="text-[11px] font-q-bold uppercase tracking-[0.15em]" style={{ color: currentAccent.hex }}>{t('insights.trackProgress')}</Text>
                             <Ionicons name="chevron-forward" size={12} color={currentAccent.hex} style={{ marginLeft: 4 }} />
                         </View>
                     </View>

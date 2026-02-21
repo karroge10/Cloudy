@@ -11,6 +11,8 @@ import { haptics } from '../utils/haptics';
 import { TopNav } from '../components/TopNav';
 import { useAccent } from '../context/AccentContext';
 
+import { useTranslation } from 'react-i18next';
+
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Seeded random for daily consistency
@@ -26,6 +28,7 @@ export const FlashbackScreen = () => {
     const { entries } = useJournal();
     const { isDarkMode } = useTheme();
     const { currentAccent } = useAccent();
+    const { t, i18n } = useTranslation();
 
     const journalEntries = useMemo(() => 
         entries.filter(e => !e.deleted_at), 
@@ -82,10 +85,10 @@ export const FlashbackScreen = () => {
     if (!stats) {
         return (
             <Layout>
-                <TopNav title="Flashback" onBack={() => navigation.goBack()} />
+                <TopNav title={t('flashback.title')} onBack={() => navigation.goBack()} />
                 <View className="flex-1 items-center justify-center p-10">
                     <MascotImage source={MASCOTS.SAD} className="w-48 h-48 mb-6" />
-                    <Text className="text-lg font-q-bold text-muted text-center">Cookie needs more memories to start the flashback!</Text>
+                    <Text className="text-lg font-q-bold text-muted text-center">{t('flashback.needsMemories')}</Text>
                 </View>
             </Layout>
         );
@@ -111,7 +114,7 @@ export const FlashbackScreen = () => {
 
     const MemoryPreview = ({ title, entry, label }: any) => {
         if (!entry) return null;
-        const date = new Date(entry.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+        const date = new Date(entry.created_at).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric', year: 'numeric' });
         
         return (
             <TouchableOpacity 
@@ -128,7 +131,7 @@ export const FlashbackScreen = () => {
                     "{entry.text}"
                 </Text>
                 <View className="flex-row items-center mt-4">
-                    <Text className="text-primary font-q-bold text-xs uppercase tracking-wider" style={{ color: currentAccent.hex }}>Taste this memory</Text>
+                    <Text className="text-primary font-q-bold text-xs uppercase tracking-wider" style={{ color: currentAccent.hex }}>{t('flashback.tasteMemory')}</Text>
                     <Ionicons name="arrow-forward" size={12} color={currentAccent.hex} style={{ marginLeft: 4 }} />
                 </View>
             </TouchableOpacity>
@@ -138,49 +141,49 @@ export const FlashbackScreen = () => {
     return (
         <Layout useSafePadding={false}>
             <View className="px-6 pt-4">
-                <TopNav title="Flashback" onBack={() => navigation.goBack()} />
+                <TopNav title={t('flashback.title')} onBack={() => navigation.goBack()} />
             </View>
 
             <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
                 <View className="items-center my-6">
                     <MascotImage source={MASCOTS.CHEF} className="w-40 h-40" resizeMode="contain" />
-                    <Text className="text-2xl font-q-bold text-text mt-4">Cookie's Daily Mix</Text>
-                    <Text className="text-base font-q-medium text-muted text-center mt-1">A unique blend of your journey</Text>
+                    <Text className="text-2xl font-q-bold text-text mt-4">{t('flashback.cookiesDailyMix')}</Text>
+                    <Text className="text-base font-q-medium text-muted text-center mt-1">{t('flashback.uniqueBlend')}</Text>
                 </View>
 
                 <View className="mb-4">
-                    <Text className="text-xs font-q-bold text-muted uppercase tracking-[0.2em] mb-4 ml-1">The Daily Serving</Text>
-                    <MemoryPreview label="Daily Special" entry={stats.dailySpecial} />
+                    <Text className="text-xs font-q-bold text-muted uppercase tracking-[0.2em] mb-4 ml-1">{t('flashback.dailyServing')}</Text>
+                    <MemoryPreview label={t('flashback.dailySpecial')} entry={stats.dailySpecial} />
                 </View>
 
                 <View className="mb-4">
-                    <Text className="text-xs font-q-bold text-muted uppercase tracking-[0.2em] mb-4 ml-1">Menu Highlights</Text>
+                    <Text className="text-xs font-q-bold text-muted uppercase tracking-[0.2em] mb-4 ml-1">{t('flashback.menuHighlights')}</Text>
                     <View className="flex-row flex-wrap justify-between">
                         <View style={{ width: '48%' }}>
-                            <StatCard title="Account Age" value={stats.storyAge} subtitle="days" icon="time-outline" />
+                            <StatCard title={t('flashback.accountAge')} value={stats.storyAge} subtitle={t('common.days')} icon="time-outline" />
                         </View>
                         <View style={{ width: '48%' }}>
-                            <StatCard title="Longest Gap" value={stats.maxGapDays} subtitle="days" icon="pause-outline" />
+                            <StatCard title={t('flashback.longestGap')} value={stats.maxGapDays} subtitle={t('common.days')} icon="pause-outline" />
                         </View>
                         <View style={{ width: '48%' }}>
-                            <StatCard title="Love Meter" value={`${stats.favoritePercent}%`} subtitle="loved" icon="heart-outline" />
+                            <StatCard title={t('flashback.loveMeter')} value={`${stats.favoritePercent}%`} subtitle={t('flashback.loved')} icon="heart-outline" />
                         </View>
                         <View style={{ width: '48%' }}>
-                            <StatCard title="Consistency" value={`${stats.consistency}%`} subtitle="active" icon="checkmark-circle-outline" />
+                            <StatCard title={t('flashback.consistency')} value={`${stats.consistency}%`} subtitle={t('flashback.active')} icon="checkmark-circle-outline" />
                         </View>
                     </View>
                 </View>
 
                 {stats.fansFavorite && (
                     <View className="mb-4">
-                        <Text className="text-xs font-q-bold text-muted uppercase tracking-[0.2em] mb-4 ml-1">A Fan Favorite</Text>
-                        <MemoryPreview label="Top Pick" entry={stats.fansFavorite} />
+                        <Text className="text-xs font-q-bold text-muted uppercase tracking-[0.2em] mb-4 ml-1">{t('flashback.fanFavorite')}</Text>
+                        <MemoryPreview label={t('flashback.topPick')} entry={stats.fansFavorite} />
                     </View>
                 )}
 
                 <View className="mb-4">
-                    <Text className="text-xs font-q-bold text-muted uppercase tracking-[0.2em] mb-4 ml-1">The First Course</Text>
-                    <MemoryPreview label="Where it began" entry={stats.firstCourse} />
+                    <Text className="text-xs font-q-bold text-muted uppercase tracking-[0.2em] mb-4 ml-1">{t('flashback.firstCourse')}</Text>
+                    <MemoryPreview label={t('flashback.whereItBegan')} entry={stats.firstCourse} />
                 </View>
             </ScrollView>
         </Layout>

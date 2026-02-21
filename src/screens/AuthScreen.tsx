@@ -15,6 +15,7 @@ import { Button } from '../components/Button';
 import { getFriendlyAuthErrorMessage } from '../utils/authErrors';
 import { useTheme } from '../context/ThemeContext';
 import { useAccent } from '../context/AccentContext';
+import { useTranslation } from 'react-i18next';
 
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { identifyUser } from '../lib/posthog';
@@ -32,6 +33,7 @@ export const AuthScreen = () => {
     const { trackEvent } = useAnalytics();
     const { isDarkMode } = useTheme();
     const { currentAccent } = useAccent();
+    const { t } = useTranslation();
     const [email, setEmail] = useState('');
 
     const [password, setPassword] = useState('');
@@ -44,7 +46,7 @@ export const AuthScreen = () => {
     async function signInWithEmail() {
         haptics.selection();
         if (!email || !password) {
-            showAlert('Missing info', 'Please enter both email and password.', [{ text: 'Okay' }], 'error');
+            showAlert(t('auth.missingInfoTitle'), t('auth.missingInfoMessage'), [{ text: t('common.okay') }], 'error');
             return;
         }
         setLoading(true);
@@ -75,7 +77,7 @@ export const AuthScreen = () => {
 
         if (error) {
             const { title, message } = getFriendlyAuthErrorMessage(error);
-            showAlert(title, message, [{ text: 'Okay' }], 'error');
+            showAlert(title, message, [{ text: t('common.okay') }], 'error');
             setLoading(false);
         }
     }
@@ -83,7 +85,7 @@ export const AuthScreen = () => {
     async function signUpWithEmail() {
         haptics.selection();
         if (!email || !password) {
-            showAlert('Missing info', 'Please enter both email and password.', [{ text: 'Okay' }], 'error');
+            showAlert(t('auth.missingInfoTitle'), t('auth.missingInfoMessage'), [{ text: t('common.okay') }], 'error');
             return;
         }
         setLoading(true);
@@ -105,12 +107,12 @@ export const AuthScreen = () => {
                 if (error) {
                     if (error.message.includes('already registered') || error.status === 422) {
                         showAlert(
-                            'Account already exists',
-                            'Would you like to log into your existing journey instead? Your current temporary data will not be merged.',
+                            t('auth.accountExistsTitle'),
+                            t('auth.accountExistsMessage'),
                             [
-                                { text: 'Cancel', style: 'cancel' },
+                                { text: t('auth.cancelButton'), style: 'cancel' },
                                 { 
-                                    text: 'Log In', 
+                                    text: t('auth.logInButton'), 
                                     onPress: async () => {
                                         await supabase.auth.signOut();
                                         setIsLogin(true);
@@ -123,8 +125,8 @@ export const AuthScreen = () => {
                         throw error;
                     }
                 } else {
-                    showAlert('Success', 'Your journey is secured!', [
-                        { text: 'Okay' }
+                    showAlert(t('auth.successTitle'), t('auth.journeySecured'), [
+                        { text: t('common.okay') }
                     ], 'success');
                 }
             } else {
@@ -139,8 +141,8 @@ export const AuthScreen = () => {
                     // App.tsx handles the switch
                     DeviceEventEmitter.emit('session_transition');
                 } else {
-                    showAlert('Success', 'Please check your email to confirm your account.', [
-                        { text: 'Okay', onPress: () => navigation.goBack() }
+                    showAlert(t('auth.successTitle'), t('auth.confirmEmail'), [
+                        { text: t('common.okay'), onPress: () => navigation.goBack() }
                     ], 'success');
                     trackEvent('user_signed_up', { method: 'email' });
                 }
@@ -148,7 +150,7 @@ export const AuthScreen = () => {
             }
         } catch (error: any) {
             const { title, message } = getFriendlyAuthErrorMessage(error);
-            showAlert(title, message, [{ text: 'Okay' }], 'error');
+            showAlert(title, message, [{ text: t('common.okay') }], 'error');
             setLoading(false);
         }
     }
@@ -211,7 +213,7 @@ export const AuthScreen = () => {
             // Only show alert if it's not a cancellation or operation in progress
             if (error.code !== statusCodes.IN_PROGRESS && error.code !== statusCodes.SIGN_IN_CANCELLED) {
                 const { title, message } = getFriendlyAuthErrorMessage(error);
-                showAlert(title, message, [{ text: 'Okay' }], 'error');
+                showAlert(title, message, [{ text: t('common.okay') }], 'error');
             }
             setLoading(false);
         }
@@ -240,20 +242,20 @@ export const AuthScreen = () => {
                             />
                         </View>
                         <Text className="text-3xl font-q-bold text-text">
-                            {isLogin ? 'Welcome Back!' : 'Save Your Journey'}
+                            {isLogin ? t('auth.welcomeBack') : t('auth.saveJourney')}
                         </Text>
                         <View className="h-14 justify-center">
                             <Text className="text-base font-q-medium text-muted text-center px-4">
                                 {isLogin 
-                                    ? 'Cloudy missed you.' 
-                                    : 'Create an account to secure your progress and memories.'}
+                                    ? t('auth.missedYou') 
+                                    : t('auth.secureProgress')}
                             </Text>
                         </View>
                     </View>
 
                     <View className="mb-4">
                         <View className="mb-3">
-                            <Text className="text-lg font-q-bold text-muted mb-2 ml-1">Email</Text>
+                            <Text className="text-lg font-q-bold text-muted mb-2 ml-1">{t('auth.emailLabel')}</Text>
                             <TextInput
                                 className="bg-card px-6 py-4 rounded-3xl font-q-bold text-lg text-text border-2 border-inactive/10"
                                 placeholder="hello@cloudy.app"
@@ -266,7 +268,7 @@ export const AuthScreen = () => {
                         </View>
 
                         <View className="mb-4">
-                            <Text className="text-lg font-q-bold text-muted mb-2 ml-1">Password</Text>
+                            <Text className="text-lg font-q-bold text-muted mb-2 ml-1">{t('auth.passwordLabel')}</Text>
                             <TextInput
                                 className="bg-card px-6 py-4 rounded-3xl font-q-bold text-lg text-text border-2 border-inactive/10"
                                 placeholder="••••••••"
@@ -279,7 +281,7 @@ export const AuthScreen = () => {
                         </View>
 
                         <Button
-                            label={isLogin ? 'Sign In' : 'Sign Up'}
+                            label={isLogin ? t('auth.signInButton') : t('auth.signUpButton')}
                             onPress={() => isLogin ? signInWithEmail() : signUpWithEmail()}
                             loading={loading}
                         />
@@ -289,9 +291,9 @@ export const AuthScreen = () => {
                             onPress={() => { haptics.selection(); setIsLogin(!isLogin); }}
                         >
                             <Text className="text-muted font-q-bold text-base">
-                                {isLogin ? "New here? " : "Already joined? "}
+                                {isLogin ? t('auth.newHere') : t('auth.alreadyJoined')}
                                 <Text className="font-q-bold" style={{ color: currentAccent.hex }}>
-                                    {isLogin ? 'Create Account' : 'Sign In'}
+                                    {isLogin ? t('auth.createAccount') : t('auth.signInButton')}
                                 </Text>
                             </Text>
                         </TouchableOpacity>
@@ -300,7 +302,7 @@ export const AuthScreen = () => {
                     {/* Google Sign In Divider */}
                     <View className="flex-row items-center mb-6 px-4">
                         <View style={{ flex: 1, height: 1, backgroundColor: isDarkMode ? '#475569' : '#E5E7EB' }} />
-                        <Text className="mx-4 font-q-bold text-sm" style={{ color: isDarkMode ? '#94A3B8' : '#64748B' }}>OR</Text>
+                        <Text className="mx-4 font-q-bold text-sm" style={{ color: isDarkMode ? '#94A3B8' : '#64748B' }}>{t('auth.orDivider')}</Text>
                         <View style={{ flex: 1, height: 1, backgroundColor: isDarkMode ? '#475569' : '#E5E7EB' }} />
                     </View>
 
@@ -317,7 +319,7 @@ export const AuthScreen = () => {
                         <View className="flex-row items-center justify-center">
                             <View className={`flex-row items-center justify-center ${loading ? "opacity-0" : "opacity-100"}`}>
                                 <Ionicons name="logo-google" size={20} color={isDarkMode ? "#E5E7EB" : "#64748B"} />
-                                <Text className={`font-q-bold text-lg ml-2 ${isDarkMode ? 'text-text' : 'text-[#64748B]'}`}>Continue with Google</Text>
+                                <Text className={`font-q-bold text-lg ml-2 ${isDarkMode ? 'text-text' : 'text-[#64748B]'}`}>{t('auth.continueWithGoogle')}</Text>
                             </View>
                             {loading && (
                                 <View className="absolute inset-0 items-center justify-center">

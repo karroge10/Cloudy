@@ -8,12 +8,14 @@ import { haptics } from '../utils/haptics';
 import { MascotImage } from './MascotImage';
 import { MASCOTS } from '../constants/Assets';
 import { useAccent } from '../context/AccentContext';
+import { useTranslation } from 'react-i18next';
 
 export const Flashback = () => {
     const navigation = useNavigation<any>();
     const { profile } = useProfile();
     const { isDarkMode } = useTheme();
     const { currentAccent } = useAccent();
+    const { t } = useTranslation();
     
     // Cookie unlocks at 30 days
     const isUnlocked = (profile?.max_streak || 0) >= 30;
@@ -43,15 +45,15 @@ export const Flashback = () => {
                     <View className="flex-row justify-between items-start">
                         <View className="flex-1 mr-4">
                             <View className="flex-row items-center mb-2">
-                                <Text className="text-lg font-q-bold text-text mr-2">Flashback</Text>
+                                <Text className="text-lg font-q-bold text-text mr-2">{t('flashback.title')}</Text>
                             </View>
                             
                             <Text className="text-base font-q-medium text-muted leading-6">
-                                A curated blend of your past, served daily.
+                                {t('flashback.desc')}
                             </Text>
                             
                             <View className="flex-row items-center mt-4">
-                                <Text className="font-q-bold text-sm uppercase tracking-wider mr-1" style={{ color: currentAccent.hex }}>Enter Mix</Text>
+                                <Text className="font-q-bold text-sm uppercase tracking-wider mr-1" style={{ color: currentAccent.hex }}>{t('flashback.enterMix')}</Text>
                                 <Ionicons name="arrow-forward" size={14} color={currentAccent.hex} />
                             </View>
                         </View>
@@ -65,10 +67,10 @@ export const Flashback = () => {
                 ) : (
                     <View className="items-center py-2 pb-6">
                         <View className="flex-row justify-between items-center w-full mb-6">
-                            <Text className="text-lg font-q-bold text-text">Flashback</Text>
+                            <Text className="text-lg font-q-bold text-text">{t('flashback.title')}</Text>
                             <View className="bg-inactive/10 px-3 py-1 rounded-full flex-row items-center">
                                 <Ionicons name="lock-closed" size={10} color={isDarkMode ? "#94A3B8" : "#64748B"} />
-                                <Text className="text-[10px] font-q-bold text-muted ml-1 uppercase">Locked</Text>
+                                <Text className="text-[10px] font-q-bold text-muted ml-1 uppercase">{t('insights.locked')}</Text>
                             </View>
                         </View>
 
@@ -84,13 +86,13 @@ export const Flashback = () => {
                         </View>
                         
                         <Text className="text-base font-q-bold text-text mb-2 text-center px-6">
-                            Reach 30 day streak to unlock.
+                            {t('flashback.unlockDesc')}
                         </Text>
                         
                         <View className="w-full max-w-[220px] mb-6">
                             <View className="flex-row justify-between mb-2 px-1">
-                                <Text className="text-[10px] font-q-bold text-muted uppercase tracking-tight">Progress</Text>
-                                <Text className="text-[10px] font-q-bold font-q-bold" style={{ color: currentAccent.hex }}>{Math.min(profile?.max_streak || 0, 30)} / 30 days</Text>
+                                <Text className="text-[10px] font-q-bold text-muted uppercase tracking-tight">{t('common.progress')}</Text>
+                                <Text className="text-[10px] font-q-bold" style={{ color: currentAccent.hex }}>{t('common.activeDays', { count: Math.min(profile?.max_streak || 0, 30) })} / {t('common.daysGoal', { count: 30 })}</Text>
                             </View>
                             <View className="w-full h-2 bg-inactive/10 rounded-full overflow-hidden">
                                 <View 
@@ -104,7 +106,7 @@ export const Flashback = () => {
                         </View>
 
                         <View className="flex-row items-center">
-                            <Text className="text-[11px] font-q-bold uppercase tracking-[0.15em]" style={{ color: currentAccent.hex }}>Track Progress</Text>
+                            <Text className="text-[11px] font-q-bold uppercase tracking-[0.15em]" style={{ color: currentAccent.hex }}>{t('insights.trackProgress')}</Text>
                             <Ionicons name="chevron-forward" size={12} color={currentAccent.hex} style={{ marginLeft: 4 }} />
                         </View>
                     </View>

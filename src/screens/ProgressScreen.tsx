@@ -14,6 +14,8 @@ import { haptics } from '../utils/haptics';
 import { useTheme } from '../context/ThemeContext';
 import { Divider } from '../components/Divider';
 import { useAccent } from '../context/AccentContext';
+import { useTranslation } from 'react-i18next';
+import i18n from '../lib/i18n';
 
 export const ProgressScreen = () => {
     const { isDarkMode } = useTheme();
@@ -22,6 +24,7 @@ export const ProgressScreen = () => {
     const { profile, loading: profileLoading } = useProfile();
     const [refreshing, setRefreshing] = useState(false);
     const { currentAccent } = useAccent();
+    const { t } = useTranslation();
 
     const maxStreak = profile?.max_streak || streak;
     const effectiveStreak = maxStreak;
@@ -43,7 +46,7 @@ export const ProgressScreen = () => {
                 const dateStr = uniqueDays[dayIndex];
                 if (dateStr) {
                     details[c.id] = {
-                        unlockDate: new Date(dateStr).toLocaleDateString(undefined, {
+                        unlockDate: new Date(dateStr).toLocaleDateString(i18n.language, {
                             month: 'short',
                             day: 'numeric',
                             year: 'numeric'
@@ -53,7 +56,7 @@ export const ProgressScreen = () => {
             }
         });
         return details;
-    }, [rawStreakData]);
+    }, [rawStreakData, i18n.language]);
 
     const onRefresh = async () => {
         setRefreshing(true);
@@ -73,7 +76,7 @@ export const ProgressScreen = () => {
         <Layout noScroll={true} useSafePadding={false} edges={['top', 'left', 'right']}>
             <View className="px-6 pt-4">
                 <TopNav
-                    title="Progress"
+                    title={t('profile.setup.seeProgress')}
                     onBack={() => navigation.goBack()}
                     roundButtons={true}
                 />
@@ -92,26 +95,26 @@ export const ProgressScreen = () => {
                         <MascotImage source={MASCOTS.STAR} className="w-32 h-32" resizeMode="contain" />
                     </View>
                     <Text className="text-3xl font-q-bold text-text mb-2">
-                        {unlockedCompanions.length}/{COMPANIONS.length} Unlocked
+                        {t('progress.unlockedCount', { unlocked: unlockedCompanions.length, total: COMPANIONS.length })}
                     </Text>
                     <View 
                         className="bg-card px-6 py-2.5 rounded-2xl shadow-sm border flex-row items-center"
                         style={{ borderColor: `${currentAccent.hex}1A` }}
                     >
                         <Text className="font-q-bold text-base" style={{ color: currentAccent.hex }}>
-                            Max Streak: {maxStreak} Days 🔥
+                            {t('progress.maxStreak', { count: maxStreak })} {t('progress.days')}
                         </Text>
                     </View>
 
                     <View className="flex-row items-center mt-8 px-4">
                         <Text className="text-sm font-q-medium text-muted leading-5 text-center flex-1">
-                            Each friend represents a milestone in your mental growth as you cultivate your daily habits.
+                            {t('progress.description')}
                         </Text>
                     </View>
 
                     {nextCompanion && daysUntilNextLevel !== null && (
                         <Text className="text-muted font-q-bold text-[10px] uppercase tracking-[3px] mt-8">
-                            Next Reward in {Math.max(0, nextCompanion.requiredStreak - effectiveStreak)} {Math.max(0, nextCompanion.requiredStreak - effectiveStreak) === 1 ? 'day' : 'days'}
+                            {t('progress.nextReward', { count: nextCompanion.requiredStreak - effectiveStreak })}
                         </Text>
                     )}
                 </View>
@@ -154,24 +157,24 @@ export const ProgressScreen = () => {
                                     <View className="flex-1">
                                         <View className="flex-row items-center justify-between mb-1">
                                             <Text className={`font-q-bold text-2xl ${isUnlocked ? 'text-text' : 'text-text/40'}`}>
-                                                {companion.name}
+                                                {t(`companions.${companion.id}.name`)}
                                             </Text>
                                              {isUnlocked && (
                                                  companion.trait === 'HERO' ? (
                                                      <View className={`${isDarkMode ? 'bg-[#FFD700]/30' : 'bg-black'} px-3 py-1 rounded-full border border-[#FFD700] flex-row items-center shadow-sm`}>
                                                          <Ionicons name="flash" size={10} color="#FFD700" />
-                                                         <Text className="text-[#FFD700] font-q-bold text-[10px] ml-1.5 uppercase tracking-widest">HERO</Text>
+                                                         <Text className="text-[#FFD700] font-q-bold text-[10px] ml-1.5 uppercase tracking-widest">{t('common.hero')}</Text>
                                                      </View>
                                                  ) : (
                                                      <View className="px-3 py-1 rounded-full" style={{ backgroundColor: `${currentAccent.hex}33` }}>
-                                                         <Text className="font-q-bold text-[10px] uppercase tracking-[1px]" style={{ color: currentAccent.hex }}>{companion.trait}</Text>
+                                                         <Text className="font-q-bold text-[10px] uppercase tracking-[1px]" style={{ color: currentAccent.hex }}>{t(`companions.${companion.id}.trait`)}</Text>
                                                      </View>
                                                  )
                                              )}
                                         </View>
 
                                         <Text className={`font-q-medium text-sm leading-5 ${isUnlocked ? 'text-text/60' : 'text-text/30'}`}>
-                                            {isUnlocked ? companion.description : `${companion.requiredStreak} days of mindfulness to unlock.`}
+                                            {isUnlocked ? t(`companions.${companion.id}.description`) : t('progress.unlockMindfulness', { count: companion.requiredStreak })}
                                         </Text>
                                     </View>
                                 </View>
@@ -194,13 +197,13 @@ export const ProgressScreen = () => {
                                                 className={`font-q-bold text-xs uppercase tracking-widest ${isUnlocked ? '' : 'text-text/30'}`}
                                                 style={isUnlocked ? { color: currentAccent.hex } : {}}
                                             >
-                                                REWARD {isUnlocked ? 'UNLOCKED' : 'LOCKED'}
+                                                {t('progress.reward')} {isUnlocked ? t('insights.unlocked') : t('insights.locked')}
                                             </Text>
                                             <Text className={`font-q-bold text-base mt-0.5 ${isUnlocked ? 'text-text' : 'text-text/40'}`}>
-                                                {companion.unlockPerk}
+                                                {t(`companions.${companion.id}.perk`)}
                                             </Text>
                                             <Text className={`font-q-medium text-xs mt-1 leading-4 ${isUnlocked ? 'text-text/50' : 'text-text/20'}`}>
-                                                {companion.unlockPerkDescription}
+                                                {t(`companions.${companion.id}.perkDesc`)}
                                             </Text>
                                         </View>
                                     </View>
@@ -211,8 +214,8 @@ export const ProgressScreen = () => {
                                     <View className="mt-2 px-2 mb-2">
                                         <Divider className="mb-4" />
                                         <View className="flex-row justify-between items-center mb-3">
-                                            <Text className="font-q-bold text-xs text-muted/60 uppercase tracking-wider">Progress</Text>
-                                            <Text className="font-q-bold text-xs" style={{ color: currentAccent.hex }}>{effectiveStreak}/{companion.requiredStreak} Days</Text>
+                                            <Text className="font-q-bold text-xs text-muted/60 uppercase tracking-wider">{t('common.progress')}</Text>
+                                            <Text className="font-q-bold text-xs" style={{ color: currentAccent.hex }}>{effectiveStreak}/{companion.requiredStreak} {t('common.days')}</Text>
                                         </View>
                                         <View className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: `${currentAccent.hex}1A` }}>
                                             <View
@@ -233,7 +236,7 @@ export const ProgressScreen = () => {
                                             className="font-q-bold text-[11px] uppercase tracking-widest ml-2"
                                             style={{ color: `${currentAccent.hex}99` }}
                                         >
-                                            Unlocked on {detail.unlockDate} • Day {dayIndex + 1}
+                                            {t('common.unlockedOnDay', { date: detail.unlockDate, count: dayIndex + 1 })}
                                         </Text>
                                     </View>
                                 )}
@@ -244,7 +247,7 @@ export const ProgressScreen = () => {
 
                 <View className="mt-12">
                     <Button
-                        label="Maintain the Habit"
+                        label={t('progress.maintainHabit')}
                         onPress={() => {
                             haptics.selection();
                             navigation.goBack();

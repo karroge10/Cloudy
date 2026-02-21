@@ -23,15 +23,17 @@ import { useAnalytics } from '../hooks/useAnalytics';
 import { Layout } from '../components/Layout';
 import { LogoutSheet } from '../components/LogoutSheet';
 import { Divider } from '../components/Divider';
+import { useTranslation } from 'react-i18next';
 
 import { COMPANIONS } from '../constants/Companions';
 import { useTheme } from '../context/ThemeContext';
 import { TimePicker } from '../components/TimePicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { GOALS } from '../constants/Goals';
+import { STRUGGLES } from '../constants/Struggles';
+
 const GENDERS = ['Female', 'Male', 'Non-binary', 'Prefer not to say'];
-const GOALS = ['Mental Clarity', 'Memory keeping', 'Self-discipline', 'Creativity', 'Gratitude'];
-const STRUGGLES = ['Anxiety', 'Stress', 'Sleep', 'Focus', 'Motivation', 'N/A'];
 
 import { useAccent } from '../context/AccentContext';
 
@@ -41,6 +43,50 @@ export const ProfileScreen = () => {
     const { isDarkMode } = useTheme();
     const { trackEvent } = useAnalytics();
     const { currentAccent } = useAccent();
+    const { t } = useTranslation();
+
+    const renderGenderLabel = (g: string) => {
+        switch (g) {
+            case 'Female': return t('profile.genders.female');
+            case 'Male': return t('profile.genders.male');
+            case 'Non-binary': return t('profile.genders.nonBinary');
+            case 'Prefer not to say': return t('profile.genders.noSay');
+            default: return g;
+        }
+    };
+
+    const renderGoalLabel = (goal: string) => {
+        switch (goal) {
+            case 'Mental Clarity': return t('profile.goals.clarity');
+            case 'Memory keeping': return t('profile.goals.memory');
+            case 'Self-discipline': return t('profile.goals.discipline');
+            case 'Creativity': return t('profile.goals.creativity');
+            case 'Gratitude': return t('profile.goals.gratitude');
+            case 'Inner Peace': return t('profile.goals.innerPeace');
+            case 'Happiness': return t('profile.goals.happiness');
+            case 'Better Sleep': return t('profile.goals.betterSleep');
+            case 'Productivity': return t('profile.goals.productivity');
+            case 'Self-Love': return t('profile.goals.selfLove');
+            case 'Focus': return t('profile.goals.focus');
+            default: return goal;
+        }
+    };
+
+    const renderStruggleLabel = (s: string) => {
+        switch (s) {
+            case 'Anxiety': return t('profile.struggles.anxiety');
+            case 'Stress': return t('profile.struggles.stress');
+            case 'Sleep': return t('profile.struggles.sleep');
+            case 'Focus': return t('profile.struggles.focus');
+            case 'Motivation': return t('profile.struggles.motivation');
+            case 'N/A': return t('profile.struggles.na');
+            case 'Overthinking': return t('profile.struggles.overthinking');
+            case 'Low Energy': return t('profile.struggles.lowEnergy');
+            case 'Sleep Issues': return t('profile.struggles.sleepIssues');
+            case 'Lack of Focus': return t('profile.struggles.lackOfFocus');
+            default: return s;
+        }
+    };
     let navigation: any;
     try {
         navigation = useNavigation<any>();
@@ -152,12 +198,24 @@ export const ProfileScreen = () => {
     };
 
     const currentRank = [...COMPANIONS].reverse().find(c => (profile?.max_streak || 0) >= c.requiredStreak)?.trait || 'Beginner';
+    
+    const getRankTranslation = (rank: string) => {
+        switch (rank) {
+            case 'Beginner': return t('ranks.beginner');
+            case 'Expert': return t('ranks.expert');
+            case 'Master': return t('ranks.master');
+            case 'Dedicated': return t('ranks.dedicated');
+            case 'Legend': return t('ranks.legend');
+            case 'HERO': return t('ranks.hero');
+            default: return rank;
+        }
+    };
 
     return (
         <Layout noScroll={true} isTabScreen={true} useSafePadding={false}>
             <View className="px-6 pt-4">
                 <TopNav 
-                    title="Profile" 
+                    title={t('profile.title')} 
                     rightElement={
                         <TouchableOpacity onPress={() => { 
                             haptics.selection(); 
@@ -196,20 +254,20 @@ export const ProfileScreen = () => {
                                  <Skeleton width={120} height={24} style={{ marginBottom: 4 }} borderRadius={12} />
                               ) : (
                                  <View className="flex-row items-center flex-wrap">
-                                    <Text className="text-xl font-q-bold text-muted mr-1">Hi, {displayName || 'Friend'}!</Text>
+                                    <Text className="text-xl font-q-bold text-muted mr-1">{t('profile.hi', { name: displayName || t('profile.friend') })}</Text>
                                     
                                     {currentRank === 'HERO' && (
                                         <Ionicons name="checkmark-circle" size={20} color="#FFD700" style={{ marginRight: 8 }} />
                                     )}
                                     
                                     {currentRank === 'HERO' ? (
-                                        <View className={`${isDarkMode ? 'bg-[#FFD700]/20' : 'bg-black'} px-3 py-1 rounded-full border border-[#FFD700] flex-row items-center shadow-sm`}>
-                                            <Ionicons name="flash" size={10} color="#FFD700" />
-                                            <Text className="text-[#FFD700] font-q-bold text-[10px] ml-1.5 uppercase tracking-widest">HERO</Text>
-                                        </View>
+                                            <View className={`${isDarkMode ? 'bg-[#FFD700]/20' : 'bg-black'} px-3 py-1 rounded-full border border-[#FFD700] flex-row items-center shadow-sm`}>
+                                                <Ionicons name="flash" size={10} color="#FFD700" />
+                                                <Text className="text-[#FFD700] font-q-bold text-[10px] ml-1.5 uppercase tracking-widest">{t('common.hero')}</Text>
+                                            </View>
                                     ) : (
                                         <View className="px-2.5 py-1 rounded-full" style={{ backgroundColor: `${currentAccent.hex}33` }}>
-                                            <Text className="font-q-bold text-[10px] uppercase tracking-wider" style={{ color: currentAccent.hex }}>{currentRank}</Text>
+                                            <Text className="font-q-bold text-[10px] uppercase tracking-wider" style={{ color: currentAccent.hex }}>{getRankTranslation(currentRank)}</Text>
                                         </View>
                                     )}
                                  </View>
@@ -223,8 +281,8 @@ export const ProfileScreen = () => {
                             </View>
                         ) : (
                             <View>
-                                <Text className="text-[44px] leading-[50px] font-q-bold text-text">{streak} Day</Text>
-                                <Text className="text-[44px] leading-[50px] font-q-bold text-text">Streak!</Text>
+                                <Text className="text-[44px] leading-[50px] font-q-bold text-text">{t('profile.streakDay', { count: streak })}</Text>
+                                <Text className="text-[44px] leading-[50px] font-q-bold text-text">{t('profile.streakTitle')}</Text>
                              </View>
                          )}
                      </View>
@@ -262,56 +320,56 @@ export const ProfileScreen = () => {
                     
                     <View className="py-2">
                         <TouchableOpacity onPress={() => { haptics.selection(); setIsNameSheetVisible(true); }} className="flex-row justify-between items-center py-3">
-                            <Text className="text-lg font-q-bold text-text">Name</Text>
+                            <Text className="text-lg font-q-bold text-text">{t('profile.sections.name')}</Text>
                             <View className="flex-1 flex-row items-center justify-end ml-4">
-                                <Text className="font-q-bold text-base mr-2" style={{ color: currentAccent.hex }}>{profile?.display_name || 'Set Name'}</Text>
+                                <Text className="font-q-bold text-base mr-2" style={{ color: currentAccent.hex }}>{profile?.display_name || t('profile.placeholders.setName')}</Text>
                                 <Ionicons name="chevron-forward" size={16} color={isDarkMode ? "#64748B" : "#CBD5E1"} />
                             </View>
                         </TouchableOpacity>
                         <Divider />
                         <TouchableOpacity onPress={() => { haptics.selection(); setIsAgeSheetVisible(true); }} className="flex-row justify-between items-center py-3">
-                            <Text className="text-lg font-q-bold text-text">Age</Text>
+                            <Text className="text-lg font-q-bold text-text">{t('profile.sections.age')}</Text>
                             <View className="flex-1 flex-row items-center justify-end ml-4">
-                                <Text className="font-q-bold text-base mr-2" style={{ color: currentAccent.hex }}>{profile?.age || 'Set Age'}</Text>
+                                <Text className="font-q-bold text-base mr-2" style={{ color: currentAccent.hex }}>{profile?.age || t('profile.placeholders.setAge')}</Text>
                                 <Ionicons name="chevron-forward" size={16} color={isDarkMode ? "#64748B" : "#CBD5E1"} />
                             </View>
                         </TouchableOpacity>
                         <Divider />
                         <TouchableOpacity onPress={() => { haptics.selection(); setIsGenderSheetVisible(true); }} className="flex-row justify-between items-center py-3">
-                            <Text className="text-lg font-q-bold text-text">Gender</Text>
+                            <Text className="text-lg font-q-bold text-text">{t('profile.sections.gender')}</Text>
                             <View className="flex-1 flex-row items-center justify-end ml-4">
-                                <Text className="font-q-bold text-base mr-2" style={{ color: currentAccent.hex }}>{profile?.gender || 'Set Gender'}</Text>
+                                <Text className="font-q-bold text-base mr-2" style={{ color: currentAccent.hex }}>{renderGenderLabel(profile?.gender || '') || t('profile.placeholders.setGender')}</Text>
                                 <Ionicons name="chevron-forward" size={16} color={isDarkMode ? "#64748B" : "#CBD5E1"} />
                             </View>
                         </TouchableOpacity>
                         <Divider />
                         <TouchableOpacity onPress={() => { haptics.selection(); setIsCountrySheetVisible(true); }} className="flex-row justify-between items-center py-3">
-                            <Text className="text-lg font-q-bold text-text">Location</Text>
+                            <Text className="text-lg font-q-bold text-text">{t('profile.sections.location')}</Text>
                             <View className="flex-1 flex-row items-center justify-end ml-4">
-                                <Text className="font-q-bold text-base mr-2" style={{ color: currentAccent.hex }}>{profile?.country || 'Set Country'}</Text>
+                                <Text className="font-q-bold text-base mr-2" style={{ color: currentAccent.hex }}>{profile?.country || t('profile.placeholders.setCountry')}</Text>
                                 <Ionicons name="chevron-forward" size={16} color={isDarkMode ? "#64748B" : "#CBD5E1"} />
                             </View>
                         </TouchableOpacity>
                         <Divider />
                         <TouchableOpacity onPress={() => { haptics.selection(); setIsGoalSheetVisible(true); }} className="flex-row justify-between items-center py-3">
-                            <Text className="text-lg font-q-bold text-text">Goals</Text>
+                            <Text className="text-lg font-q-bold text-text">{t('profile.sections.goals')}</Text>
                             <View className="flex-1 flex-row items-center justify-end ml-4">
                                 <Text className="font-q-bold text-base mr-2" numberOfLines={1} style={{ color: currentAccent.hex }}>
-                                    {(profile?.goals?.length ?? 0) === 0 ? 'Set Goals' : 
-                                     profile?.goals?.length === 1 ? profile.goals[0] : 
-                                     `${profile?.goals?.[0]} +${(profile?.goals?.length ?? 0) - 1} more`}
+                                    {(profile?.goals?.length ?? 0) === 0 ? t('profile.placeholders.setGoals') : 
+                                     profile?.goals?.length === 1 ? renderGoalLabel(profile.goals[0]) : 
+                                     `${renderGoalLabel(profile?.goals?.[0] || '')} ${t('common.plusMore', { count: (profile?.goals?.length ?? 0) - 1 })}`}
                                 </Text>
                                 <Ionicons name="chevron-forward" size={16} color={isDarkMode ? "#64748B" : "#CBD5E1"} />
                             </View>
                         </TouchableOpacity>
                         <Divider />
                         <TouchableOpacity onPress={() => { haptics.selection(); setIsStruggleSheetVisible(true); }} className="flex-row justify-between items-center py-3">
-                            <Text className="text-lg font-q-bold text-text">Struggles</Text>
+                            <Text className="text-lg font-q-bold text-text">{t('profile.sections.struggles')}</Text>
                             <View className="flex-1 flex-row items-center justify-end ml-4">
                                 <Text className="font-q-bold text-base mr-2" numberOfLines={1} style={{ color: currentAccent.hex }}>
-                                    {(profile?.struggles?.length ?? 0) === 0 ? 'Set Struggles' : 
-                                     profile?.struggles?.length === 1 ? profile.struggles[0] : 
-                                     `${profile?.struggles?.[0]} +${(profile?.struggles?.length ?? 0) - 1} more`}
+                                    {(profile?.struggles?.length ?? 0) === 0 ? t('profile.placeholders.setStruggles') : 
+                                     profile?.struggles?.length === 1 ? renderStruggleLabel(profile.struggles[0]) : 
+                                     `${renderStruggleLabel(profile?.struggles?.[0] || '')} ${t('common.plusMore', { count: (profile?.struggles?.length ?? 0) - 1 })}`}
                                 </Text>
                                 <Ionicons name="chevron-forward" size={16} color={isDarkMode ? "#64748B" : "#CBD5E1"} />
                             </View>
@@ -326,7 +384,7 @@ export const ProfileScreen = () => {
                     }}
                     className="mt-4 items-center py-4 active:scale-95 transition-transform"
                 >
-                    <Text className="text-lg font-q-bold text-red-400/60">Log Out</Text>
+                    <Text className="text-lg font-q-bold text-red-400/60">{t('profile.logout')}</Text>
                 </TouchableOpacity>
 
 
@@ -340,10 +398,10 @@ export const ProfileScreen = () => {
              }}>
                 <View className="items-center w-full">
                      <MascotImage source={MASCOTS.THINK} className="w-40 h-40 mb-4" resizeMode="contain" />
-                     <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">What should Cloudy call you?</Text>
+                     <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">{t('profile.setup.nameTitle')}</Text>
                     <TextInput
                         className="w-full bg-card px-6 py-5 rounded-[24px] font-q-bold text-lg text-text border-2 border-secondary mb-8"
-                        placeholder="Your Name"
+                        placeholder={t('home.setup.namePlaceholder')}
                         placeholderTextColor={isDarkMode ? "#64748B" : "#CBD5E1"}
                         onChangeText={setTempName}
                         value={tempName}
@@ -351,7 +409,7 @@ export const ProfileScreen = () => {
                         autoFocus={true}
                     />
                     <Button 
-                        label="Save Name"
+                        label={t('home.setup.saveProfile')}
                         onPress={() => {
                             updateProfile({ display_name: tempName });
                             setIsNameSheetVisible(false);
@@ -366,7 +424,7 @@ export const ProfileScreen = () => {
                         }} 
                         className="mt-4 py-2 active:scale-95 transition-transform"
                     >
-                         <Text className="text-muted font-q-bold text-base">Cancel</Text>
+                         <Text className="text-muted font-q-bold text-base">{t('common.cancel')}</Text>
                     </TouchableOpacity>
                 </View>
             </BottomSheet>
@@ -377,10 +435,10 @@ export const ProfileScreen = () => {
              }}>
                 <View className="items-center w-full">
                      <MascotImage source={MASCOTS.CAKE} className="w-40 h-40 mb-4" resizeMode="contain" />
-                     <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">How old are you?</Text>
+                     <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">{t('profile.setup.ageTitle')}</Text>
                     <TextInput
                         className="w-full bg-card px-6 py-5 rounded-[24px] font-q-bold text-lg text-text border-2 border-inactive/10 mb-8"
-                        placeholder="Age"
+                        placeholder={t('profile.sections.age')}
                         placeholderTextColor="#CBD5E1"
                         onChangeText={setTempAge}
                         value={tempAge}
@@ -388,7 +446,7 @@ export const ProfileScreen = () => {
                         autoFocus={true}
                     />
                     <Button 
-                        label="Save Age"
+                        label={t('common.save')}
                         onPress={() => {
                             const val = parseInt(tempAge);
                             if (!isNaN(val)) {
@@ -406,7 +464,7 @@ export const ProfileScreen = () => {
                         }} 
                         className="mt-4 py-2 active:scale-95 transition-transform"
                     >
-                         <Text className="text-muted font-q-bold text-base">Cancel</Text>
+                         <Text className="text-muted font-q-bold text-base">{t('common.cancel')}</Text>
                     </TouchableOpacity>
                 </View>
             </BottomSheet>
@@ -417,12 +475,12 @@ export const ProfileScreen = () => {
              }}>
                 <View className="items-center w-full">
                     <MascotImage source={MASCOTS.MIRROR} className="w-40 h-40 mb-4" resizeMode="contain" />
-                    <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">How do you identify?</Text>
+                    <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">{t('profile.setup.genderTitle')}</Text>
                     <View className="flex-row flex-wrap gap-3 justify-center w-full mb-8">
                         {GENDERS.map((g) => (
                             <SelectionPill
                                 key={g}
-                                label={g}
+                                label={renderGenderLabel(g)}
                                 selected={tempGender === g}
                                 onPress={() => {
                                     setTempGender(g);
@@ -432,7 +490,7 @@ export const ProfileScreen = () => {
                         ))}
                     </View>
                     <Button 
-                        label="Save Gender"
+                        label={t('common.save')}
                         onPress={() => {
                             updateProfile({ gender: tempGender });
                             setIsGenderSheetVisible(false);
@@ -446,7 +504,7 @@ export const ProfileScreen = () => {
                         }} 
                         className="mt-4 py-2"
                     >
-                         <Text className="text-muted font-q-bold text-base">Cancel</Text>
+                         <Text className="text-muted font-q-bold text-base">{t('common.cancel')}</Text>
                     </TouchableOpacity>
                 </View>
             </BottomSheet>
@@ -457,17 +515,17 @@ export const ProfileScreen = () => {
              }}>
                 <View className="items-center w-full">
                      <MascotImage source={MASCOTS.GLOBE} className="w-40 h-40 mb-4" resizeMode="contain" />
-                     <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">Where are you from?</Text>
+                     <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">{t('profile.setup.locationTitle')}</Text>
                     <TextInput
                         className="w-full bg-card px-6 py-5 rounded-[24px] font-q-bold text-lg text-text border-2 border-inactive/10 mb-8"
-                        placeholder="Country"
+                        placeholder={t('profile.sections.location')}
                         placeholderTextColor="#CBD5E1"
                         onChangeText={setTempCountry}
                         value={tempCountry}
                         autoFocus={true}
                     />
                     <Button 
-                        label="Save Location"
+                        label={t('common.save')}
                         onPress={() => {
                             updateProfile({ country: tempCountry });
                             setIsCountrySheetVisible(false);
@@ -482,7 +540,7 @@ export const ProfileScreen = () => {
                         }} 
                         className="mt-4 py-2 active:scale-95 transition-transform"
                     >
-                         <Text className="text-muted font-q-bold text-base">Cancel</Text>
+                         <Text className="text-muted font-q-bold text-base">{t('common.cancel')}</Text>
                     </TouchableOpacity>
                 </View>
             </BottomSheet>
@@ -497,14 +555,14 @@ export const ProfileScreen = () => {
                 <View className="items-center w-full">
                     <MascotImage source={MASCOTS.ZEN} className="w-40 h-40 mb-4" resizeMode="contain" />
                     <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">
-                        What are your main goals for using Cloudy?
+                        {t('profile.setup.goalsTitle')}
                     </Text>
                     
                     <View className="flex-row flex-wrap gap-3 justify-center w-full mb-8">
                         {GOALS.map((goal) => (
                             <SelectionPill
                                 key={goal}
-                                label={goal}
+                                label={renderGoalLabel(goal)}
                                 selected={selectedGoals.includes(goal)}
                                 onPress={() => {
                                     haptics.selection();
@@ -520,7 +578,7 @@ export const ProfileScreen = () => {
                         ))}
                     </View>
                     <Button 
-                        label="Save Goals"
+                        label={t('common.save')}
                         onPress={() => {
                             updateProfile({ goals: selectedGoals });
                             setIsGoalSheetVisible(false);
@@ -535,7 +593,7 @@ export const ProfileScreen = () => {
                         }} 
                         className="mt-4 py-2 active:scale-95 transition-transform"
                     >
-                         <Text className="text-muted font-q-bold text-base">Cancel</Text>
+                         <Text className="text-muted font-q-bold text-base">{t('common.cancel')}</Text>
                     </TouchableOpacity>
                 </View>
             </BottomSheet>
@@ -550,14 +608,14 @@ export const ProfileScreen = () => {
                 <View className="items-center w-full">
                     <MascotImage source={MASCOTS.SAD} className="w-40 h-40 mb-4" resizeMode="contain" />
                     <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">
-                        What's been weighing on you lately?
+                        {t('profile.setup.strugglesTitle')}
                     </Text>
                     
                     <View className="flex-row flex-wrap gap-3 justify-center w-full mb-8">
                         {STRUGGLES.map((struggle) => (
                             <SelectionPill
                                 key={struggle}
-                                label={struggle}
+                                label={renderStruggleLabel(struggle)}
                                 selected={selectedStruggles.includes(struggle)}
                                 onPress={() => {
                                     haptics.selection();
@@ -571,7 +629,7 @@ export const ProfileScreen = () => {
                         ))}
                     </View>
                     <Button 
-                        label="Save Struggles"
+                        label={t('common.save')}
                         onPress={() => {
                             updateProfile({ struggles: selectedStruggles });
                             setIsStruggleSheetVisible(false);
@@ -586,7 +644,7 @@ export const ProfileScreen = () => {
                         }} 
                         className="mt-4 py-2 active:scale-95 transition-transform"
                     >
-                         <Text className="text-muted font-q-bold text-base">Cancel</Text>
+                         <Text className="text-muted font-q-bold text-base">{t('common.cancel')}</Text>
                     </TouchableOpacity>
                 </View>
             </BottomSheet>
@@ -600,7 +658,7 @@ export const ProfileScreen = () => {
             >
                 <View className="items-center w-full">
                     <MascotImage source={MASCOTS.HUG} className="w-40 h-40 mb-4" resizeMode="contain" />
-                    <Text className="text-2xl font-q-bold text-text text-center mb-1 px-4">Choose your companion</Text>
+                    <Text className="text-2xl font-q-bold text-text text-center mb-1 px-4">{t('profile.setup.mascotTitle')}</Text>
                     
                     <TouchableOpacity 
                         onPress={() => {
@@ -611,7 +669,7 @@ export const ProfileScreen = () => {
                         className="mb-8"
                     >
                          <View style={{ borderBottomWidth: 1, borderBottomColor: currentAccent.hex, paddingBottom: 2 }}>
-                             <Text className="font-q-bold text-sm uppercase tracking-widest" style={{ color: currentAccent.hex }}>See Progress</Text>
+                             <Text className="font-q-bold text-sm uppercase tracking-widest" style={{ color: currentAccent.hex }}>{t('profile.setup.seeProgress')}</Text>
                          </View>
                     </TouchableOpacity>
 
@@ -627,12 +685,12 @@ export const ProfileScreen = () => {
                                         return (
                                             <MascotCard 
                                                 key={companion.id}
-                                                name={companion.name}
+                                                name={t(`companions.${companion.id}.name`)}
                                                 asset={companion.asset}
                                                 isSelected={tempMascotName === companion.name}
                                                 isLocked={isLocked}
                                                 requiredStreak={companion.requiredStreak}
-                                                unlockPerk={companion.unlockPerk}
+                                                unlockPerk={t(`companions.${companion.id}.perk`)}
                                                 onPress={() => {
                                                     if (!isLocked) {
                                                         setTempMascotName(companion.name);
@@ -648,7 +706,7 @@ export const ProfileScreen = () => {
                                     <View className="w-full mt-4">
                                         {hasAnyUnlocked && (
                                             <Button 
-                                                label="Save"
+                                                label={t('common.save')}
                                                 onPress={() => {
                                                     const selected = COMPANIONS.find(c => c.name === tempMascotName);
                                                     if (selected && effectiveStreak < selected.requiredStreak) {
@@ -669,7 +727,7 @@ export const ProfileScreen = () => {
                                             }}
                                             className="mt-4 py-2 items-center active:scale-95 transition-transform"
                                         >
-                                            <Text className="text-muted font-q-bold text-base">Maybe later</Text>
+                                            <Text className="text-muted font-q-bold text-base">{t('common.maybeLater')}</Text>
                                         </TouchableOpacity>
                                     </View>
                                 </>
@@ -699,14 +757,14 @@ export const ProfileScreen = () => {
                 {onboardingStep === 0 ? (
                     <View className="items-center w-full">
                         <MascotImage source={MASCOTS.THINK} className="w-40 h-40 mb-4" resizeMode="contain" />
-                        <Text className="text-xl font-q-bold text-center mb-1" style={{ color: currentAccent.hex }}>A fresh start!</Text>
+                        <Text className="text-xl font-q-bold text-center mb-1" style={{ color: currentAccent.hex }}>{t('profile.setup.aFreshStart')}</Text>
                         <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">
-                            What should Cloudy call you?
+                            {t('profile.setup.nameTitle')}
                         </Text>
                         
                         <TextInput
                             className="w-full bg-card px-6 py-5 rounded-[24px] font-q-bold text-lg text-text border-2 border-secondary mb-8"
-                            placeholder="Your Name"
+                            placeholder={t('home.setup.namePlaceholder')}
                             placeholderTextColor={isDarkMode ? "#64748B" : "#CBD5E1"}
                             onChangeText={setTempName}
                             value={tempName}
@@ -715,7 +773,7 @@ export const ProfileScreen = () => {
                         />
 
                         <Button 
-                            label="Continue"
+                            label={t('common.continue')}
                             loading={isSavingOnboarding}
                             onPress={async () => {
                                 if (!tempName.trim()) return;
@@ -739,17 +797,17 @@ export const ProfileScreen = () => {
                             }}
                             className="mt-4 py-2 active:scale-95 transition-transform"
                         >
-                            <Text className="text-muted font-q-bold text-base">Maybe later</Text>
+                            <Text className="text-muted font-q-bold text-base">{t('common.maybeLater')}</Text>
                         </TouchableOpacity>
                     </View>
                 ) : (
                     <View className="items-center w-full">
                         <MascotImage source={MASCOTS.WATCH} className="w-40 h-40 mb-4" resizeMode="contain" />
                         <Text className="text-xl font-q-bold text-center mb-1 px-4" style={{ color: currentAccent.hex }}>
-                            {tempName ? `Nice to meet you, ${tempName}!` : "Nice to meet you!"}
+                            {tempName ? t('profile.setup.niceToMeetYouWithName', { name: tempName }) : t('profile.setup.niceToMeetYou')}
                         </Text>
                         <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">
-                            When should I remind you to reflect?
+                            {t('home.setup.reminderTitle')}
                         </Text>
 
                         <View className="w-full mb-8">
@@ -757,7 +815,7 @@ export const ProfileScreen = () => {
                         </View>
 
                         <Button 
-                            label="Set Reminder"
+                            label={t('home.setup.setReminder')}
                             loading={isSavingOnboarding}
                             onPress={async () => {
                                 setIsSavingOnboarding(true);
@@ -794,7 +852,7 @@ export const ProfileScreen = () => {
                             }}
                             className="mt-4 py-2 active:scale-95 transition-transform"
                         >
-                            <Text className="text-muted font-q-bold text-base">No thanks, I'll remember</Text>
+                            <Text className="text-muted font-q-bold text-base">{t('home.setup.noThanks')}</Text>
                         </TouchableOpacity>
                     </View>
                 )}

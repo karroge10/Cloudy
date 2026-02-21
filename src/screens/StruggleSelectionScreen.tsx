@@ -10,12 +10,31 @@ import { Layout } from '../components/Layout';
 import { STRUGGLES } from '../constants/Struggles';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { useAccent } from '../context/AccentContext';
+import { useTranslation } from 'react-i18next';
 
 export const StruggleSelectionScreen = () => {
     const navigation = useNavigation();
     const { height } = useWindowDimensions();
     const { trackEvent } = useAnalytics();
     const { currentAccent } = useAccent();
+    const { t } = useTranslation();
+
+    const renderStruggleLabel = (s: string) => {
+        switch (s) {
+            case 'Anxiety': return t('profile.struggles.anxiety');
+            case 'Stress': return t('profile.struggles.stress');
+            case 'Sleep': return t('profile.struggles.sleep');
+            case 'Focus': return t('profile.struggles.focus');
+            case 'Motivation': return t('profile.struggles.motivation');
+            case 'N/A': return t('profile.struggles.na');
+            case 'Overthinking': return t('profile.struggles.overthinking');
+            case 'Low Energy': return t('profile.struggles.lowEnergy');
+            case 'Sleep Issues': return t('profile.struggles.sleepIssues');
+            case 'Lack of Focus': return t('profile.struggles.lackOfFocus');
+            default: return s;
+        }
+    };
+
     const [selected, setSelected] = useState<string[]>([]);
 
     const mascotSize = height < 750 ? 'w-48 h-48' : height < 850 ? 'w-64 h-64' : 'w-72 h-72';
@@ -46,7 +65,7 @@ export const StruggleSelectionScreen = () => {
                     {/* Main Content Area */}
                     <View className="items-center mb-6">
                         <Text className="text-4xl font-q-bold text-text text-center mb-6 pt-4 leading-tight">
-                            What's been weighing on you lately?
+                            {t('profile.setup.strugglesTitle')}
                         </Text>
                         <MascotImage
                             source={MASCOTS.SAD}
@@ -61,7 +80,7 @@ export const StruggleSelectionScreen = () => {
                         {STRUGGLES.map((struggle) => (
                             <SelectionPill
                                 key={struggle}
-                                label={struggle}
+                                label={renderStruggleLabel(struggle)}
                                 selected={selected.includes(struggle)}
                                 onPress={() => toggleSelection(struggle)}
                             />
@@ -80,7 +99,7 @@ export const StruggleSelectionScreen = () => {
                     </View>
 
                     <Button
-                        label="Continue"
+                        label={t('common.continue')}
                         onPress={() => {
                             trackEvent('onboarding_struggles_selected', { struggles: selected });
                             (navigation.navigate as any)('GoalSelection', { struggles: selected });

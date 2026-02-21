@@ -9,12 +9,14 @@ import { AppFooter } from '../components/AppFooter';
 import { useAccent } from '../context/AccentContext';
 import { Linking } from 'react-native';
 import { LINKS } from '../constants/Links';
+import { useTranslation } from 'react-i18next';
 
 export const LegalScreen = () => {
     const navigation = useNavigation();
     const route = useRoute<any>();
     const [activeTab, setActiveTab] = useState<'privacy' | 'terms'>(route.params?.type || 'privacy');
     const { currentAccent } = useAccent();
+    const { t } = useTranslation();
 
     const privacyPolicy = `
 Last Updated: February 14, 2026
@@ -66,7 +68,7 @@ Cloudy is provided "as is" without any warranties. We are not liable for any dam
     return (
         <Layout noScroll={true} useSafePadding={false} edges={['top', 'left', 'right']}>
             <View className="px-6 pt-4">
-                <TopNav title="Legal" onBack={() => navigation.goBack()} />
+                <TopNav title={t('settings.privacySecurity')} onBack={() => navigation.goBack()} />
             </View>
 
             <View className="flex-row px-6 mt-4 gap-4">
@@ -75,14 +77,14 @@ Cloudy is provided "as is" without any warranties. We are not liable for any dam
                     className={`flex-1 py-3 rounded-2xl items-center ${activeTab === 'privacy' ? '' : 'bg-card border border-inactive/10'}`}
                     style={activeTab === 'privacy' ? { backgroundColor: currentAccent.hex } : {}}
                 >
-                    <Text className={`font-q-bold ${activeTab === 'privacy' ? 'text-white' : 'text-muted'}`}>Privacy Policy</Text>
+                    <Text className={`font-q-bold ${activeTab === 'privacy' ? 'text-white' : 'text-muted'}`}>{t('common.privacyPolicy')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
                     onPress={() => { haptics.selection(); setActiveTab('terms'); }}
                     className={`flex-1 py-3 rounded-2xl items-center ${activeTab === 'terms' ? '' : 'bg-card border border-inactive/10'}`}
                     style={activeTab === 'terms' ? { backgroundColor: currentAccent.hex } : {}}
                 >
-                    <Text className={`font-q-bold ${activeTab === 'terms' ? 'text-white' : 'text-muted'}`}>Terms of Service</Text>
+                    <Text className={`font-q-bold ${activeTab === 'terms' ? 'text-white' : 'text-muted'}`}>{t('common.termsOfService')}</Text>
                 </TouchableOpacity>
             </View>
 
@@ -103,7 +105,7 @@ Cloudy is provided "as is" without any warranties. We are not liable for any dam
                 >
                     <Text className="text-muted font-q-medium text-xs text-center">
                         Full policies and terms are also available at{"\n"}
-                        <Text style={{ color: currentAccent.hex }} className="font-q-bold">cloudyapp.vercel.app</Text>
+                        <Text style={{ color: currentAccent.hex }} className="font-q-bold">{t('common.ourWebsite')}</Text>
                     </Text>
                 </TouchableOpacity>
 

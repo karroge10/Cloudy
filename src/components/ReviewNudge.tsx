@@ -9,6 +9,7 @@ import { haptics } from '../utils/haptics';
 import { useAnalytics } from '../hooks/useAnalytics';
 
 import { useAccent } from '../context/AccentContext';
+import { useTranslation } from 'react-i18next';
 
 interface ReviewNudgeProps {
     visible: boolean;
@@ -18,6 +19,7 @@ interface ReviewNudgeProps {
 export const ReviewNudge = ({ visible, onClose }: ReviewNudgeProps) => {
     const { trackEvent } = useAnalytics();
     const { currentAccent } = useAccent();
+    const { t } = useTranslation();
 
     const handleRateNow = async () => {
         haptics.success();
@@ -45,16 +47,16 @@ export const ReviewNudge = ({ visible, onClose }: ReviewNudgeProps) => {
         <BottomSheet visible={visible} onClose={onClose}>
             <View className="items-center w-full">
                 <MascotImage source={MASCOTS.STAR} className="w-40 h-40 mb-4" resizeMode="contain" />
-                <Text className="text-xl font-q-bold text-center mb-1" style={{ color: currentAccent.hex }}>Moment of Delight ✨</Text>
+                <Text className="text-xl font-q-bold text-center mb-1" style={{ color: currentAccent.hex }}>{t('review.delight')}</Text>
                 <Text className="text-2xl font-q-bold text-text text-center mb-4 px-6">
-                    Are you enjoying your journey with Cloudy?
+                    {t('review.enjoyingTitle')}
                 </Text>
                 <Text className="text-base font-q-medium text-muted text-center mb-8 px-6 leading-5">
-                    Your 3-day streak is amazing! Sharing a review helps other people find their peace too.
+                    {t('review.enjoyingMessage')}
                 </Text>
 
                 <Button 
-                    label="Love it! Rate Now"
+                    label={t('review.rateButton')}
                     onPress={handleRateNow}
                 />
 
@@ -62,7 +64,7 @@ export const ReviewNudge = ({ visible, onClose }: ReviewNudgeProps) => {
                     onPress={handleLater}
                     className="mt-4 py-2 active:scale-95 transition-transform"
                 >
-                    <Text className="text-muted font-q-bold text-base">Maybe later</Text>
+                    <Text className="text-muted font-q-bold text-base">{t('common.maybeLater')}</Text>
                 </TouchableOpacity>
             </View>
         </BottomSheet>

@@ -30,16 +30,8 @@ import Animated, {
 
 const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
 
-const GENERIC_TITLES = [
-    "A moment from your journey",
-    "A thought to remember",
-    "A piece of your story",
-    "Reflecting on the day",
-    "A mindful capture",
-    "Your journey in words",
-    "A thought to keep",
-    "Personal reflection"
-];
+import { useTranslation } from 'react-i18next';
+import i18n from '../lib/i18n';
 
 const MemoryItem = React.memo(({ 
     item, 
@@ -60,6 +52,7 @@ const MemoryItem = React.memo(({
     isDarkMode: boolean,
     accentColor: string
 }) => {
+    const { t } = useTranslation();
     const now = new Date();
     const entryDate = new Date(item.created_at);
     const diffInHours = (now.getTime() - entryDate.getTime()) / (1000 * 60 * 60);
@@ -100,7 +93,7 @@ const MemoryItem = React.memo(({
                         <View className="flex-row items-center px-4 py-2 rounded-full" style={{ backgroundColor: `${accentColor}1A` }}>
                             <Ionicons name="time-outline" size={16} color={accentColor} />
                             <Text className="font-q-semibold ml-2 text-sm" style={{ color: accentColor }}>
-                                {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                                {new Date(item.created_at).toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit', hour12: false })}
                             </Text>
                         </View>
                         <View className="flex-row items-center space-x-1">
@@ -152,6 +145,7 @@ export const MemoryScreen = () => {
     const CARD_WIDTH = SCREEN_WIDTH - 48;
     const { isDarkMode } = useTheme();
     const { currentAccent } = useAccent();
+    const { t } = useTranslation();
 
     const getNavigation = () => {
         try {
@@ -211,14 +205,17 @@ export const MemoryScreen = () => {
     }, [initialIndex, journalEntries.length]);
 
     const getPromptForEntry = useCallback((item: JournalEntry) => {
+        const genericTitles = t('common.genericTitles', { returnObjects: true }) as string[];
+        if (!Array.isArray(genericTitles) || genericTitles.length === 0) return '';
+        
         let hash = 0;
         for (let i = 0; i < item.id.length; i++) {
             hash = ((hash << 5) - hash) + item.id.charCodeAt(i);
             hash |= 0;
         }
-        const index = Math.abs(hash) % GENERIC_TITLES.length;
-        return GENERIC_TITLES[index] + '...';
-    }, []);
+        const index = Math.abs(hash) % genericTitles.length;
+        return genericTitles[index] + '...';
+    }, [t]);
 
     const scrollX = useSharedValue(0);
     const handleScroll = useAnimatedScrollHandler((event) => {
@@ -293,7 +290,7 @@ export const MemoryScreen = () => {
     const handleShare = async (item: JournalEntry) => {
         haptics.selection();
         try {
-            const dateStr = new Date(item.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+            const dateStr = new Date(item.created_at).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric', year: 'numeric' });
             await Share.share({
                 message: `Journal Entry (${dateStr}): "${item.text}"`,
             });
@@ -319,18 +316,18 @@ export const MemoryScreen = () => {
         return (
             <Layout useSafePadding={false}>
                 <View className="px-6 pt-4">
-                    <TopNav title="Journal" onBack={() => navigation.goBack()} />
+                    <TopNav title={t('common.journal')} onBack={() => navigation.goBack()} />
                 </View>
                 <View className="flex-1 items-center justify-center p-12">
                      <MascotImage source={MASCOTS.SAD} className="w-48 h-48 mb-6" resizeMode="contain" />
-                     <Text className="text-lg font-q-bold text-muted text-center">No memories found.</Text>
+                     <Text className="text-lg font-q-bold text-muted text-center">{t('common.noMemoriesFound')}</Text>
                 </View>
             </Layout>
         );
     }
 
     const activeEntry = journalEntries[currentIndex] || journalEntries[0];
-    const displayDate = new Date(activeEntry.created_at).toLocaleDateString([], { 
+    const displayDate = new Date(activeEntry.created_at).toLocaleDateString(i18n.language, { 
         month: 'short', day: 'numeric', year: 'numeric' 
     });
 
@@ -340,7 +337,7 @@ export const MemoryScreen = () => {
                 <View className="px-6 pt-4">
                     <TopNav 
                         title={displayDate}
-                        subtitle={isMixMode ? "CHEF'S SPECIAL" : "MEMORY INSPECTOR"}
+                        subtitle={isMixMode ? t('journey.chefsSpecial') : t('journey.memoryInspector')}
                         rightElement={
                             <TouchableOpacity 
                                 onPress={() => handleShare(activeEntry)} 
@@ -408,7 +405,7 @@ export const MemoryScreen = () => {
 
                     <View className="items-center">
                         <Text className="text-text font-q-bold text-base">{currentIndex + 1} / {totalCount}</Text>
-                        <Text className="text-muted font-q-medium text-[10px] uppercase tracking-widest mt-1">Swipe to explore</Text>
+                        <Text className="text-muted font-q-medium text-[10px] uppercase tracking-widest mt-1">{t('common.swipeToExplore')}</Text>
                     </View>
 
                     <TouchableOpacity 
@@ -428,11 +425,11 @@ export const MemoryScreen = () => {
             <BottomSheet visible={!!deletingId} onClose={() => setDeletingId(null)}>
                 <View className="items-center w-full">
                     <Image source={MASCOTS.SAD} className="w-32 h-32 mb-4" />
-                    <Text className="text-2xl font-q-bold text-text text-center mb-4">Delete this memory?</Text>
-                    <Text className="text-base font-q-medium text-muted text-center mb-8 px-4 leading-6">This action cannot be undone. Are you sure?</Text>
-                    <Button label="Yes, Delete It" onPress={confirmDelete} variant="primary" />
+                    <Text className="text-2xl font-q-bold text-text text-center mb-4">{t('common.deleteMemoryTitle')}</Text>
+                    <Text className="text-base font-q-medium text-muted text-center mb-8 px-4 leading-6">{t('common.deleteMemoryDesc')}</Text>
+                    <Button label={t('journey.confirmDelete')} onPress={confirmDelete} variant="primary" />
                     <TouchableOpacity onPress={() => setDeletingId(null)} className="mt-4">
-                        <Text className="text-muted font-q-bold">No, Keep It</Text>
+                        <Text className="text-muted font-q-bold">{t('journey.cancelDelete')}</Text>
                     </TouchableOpacity>
                 </View>
             </BottomSheet>

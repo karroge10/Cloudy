@@ -25,6 +25,24 @@ import { useAccent, ACCENT_COLORS } from '../context/AccentContext';
 import { useAppLogout } from '../hooks/useAppLogout';
 import { Linking } from 'react-native';
 import { LINKS } from '../constants/Links';
+import { useTranslation } from 'react-i18next';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import i18n from '../lib/i18n';
+
+const LANGUAGES = [
+    { label: 'English', code: 'en' },
+    { label: 'Español', code: 'es' },
+    { label: 'Português', code: 'pt' },
+    { label: 'Français', code: 'fr' },
+    { label: 'Deutsch', code: 'de' },
+    { label: 'Italiano', code: 'it' },
+    { label: 'Русский', code: 'ru' },
+    { label: 'हिन्दी', code: 'hi' },
+    { label: '简体中文', code: 'zh' },
+    { label: '日本語', code: 'ja' },
+    { label: '한국어', code: 'ko' },
+    { label: 'Bahasa Indonesia', code: 'id' },
+];
 
 export const SettingsScreen = () => {
     const navigation = useNavigation<any>();
@@ -33,6 +51,9 @@ export const SettingsScreen = () => {
     const { trackEvent } = useAnalytics();
     const { isDarkMode, toggleTheme } = useTheme();
     const { currentAccent, setAccent } = useAccent();
+    const { t } = useTranslation();
+
+    const [isLanguageSheetVisible, setIsLanguageSheetVisible] = useState(false);
 
     const [isFeedbackSheetVisible, setIsFeedbackSheetVisible] = useState(false);
     const [isDeleteSheetVisible, setIsDeleteSheetVisible] = useState(false);
@@ -133,19 +154,19 @@ export const SettingsScreen = () => {
             setIsDeleteSheetVisible(false);
 
             showAlert(
-                'Account Deleted',
-                'Your data has been removed. We hope to see you again someday.',
-                [{ text: 'Goodbye' }],
+                t('settings.accountDeletedTitle'),
+                t('settings.accountDeletedDesc'),
+                [{ text: t('common.goodbye') }],
                 'success'
             );
         } catch (error: any) {
-            showAlert('Error', 'Could not delete account. Please try logging out instead.', [{ text: 'Okay' }], 'error');
+            showAlert(t('settings.deleteAccountErrorTitle'), t('settings.deleteAccountError'), [{ text: t('common.okay') }], 'error');
         }
     };
 
     const handleAddPassword = async () => {
         if (!newPassword || newPassword.length < 6) {
-            showAlert('Wait', 'Password must be at least 6 characters.', [{ text: 'Okay' }], 'error');
+            showAlert(t('settings.wait'), t('settings.passwordLengthError'), [{ text: t('common.okay') }], 'error');
             return;
         }
 
@@ -161,12 +182,12 @@ export const SettingsScreen = () => {
             setIsPasswordSheetVisible(false);
             setNewPassword('');
             haptics.success();
-            showAlert('Success', 'Password added! You can now log in with either Google or email.', [{ text: 'Great' }], 'success');
+            showAlert(t('settings.passwordAddedTitle'), t('settings.passwordAddedDesc'), [{ text: t('common.great') }], 'success');
             trackEvent('user_added_password');
 
         } catch (error: any) {
             const { title, message } = getFriendlyAuthErrorMessage(error);
-            showAlert(title, message, [{ text: 'Okay' }], 'error');
+            showAlert(title, message, [{ text: t('common.okay') }], 'error');
         } finally {
             setPasswordLoading(false);
         }
@@ -175,7 +196,7 @@ export const SettingsScreen = () => {
     return (
         <Layout noScroll={true} useSafePadding={false}>
             <View className="px-6 pt-4">
-                <TopNav title="Settings" showBack={true} />
+                <TopNav title={t('settings.title')} showBack={true} />
             </View>
 
             <ScrollView
@@ -189,7 +210,7 @@ export const SettingsScreen = () => {
                     {/* Daily Reminder */}
                     <View className="flex-row items-center justify-between py-4">
                         <View className="flex-1">
-                            <Text className="text-lg font-q-bold text-text">Daily Reminder</Text>
+                            <Text className="text-lg font-q-bold text-text">{t('settings.dailyReminder')}</Text>
                             <TouchableOpacity onPress={() => { haptics.selection(); setIsTimeSheetVisible(true); }}>
                                 <Text className="font-q-bold text-base mt-1" style={{ color: currentAccent.hex }}>{displayReminderTime}</Text>
                             </TouchableOpacity>
@@ -215,8 +236,8 @@ export const SettingsScreen = () => {
                     {/* Haptic Feedback */}
                     <View className="flex-row items-center justify-between py-4">
                         <View className="flex-1">
-                            <Text className="text-lg font-q-bold text-text">Haptic Feedback</Text>
-                            <Text className="text-muted font-q-medium text-xs">Soft vibrations for interactions</Text>
+                            <Text className="text-lg font-q-bold text-text">{t('settings.hapticFeedback')}</Text>
+                            <Text className="text-muted font-q-medium text-xs">{t('settings.hapticDescription')}</Text>
                         </View>
                         <Switch
                             trackColor={{ false: '#E0E0E0', true: currentAccent.hex }}
@@ -240,10 +261,10 @@ export const SettingsScreen = () => {
                                 className="active:opacity-70"
                             >
                                 <View className="flex-row items-center">
-                                    <Text className="text-lg font-q-bold text-text">Cloudy Night Theme</Text>
+                                    <Text className="text-lg font-q-bold text-text">{t('settings.nightTheme')}</Text>
                                 </View>
                                 <Text className="text-muted font-q-medium text-xs mt-0.5">
-                                    Switch to a calming dark palette
+                                    {t('settings.nightDescription')}
                                 </Text>
                             </TouchableOpacity>
                         </View>
@@ -268,14 +289,14 @@ export const SettingsScreen = () => {
                                 setIsAccentSheetVisible(true);
                             } else {
                                 haptics.error();
-                                showAlert('Feature Locked', 'Reach a 60-day streak to unlock accent colors!', [{ text: 'Okay' }], 'info');
+                                showAlert(t('settings.accentColorsLockedTitle'), t('settings.accentColorsLockedDesc'), [{ text: t('common.okay') }], 'info');
                             }
                         }}
                         className={`flex-row items-center justify-between py-4 ${profile?.max_streak && profile.max_streak >= 60 ? '' : 'opacity-60'}`}
                     >
                         <View>
-                            <Text className="text-lg font-q-bold text-text">Accent Color</Text>
-                            <Text className="text-muted font-q-medium text-xs">Personalize your app's primary color</Text>
+                            <Text className="text-lg font-q-bold text-text">{t('settings.accentColor')}</Text>
+                            <Text className="text-muted font-q-medium text-xs">{t('settings.accentDescription')}</Text>
                         </View>
                         {profile?.max_streak && profile.max_streak >= 60 ? (
                             <View className="w-6 h-6 rounded-full border-2 border-white/20" style={{ backgroundColor: currentAccent.hex }} />
@@ -289,8 +310,8 @@ export const SettingsScreen = () => {
                     {/* Biometric Lock */}
                     <View className="flex-row items-center justify-between py-4">
                         <View className="flex-1">
-                            <Text className="text-lg font-q-bold text-text">Lock my Cloud</Text>
-                            <Text className="text-muted font-q-medium text-xs">Biometric protection for your diary</Text>
+                            <Text className="text-lg font-q-bold text-text">{t('settings.lockCloud')}</Text>
+                            <Text className="text-muted font-q-medium text-xs">{t('settings.lockDescription')}</Text>
                         </View>
                         <Switch
                             trackColor={{ false: '#E0E0E0', true: currentAccent.hex }}
@@ -300,15 +321,15 @@ export const SettingsScreen = () => {
                                 
                                 if (val && !bioSupported) {
                                     showAlert(
-                                        'Not Supported',
-                                        'Your device does not support biometrics or none are enrolled.',
-                                        [{ text: 'Okay' }],
+                                        t('settings.notSupported'),
+                                        t('settings.bioNotSupportedDesc'),
+                                        [{ text: t('common.okay') }],
                                         'info'
                                     );
                                     return;
                                 }
 
-                                const prompt = val ? 'Authenticate to Enable Lock' : 'Authenticate to Disable Lock';
+                                const prompt = val ? t('settings.authToEnable') : t('settings.authToDisable');
                                 const authenticated = await security.authenticate(prompt);
 
                                 if (authenticated) {
@@ -324,14 +345,33 @@ export const SettingsScreen = () => {
 
                     <Divider />
 
+                    {/* Language Selector */}
+                    <TouchableOpacity
+                        onPress={() => { haptics.selection(); setIsLanguageSheetVisible(true); }}
+                        className="flex-row items-center justify-between py-4"
+                    >
+                        <View>
+                            <Text className="text-lg font-q-bold text-text">{t('settings.language')}</Text>
+                            <Text className="text-muted font-q-medium text-xs">{t('settings.languageDescription')}</Text>
+                        </View>
+                        <View className="flex-row items-center">
+                             <Text className="font-q-bold text-base mr-2" style={{ color: currentAccent.hex }}>
+                                {LANGUAGES.find(l => l.code === i18n.language)?.label || t('settings.english')}
+                             </Text>
+                             <Ionicons name="chevron-forward" size={16} color={isDarkMode ? "#64748B" : "#CBD5E1"} />
+                        </View>
+                    </TouchableOpacity>
+
+                    <Divider />
+
                     {/* Official Website */}
                     <TouchableOpacity
                         onPress={() => { haptics.selection(); Linking.openURL(LINKS.WEBSITE); }}
                         className="flex-row items-center justify-between py-4"
                     >
                         <View>
-                            <Text className="text-lg font-q-bold text-text">Our Home</Text>
-                            <Text className="text-muted font-q-medium text-xs">Visit cloudyapp.vercel.app</Text>
+                            <Text className="text-lg font-q-bold text-text">{t('settings.ourHome')}</Text>
+                            <Text className="text-muted font-q-medium text-xs">{t('settings.visitWebsite')}</Text>
                         </View>
                         <Ionicons name="globe-outline" size={22} color={currentAccent.hex} />
                     </TouchableOpacity>
@@ -343,7 +383,7 @@ export const SettingsScreen = () => {
                         onPress={() => { haptics.selection(); navigation.navigate('Legal', { type: 'privacy' }); }}
                         className="flex-row items-center justify-between py-4"
                     >
-                        <Text className="text-lg font-q-bold text-text">Privacy & Security</Text>
+                        <Text className="text-lg font-q-bold text-text">{t('settings.privacySecurity')}</Text>
                         <Ionicons name="lock-closed-outline" size={22} color={currentAccent.hex} />
                     </TouchableOpacity>
 
@@ -355,8 +395,8 @@ export const SettingsScreen = () => {
                         className="flex-row items-center justify-between py-4"
                     >
                         <View>
-                            <Text className="text-lg font-q-bold text-text">Cloudy Whisper</Text>
-                            <Text className="text-muted font-q-medium text-xs">Send feedback or report bugs</Text>
+                            <Text className="text-lg font-q-bold text-text">{t('settings.cloudyWhisper')}</Text>
+                            <Text className="text-muted font-q-medium text-xs">{t('settings.feedbackDescription')}</Text>
                         </View>
                         <Ionicons name="chatbubble-ellipses-outline" size={22} color={currentAccent.hex} />
                     </TouchableOpacity>
@@ -377,8 +417,8 @@ export const SettingsScreen = () => {
                                     className="flex-row items-center justify-between py-4"
                                 >
                                     <View>
-                                        <Text className="text-lg font-q-bold text-text">Add Password Login</Text>
-                                        <Text className="text-muted font-q-medium text-xs">Enable logging in with email & password</Text>
+                                        <Text className="text-lg font-q-bold text-text">{t('settings.addPassword')}</Text>
+                                        <Text className="text-muted font-q-medium text-xs">{t('settings.addPasswordDesc')}</Text>
                                     </View>
                                     <Ionicons name="key-outline" size={22} color={currentAccent.hex} />
                                 </TouchableOpacity>
@@ -395,10 +435,10 @@ export const SettingsScreen = () => {
                                 onPress={() => { haptics.selection(); navigation.navigate('SecureAccount'); }}
                                 className="flex-row items-center justify-between py-4"
                             >
-                                <View>
-                                    <Text className="text-lg font-q-bold text-text">Secure Your Journey</Text>
-                                    <Text className="text-muted font-q-medium text-xs">Create an account to save your progress</Text>
-                                </View>
+                                    <View>
+                                        <Text className="text-lg font-q-bold text-text">{t('settings.secureJourney')}</Text>
+                                        <Text className="text-muted font-q-medium text-xs">{t('settings.secureJourneyDesc')}</Text>
+                                    </View>
                                 <Ionicons name="sparkles-outline" size={22} color={currentAccent.hex} />
                             </TouchableOpacity>
                             <Divider />
@@ -410,14 +450,14 @@ export const SettingsScreen = () => {
                         onPress={() => { haptics.selection(); setIsDeleteSheetVisible(true); }}
                         className="flex-row items-center justify-between py-4"
                     >
-                        <Text className="text-lg font-q-bold text-text">Delete Account & Data</Text>
+                        <Text className="text-lg font-q-bold text-text">{t('settings.deleteAccount')}</Text>
                         <Ionicons name="trash-outline" size={22} color={currentAccent.hex} />
                     </TouchableOpacity>
                 </View>
 
                 {/* Log Out */}
                 <TouchableOpacity onPress={() => { haptics.heavy(); setIsLogoutSheetVisible(true); }} className="mt-4 items-center py-4 active:scale-95 transition-transform">
-                    <Text className="text-lg font-q-bold text-red-400/60">Log Out</Text>
+                    <Text className="text-lg font-q-bold text-red-400/60">{t('profile.logout')}</Text>
                 </TouchableOpacity>
 
                 <AppFooter />
@@ -426,14 +466,14 @@ export const SettingsScreen = () => {
             <BottomSheet visible={isTimeSheetVisible} onClose={() => { setIsTimeSheetVisible(false); resetReminderDate(); }}>
                 <View className="items-center mt-2 w-full">
                     <MascotImage source={MASCOTS.WATCH} className="w-40 h-40 mb-4" resizeMode="contain" />
-                    <Text className="text-2xl font-q-bold text-text text-center mb-6">When to remind you?</Text>
+                    <Text className="text-2xl font-q-bold text-text text-center mb-6">{t('settings.remindTimeTitle')}</Text>
 
                     <View className="w-full mb-8">
                         <TimePicker value={reminderDate} onChange={setReminderDate} />
                     </View>
 
                     <Button
-                        label="Update Time"
+                        label={t('common.updateTime')}
                         onPress={() => {
                             const h = reminderDate.getHours().toString().padStart(2, '0');
                             const m = reminderDate.getMinutes().toString().padStart(2, '0');
@@ -445,7 +485,7 @@ export const SettingsScreen = () => {
                     />
 
                     <TouchableOpacity onPress={() => { haptics.selection(); setIsTimeSheetVisible(false); resetReminderDate(); }} className="mt-4 py-2 active:scale-95 transition-transform">
-                        <Text className="text-muted font-q-bold text-base">Cancel</Text>
+                        <Text className="text-muted font-q-bold text-base">{t('common.cancel')}</Text>
                     </TouchableOpacity>
                 </View>
             </BottomSheet>
@@ -453,7 +493,7 @@ export const SettingsScreen = () => {
             <BottomSheet visible={isAccentSheetVisible} onClose={revertAccent}>
                 <View className="items-center w-full">
                     <MascotImage source={MASCOTS.HUG} className="w-40 h-40 mb-4" resizeMode="contain" />
-                    <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">Choose your vibe</Text>
+                    <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">{t('settings.chooseVibe')}</Text>
 
                     <View className="flex-row flex-wrap justify-between w-full mb-4">
                         {Object.values(ACCENT_COLORS).map((color) => {
@@ -510,7 +550,7 @@ export const SettingsScreen = () => {
 
                     <View className="w-full mt-4">
                         <Button 
-                            label="Looks Great" 
+                            label={t('common.looksGreat')} 
                             onPress={() => {
                                 haptics.success();
                                 setIsAccentSheetVisible(false);
@@ -520,7 +560,7 @@ export const SettingsScreen = () => {
                             onPress={() => { haptics.selection(); revertAccent(); }}
                             className="mt-4 py-2 items-center active:scale-95 transition-transform"
                         >
-                            <Text className="text-muted font-q-bold text-base">Maybe later</Text>
+                            <Text className="text-muted font-q-bold text-base">{t('common.maybeLater')}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -529,15 +569,15 @@ export const SettingsScreen = () => {
             <BottomSheet visible={isPasswordSheetVisible} onClose={() => setIsPasswordSheetVisible(false)}>
                 <View className="items-center w-full px-4">
                     <MascotImage source={MASCOTS.SAVE} className="w-32 h-32 mb-4" resizeMode="contain" />
-                    <Text className="text-2xl font-q-bold text-text text-center mb-2">Create Password</Text>
+                    <Text className="text-2xl font-q-bold text-text text-center mb-2">{t('settings.createPasswordTitle')}</Text>
                     <Text className="text-base font-q-medium text-muted text-center mb-6">
-                        This will allow you to log in to your account using your email and this password.
+                        {t('settings.createPasswordDesc')}
                     </Text>
 
                     <View className="w-full mb-6">
                         <TextInput
                             className="bg-card px-6 py-4 rounded-3xl font-q-bold text-lg text-text border-2 border-inactive/10 w-full"
-                            placeholder="Set a secure password"
+                            placeholder={t('settings.setPasswordPlaceholder')}
                             placeholderTextColor="#CBD5E1"
                             onChangeText={setNewPassword}
                             value={newPassword}
@@ -547,13 +587,13 @@ export const SettingsScreen = () => {
                     </View>
 
                     <Button
-                        label="Set Password"
+                        label={t('common.setPassword')}
                         onPress={handleAddPassword}
                         loading={passwordLoading}
                     />
 
                     <TouchableOpacity onPress={() => { haptics.selection(); setIsPasswordSheetVisible(false); }} className="mt-4 py-2">
-                        <Text className="text-muted font-q-bold text-base">Cancel</Text>
+                        <Text className="text-muted font-q-bold text-base">{t('common.cancel')}</Text>
                     </TouchableOpacity>
                 </View>
             </BottomSheet>
@@ -561,13 +601,13 @@ export const SettingsScreen = () => {
             <BottomSheet visible={isDeleteSheetVisible} onClose={() => setIsDeleteSheetVisible(false)}>
                 <View className="items-center w-full">
                     <MascotImage source={MASCOTS.CRY} className="w-32 h-32 mb-4" resizeMode="contain" />
-                    <Text className="text-2xl font-q-bold text-text text-center mb-4 px-6">Are you sure you want to leave?</Text>
+                    <Text className="text-2xl font-q-bold text-text text-center mb-4 px-6">{t('settings.deleteConfirmTitle')}</Text>
                     <Text className="text-lg font-q-medium text-muted text-center mb-8 px-4 leading-6">
-                        This will permanently erase all your memories and your profile. This action cannot be undone.
+                        {t('settings.deleteConfirmDesc')}
                     </Text>
 
                     <Button
-                        label="Wait, I'll stay!"
+                        label={t('settings.stayButton')}
                         onPress={() => { 
                             haptics.selection(); 
                             setIsDeleteSheetVisible(false); 
@@ -582,7 +622,7 @@ export const SettingsScreen = () => {
                         }} 
                         className="mt-4 py-2 active:scale-95 transition-transform"
                     >
-                        <Text className="text-red-400 font-q-bold text-base">Yes, Delete Everything</Text>
+                        <Text className="text-red-400 font-q-bold text-base">{t('settings.deleteEverything')}</Text>
                     </TouchableOpacity>
                 </View>
             </BottomSheet>
@@ -598,6 +638,47 @@ export const SettingsScreen = () => {
                 onClose={() => setIsFeedbackSheetVisible(false)}
             />
 
+            <BottomSheet visible={isLanguageSheetVisible} onClose={() => setIsLanguageSheetVisible(false)}>
+                <View className="items-center w-full">
+                    <MascotImage source={MASCOTS.GLOBE} className="w-40 h-40 mb-4" resizeMode="contain" />
+                    <Text className="text-2xl font-q-bold text-text text-center mb-8 px-4">{t('settings.language')}</Text>
+
+                    <ScrollView className="w-full" style={{ maxHeight: 350 }} showsVerticalScrollIndicator={false}>
+                        <View className="flex-row flex-wrap justify-between w-full mb-8">
+                            {LANGUAGES.map((lang) => (
+                                <TouchableOpacity
+                                    key={lang.code}
+                                    onPress={async () => {
+                                        haptics.selection();
+                                        await i18n.changeLanguage(lang.code);
+                                        await AsyncStorage.setItem('user-language', lang.code);
+                                        setIsLanguageSheetVisible(false);
+                                    }}
+                                    className="w-[31%] aspect-[1.2/1] items-center justify-center bg-card rounded-[24px] mb-3 p-2"
+                                    style={{
+                                        borderWidth: 2,
+                                        borderColor: i18n.language === lang.code ? currentAccent.hex : 'transparent'
+                                    }}
+                                >
+                                    <Text className={`text-sm font-q-bold text-center ${i18n.language === lang.code ? 'text-text' : 'text-muted'}`}>
+                                        {lang.label}
+                                    </Text>
+                                    {i18n.language === lang.code && (
+                                        <View className="absolute top-1 right-1">
+                                            <Ionicons name="checkmark-circle" size={14} color={currentAccent.hex} />
+                                        </View>
+                                    )}
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </ScrollView>
+
+                    <TouchableOpacity onPress={() => { haptics.selection(); setIsLanguageSheetVisible(false); }} className="py-2 active:scale-95 transition-transform">
+                        <Text className="text-muted font-q-bold text-base">{t('common.cancel')}</Text>
+                    </TouchableOpacity>
+                </View>
+            </BottomSheet>
+
             <Modal visible={isHookLoggingOut} transparent={true} animationType="fade">
                 <View className={`flex-1 justify-center items-center bg-black/40 ${isDarkMode ? 'dark' : ''}`}>
                     <View className="bg-card p-10 rounded-[40px] items-center shadow-2xl mx-10">
@@ -606,8 +687,8 @@ export const SettingsScreen = () => {
                             className="w-40 h-40 mb-2" 
                             resizeMode="contain" 
                         />
-                        <Text className="text-2xl font-q-bold text-text text-center">See you soon!</Text>
-                        <Text className="text-base font-q-medium text-muted mt-2 text-center px-4">Logging out...</Text>
+                        <Text className="text-2xl font-q-bold text-text text-center">{t('settings.logoutTitle')}</Text>
+                        <Text className="text-base font-q-medium text-muted mt-2 text-center px-4">{t('settings.loggingOut')}</Text>
                         <View className="mt-6">
                             <ActivityIndicator size="small" color={currentAccent.hex} />
                         </View>

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { haptics } from '../utils/haptics';
 import { useTheme } from '../context/ThemeContext';
 import { useAccent } from '../context/AccentContext';
+import { useTranslation } from 'react-i18next';
 
 interface CalendarViewProps {
     markedDates: Set<string>; // YYYY-MM-DD
@@ -14,6 +15,7 @@ interface CalendarViewProps {
 export const CalendarView = ({ markedDates, onDateSelect, selectedDate }: CalendarViewProps) => {
     const { isDarkMode } = useTheme();
     const { currentAccent } = useAccent();
+    const { t } = useTranslation();
     const [currentMonth, setCurrentMonth] = useState(() => {
         if (selectedDate) {
             const [year, month, day] = selectedDate.split('-').map(Number);
@@ -37,7 +39,7 @@ export const CalendarView = ({ markedDates, onDateSelect, selectedDate }: Calend
     }, [currentMonth]);
 
     const firstDayOfMonth = daysInMonth[0].getDay(); // 0 = Sunday
-    const monthLabel = currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    const monthLabel = currentMonth.toLocaleDateString(t('common.locale_code') === 'en' ? 'en-US' : 'ru-RU', { month: 'long', year: 'numeric' });
 
     // ... handlePrevMonth, handleNextMonth ...
 
@@ -150,7 +152,7 @@ export const CalendarView = ({ markedDates, onDateSelect, selectedDate }: Calend
 
             {/* Week Days */}
             <View className="flex-row mb-2">
-                {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+                {(t('calendar.weekdays.short', { returnObjects: true }) as string[]).map(day => (
                     <View key={day} className="flex-1 items-center justify-center">
                         <Text className="font-q-bold text-xs text-muted/60 uppercase">{day}</Text>
                     </View>

@@ -11,6 +11,8 @@ import { useTheme } from '../context/ThemeContext';
 
 import { useAccent } from '../context/AccentContext';
 
+import { useTranslation } from 'react-i18next';
+
 interface StreakGoalProps {
     streak: number;
     maxStreak?: number;
@@ -22,6 +24,7 @@ interface StreakGoalProps {
 export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, maxStreak = 0, className, onPress, isLoading }) => {
     const { isDarkMode } = useTheme();
     const { currentAccent } = useAccent();
+    const { t } = useTranslation();
     const progressValue = useSharedValue(0);
 
     const handlePress = () => {
@@ -97,7 +100,7 @@ export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, maxStreak = 0, c
                                 {isLoading ? (
                                     <Skeleton width={60} height={10} borderRadius={2} />
                                 ) : (
-                                    'Next Milestone'
+                                    t('common.nextMilestone')
                                 )}
                             </Text>
                             <View className="h-Auto justify-center">
@@ -107,8 +110,10 @@ export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, maxStreak = 0, c
                                     <View>
                                         <Text className="text-lg font-q-bold text-text leading-6" numberOfLines={1}>
                                             {nextCompanion ? (
-                                                (maxStreak >= nextCompanion.requiredStreak) ? `Reach ${nextCompanion.name}` : `Unlock ${nextCompanion.name}`
-                                            ) : `${nextMilestoneValue} Day Streak`}
+                                                (maxStreak >= nextCompanion.requiredStreak) 
+                                                    ? t('common.reachMascot', { name: t(`companions.${nextCompanion.id}.name`) }) 
+                                                    : t('common.unlockMascot', { name: t(`companions.${nextCompanion.id}.name`) })
+                                            ) : t('common.dayStreak', { count: nextMilestoneValue })}
                                         </Text>
                                     </View>
                                 )}
@@ -124,7 +129,7 @@ export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, maxStreak = 0, c
                         ) : (
                             <>
                                 <Text className="font-q-bold text-2xl leading-7" style={{ color: currentAccent.hex }}>{daysLeft}</Text>
-                                <Text className="text-[10px] font-q-bold text-muted uppercase">days left</Text>
+                                <Text className="text-[10px] font-q-bold text-muted uppercase">{t('common.daysLeftLabel')}</Text>
                             </>
                         )}
                     </View>
@@ -148,13 +153,13 @@ export const StreakGoal: React.FC<StreakGoalProps> = ({ streak, maxStreak = 0, c
                         {isLoading ? (
                             <Skeleton width={70} height={12} borderRadius={2} />
                         ) : (
-                            <Text className="text-[11px] font-q-bold text-muted">{streak} days active</Text>
+                            <Text className="text-[11px] font-q-bold text-muted">{t('progress.daysActive', { count: streak })}</Text>
                         )}
                     </View>
                     {isLoading ? (
                         <Skeleton width={60} height={12} borderRadius={2} />
                     ) : (
-                        <Text className="text-[11px] font-q-bold text-muted">{nextMilestoneValue} days goal</Text>
+                        <Text className="text-[11px] font-q-bold text-muted">{t('progress.daysGoal', { count: nextMilestoneValue })}</Text>
                     )}
                 </View>
             </TouchableOpacity>

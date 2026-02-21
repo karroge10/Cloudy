@@ -40,8 +40,33 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
     const [isAnonymous, setIsAnonymous] = useState(false);
     const [loading, setLoading] = useState(true);
     const lastUpdateTimestamp = useRef(0);
-    const operationInFlight = useRef(false);
+    const operationInFlight = useRef<string | null>(null);
     const prevSessionRef = useRef(session);
+
+    const PROFILE_CACHE_KEY = (uid: string) => `user_profile_cache_${uid}`;
+
+    const persistProfile = useCallback(async (uid: string, data: Profile) => {
+        try {
+            await AsyncStorage.setItem(PROFILE_CACHE_KEY(uid), JSON.stringify(data));
+        } catch (e) {
+            console.error('[Profile] Cache persist error:', e);
+        }
+    }, []);
+
+    const loadCache = useCallback(async (uid: string) => {
+        try {
+            const cached = await AsyncStorage.getItem(PROFILE_CACHE_KEY(uid));
+            if (cached && (session?.user?.id === uid || (!session?.user?.id && !uid))) {
+                const parsed = JSON.parse(cached);
+                setProfile(parsed);
+                // If we have a cached profile, we can stop the skeleton loading state
+                setLoading(false);
+                console.log('[Profile] Loaded from local cache');
+            }
+        } catch (e) {
+            console.error('[Profile] Cache load error:', e);
+        }
+    }, [session?.user?.id]);
 
     const userId = session?.user?.id || null;
 
@@ -68,9 +93,10 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
             return;
         }
 
-        if (operationInFlight.current) {
+        if (operationInFlight.current === currentUserId) {
             return;
         }
+        operationInFlight.current = currentUserId;
 
         // Prevent setting loading to true here because `profile` may be stale in closure
         // and it causes visual flashes on simple updates.
@@ -146,6 +172,7 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
                     max_streak: data.max_streak || 0,
                 };
                 setProfile(mappedProfile);
+                persistProfile(currentUserId, mappedProfile); // Sync cache
                 haptics.setEnabled(mappedProfile.haptics_enabled);
                 notifications.scheduleDailyReminder(mappedProfile.reminder_time, false);
                 
@@ -205,16 +232,17 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
             }
             const duration = (Date.now() - fetchStartTime) / 1000;
             console.log(`[ProfileContext] Profile loaded in ${duration.toFixed(3)}s`);
-        } catch (error) {
-            console.error('[ProfileContext] Error loading profile:', error);
-            setProfile(null);
         } finally {
+            operationInFlight.current = null;
             setLoading(false);
         }
     }, [session?.user?.id, userId]);
 
     const updateProfile = async (updates: Partial<Profile>): Promise<boolean> => {
-        operationInFlight.current = true;
+        const activeUserId = session?.user?.id || userId;
+        if (!activeUserId) return false;
+
+        operationInFlight.current = activeUserId;
         lastUpdateTimestamp.current = Date.now();
         
         // Capture old profile for rollback
@@ -257,6 +285,11 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
             }
             if (updates.reminder_time !== undefined) {
                 notifications.scheduleDailyReminder(updates.reminder_time, true);
+            }
+
+            // Sync current profile updates to cache optimistically
+            if (profile) {
+                persistProfile(activeUserId, { ...profile, ...updates });
             }
 
             // DB Operations
@@ -319,19 +352,12 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
             if (updates.onboarding_completed) return true;
 
             // We temporarily release the lock to allow this specific fetch to proceed
-            operationInFlight.current = false;
+            operationInFlight.current = null;
             await fetchProfile();
             return true;
 
-        } catch (err) {
-            setProfile(oldProfile); // Revert state on error
-            return false;
         } finally {
-            // Ensure lock is released unless we already did it (but redundant sets are fine)
-            // But wait, if we released it at line 223, and then finally sets it false again. That is fine.
-            // If line 223 set it false, then fetchProfile ran.
-            // Then finally runs. Sets false. OK.
-            operationInFlight.current = false;
+            operationInFlight.current = null;
         }
     };
 
@@ -358,6 +384,11 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
             // Clear state immediately to show skeleton during identity transition
             setProfile(null);
             setLoading(true);
+
+            // Load from cache first
+            await loadCache(currentUserId);
+            
+            // Then fetch fresh data
             fetchProfile();
         };
 

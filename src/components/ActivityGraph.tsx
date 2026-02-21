@@ -4,6 +4,8 @@ import { useTheme } from '../context/ThemeContext';
 
 import { useAccent } from '../context/AccentContext';
 
+import { useTranslation } from 'react-i18next';
+
 interface ActivityGraphProps {
     entries?: { created_at: string }[]; // Array of objects with ISO date strings
     maxStreak?: number;
@@ -11,6 +13,7 @@ interface ActivityGraphProps {
 
 export const ActivityGraph: React.FC<ActivityGraphProps> = ({ entries, maxStreak }) => {
     const { currentAccent } = useAccent();
+    const { t } = useTranslation();
     const scrollViewRef = useRef<ScrollView>(null);
     // Calculate reliable width
     const screenWidth = Dimensions.get('window').width;
@@ -101,14 +104,14 @@ export const ActivityGraph: React.FC<ActivityGraphProps> = ({ entries, maxStreak
 
     const { isDarkMode } = useTheme();
 
-    const days = ['M', '', 'W', '', 'F', '', 'S'];
+    const days = t('calendar.weekdays.short', { returnObjects: true }) as string[];
 
     return (
         <View className="bg-card rounded-3xl p-6 shadow-xl mb-8 border border-inactive/5"
             style={{ shadowColor: isDarkMode ? '#000' : '#0000000D', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 15, elevation: 4 }}>
             <View className="flex-row justify-between items-center mb-6">
-                <Text className="text-lg font-q-bold text-text">Activity</Text>
-                <Text className="text-sm font-q-medium text-muted">Last {monthsText} months</Text>
+                <Text className="text-lg font-q-bold text-text">{t('common.activity')}</Text>
+                <Text className="text-sm font-q-medium text-muted">{t('common.lastMonths', { count: monthsText })}</Text>
             </View>
             
             <View className="flex-row">
@@ -144,17 +147,17 @@ export const ActivityGraph: React.FC<ActivityGraphProps> = ({ entries, maxStreak
 
             <View className="flex-row items-center justify-between mt-4">
                 <View className="flex-row items-center gap-2">
-                    <Text className="text-[10px] font-q-medium text-muted">Less</Text>
+                    <Text className="text-[10px] font-q-medium text-muted">{t('common.less')}</Text>
                     <View className="w-2.5 h-2.5 rounded-sm bg-inactive opacity-30" />
                     <View className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: currentAccent.hex, opacity: 0.3 }} />
                     <View className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: currentAccent.hex, opacity: 0.6 }} />
                     <View className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: currentAccent.hex }} />
-                    <Text className="text-[10px] font-q-medium text-muted">More</Text>
+                    <Text className="text-[10px] font-q-medium text-muted">{t('common.more')}</Text>
                 </View>
                 
                 {maxStreak !== undefined && (
                     <Text className="text-[10px] font-q-bold" style={{ color: currentAccent.hex }}>
-                        Max Streak: {maxStreak} Days 🔥
+                        {t('common.maxStreak')}: {t('common.daysCount', { count: maxStreak })} 🔥
                     </Text>
                 )}
             </View>

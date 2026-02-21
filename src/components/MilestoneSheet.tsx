@@ -7,13 +7,11 @@ import { haptics } from '../utils/haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useAccent } from '../context/AccentContext';
+import { useTranslation } from 'react-i18next';
 
 interface MilestoneSheetProps {
     visible: boolean;
-    mascotName: string;
-    description: string;
-    perk: string;
-    perkDescription: string;
+    companionId: string;
     mascotAsset: ImageSourcePropType;
     onClose: () => void;
     onViewProgress: () => void;
@@ -21,23 +19,23 @@ interface MilestoneSheetProps {
 
 export const MilestoneSheet: React.FC<MilestoneSheetProps> = ({ 
     visible, 
-    mascotName, 
-    description,
-    perk,
-    perkDescription,
+    companionId,
     mascotAsset,
     onClose,
     onViewProgress
 }) => {
     const { isDarkMode } = useTheme();
     const { currentAccent } = useAccent();
+    const { t } = useTranslation();
+
+    if (!companionId) return null;
 
     return (
         <BottomSheet visible={visible} onClose={onClose}>
             <View className="items-center w-full px-6 mb-4">
                 <View className="bg-card w-40 h-40 rounded-[40px] shadow-sm mb-6 items-center justify-center border border-secondary/20 relative">
                     <View className="absolute -top-3 -right-3 z-10 bg-secondary px-3 py-1 rounded-full shadow-sm">
-                        <Text className="font-q-bold text-xs uppercase tracking-widest" style={{ color: currentAccent.hex }}>Unlocked!</Text>
+                        <Text className="font-q-bold text-xs uppercase tracking-widest" style={{ color: currentAccent.hex }}>{t('common.unlocked')}</Text>
                     </View>
                     <MascotImage 
                         source={mascotAsset} 
@@ -48,10 +46,10 @@ export const MilestoneSheet: React.FC<MilestoneSheetProps> = ({
                 </View>
 
                 <Text className="text-2xl font-q-bold text-text text-center mb-1">
-                    You unlocked {mascotName}!
+                    {t('progress.unlockedMascot', { name: t(`companions.${companionId}.name`) })}
                 </Text>
                 <Text className="text-base font-q-medium text-muted text-center mb-6 leading-5">
-                    {description}
+                    {t(`companions.${companionId}.description`)}
                 </Text>
 
                 <View className="w-full bg-secondary rounded-[28px] p-5 mb-8 flex-row items-center">
@@ -60,20 +58,20 @@ export const MilestoneSheet: React.FC<MilestoneSheetProps> = ({
                     </View>
                     <View className="flex-1">
                         <Text className="text-[10px] font-q-bold uppercase tracking-[2px] mb-1" style={{ color: currentAccent.hex }}>
-                            REWARD UNLOCKED
+                            {t('progress.rewardUnlocked')}
                         </Text>
                         <Text className="text-base font-q-bold text-text">
-                            {perk}
+                            {t(`companions.${companionId}.perk`)}
                         </Text>
                         <Text className="text-xs font-q-medium text-text/50 leading-4 mt-0.5">
-                            {perkDescription}
+                            {t(`companions.${companionId}.perkDesc`)}
                         </Text>
                     </View>
                 </View>
 
                 <View className="w-full gap-3">
                     <Button 
-                        label="See Progress"
+                        label={t('profile.setup.seeProgress')}
                         onPress={() => {
                             haptics.selection();
                             onClose();
@@ -88,7 +86,7 @@ export const MilestoneSheet: React.FC<MilestoneSheetProps> = ({
                         }}
                         className="w-full py-3 items-center active:scale-95 transition-transform"
                     >
-                        <Text className="text-muted font-q-bold text-base">Continue</Text>
+                        <Text className="text-muted font-q-bold text-base">{t('common.continue')}</Text>
                     </TouchableOpacity>
                 </View>
             </View>

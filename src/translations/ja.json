@@ -1,0 +1,185 @@
+{
+  "common": {
+    "save": "保存",
+    "okay": "OK",
+    "error": "エラー",
+    "maybeLater": "後で",
+    "niceToMeetYou": "はじめまして！",
+    "niceToMeetYouWithName": "はじめまして、{{name}}さん！",
+    "cancel": "キャンセル",
+    "offlineError": "接続が切れました",
+    "offlineMessage": "オフラインのようです。安心してください、入力したテキストは消えていません！接続を確認して、もう一度保存してください。"
+  },
+  "home": {
+    "dailyGratitude": "今日の感謝",
+    "placeholder": "今日はどんな日でしたか？",
+    "today": "今日",
+    "charCount": "{{count}} / 200 文字",
+    "emptyEntryTitle": "未入力",
+    "emptyEntryMessage": "保存するには何か入力してください。",
+    "saveError": "保存できませんでした。",
+    "setup": {
+      "beautifullySaid": "素敵な言葉ですね！",
+      "callYou": "Cloudyに何と呼ばれたいですか？",
+      "namePlaceholder": "お名前",
+      "saveProfile": "プロフィールを保存",
+      "reminderTitle": "いつ通知を送りますか？",
+      "setReminder": "通知を設定",
+      "noThanks": "後で設定する"
+    }
+  },
+  "navigation": {
+    "entry": "記録",
+    "journey": "ジャーニー",
+    "profile": "プロフ"
+  },
+  "profile": {
+    "title": "プロフィール",
+    "hi": "こんにちは、{{name}}さん！",
+    "streakDay": "{{count}} 日目",
+    "streakTitle": "継続中!",
+    "sections": {
+      "name": "名前",
+      "age": "年齢",
+      "gender": "性別",
+      "location": "地域",
+      "goals": "目標",
+      "struggles": "悩み"
+    },
+    "placeholders": {
+      "setName": "名前を設定",
+      "setAge": "年齢を設定",
+      "setGender": "性別を設定",
+      "setCountry": "国・地域を設定",
+      "setGoals": "目標を設定",
+      "setStruggles": "悩みを設定"
+    },
+    "logout": "ログアウト"
+  },
+  "settings": {
+    "title": "設定",
+    "dailyReminder": "デイリー通知",
+    "hapticFeedback": "触覚フィードバック",
+    "hapticDescription": "操作時の心地よい振動",
+    "nightTheme": "ダークモード",
+    "nightDescription": "落ち着いたダークカラーに切り替え",
+    "accentColor": "アクセントカラー",
+    "accentDescription": "アプリのメインカラーをカスタマイズ",
+    "lockCloud": "アプリロック",
+    "lockDescription": "生体認証で日記を保護",
+    "ourHome": "公式サイト",
+    "visitWebsite": "公式サイトにアクセス",
+    "privacySecurity": "プライバシーとセキュリティ",
+    "cloudyWhisper": "Cloudyへの声",
+    "feedbackDescription": "フィードバックやバグ報告を送信",
+    "language": "言語",
+    "languageDescription": "使用する言語を選択"
+  },
+  "journey": {
+    "title": "あなたのジャーニー",
+    "all": "すべて",
+    "favorites": "お気に入り",
+    "loading": "読み込み中...",
+    "noMemories": "新しい旅が始まります。",
+    "noFavorites": "お気に入りはまだありません。",
+    "noMemoriesForDate": "{{date}} の記録は見つかりませんでした。",
+    "viewAll": "すべての記録を表示",
+    "deleteTitle": "削除しますか？",
+    "deleteMessage": "この記録を削除してもよろしいですか？",
+    "confirmDelete": "削除する",
+    "cancelDelete": "キャンセル",
+    "tooLateTitle": "削除不可",
+    "tooLateMessage": "作成から24時間を経過した記録は削除できません。"
+  },
+  "feedback": {
+    "title": "フィードバック＆サポート",
+    "description": "バグを見つけましたか？アイデアがありますか？それとも挨拶したいだけ？何でも聞いてください！ウェブサイトからもご連絡いただけます。",
+    "placeholder": "何でもお聞かせください...",
+    "emailPlaceholder": "返信用メール（任意）",
+    "sendButton": "クラウドに送信",
+    "waitTitle": "待って！",
+    "waitMessage": "送信する前に何か書いてください。",
+    "successTitle": "ありがとうございます！",
+    "successMessage": "フィードバックがクラウドに届きました。感謝します！",
+    "successButton": "どういたしまして！",
+    "errorTitle": "おっと",
+    "errorMessage": "フィードバックを送信できませんでした。もう一度お試しください。"
+  },
+  "review": {
+    "delight": "喜びの瞬間 ✨",
+    "enjoyingTitle": "Cloudyとの旅を楽しんでいますか？",
+    "enjoyingMessage": "すごい継続記録ですね！レビューを共有すると、他の人も心安らぎを見つけられます。",
+    "rateButton": "気に入った！今すぐ評価"
+  },
+  "auth": {
+    "welcomeBack": "おかえりなさい！",
+    "saveJourney": "旅を保存",
+    "missedYou": "Cloudyがあなたを待っていました。",
+    "secureProgress": "進捗と思い出を守るためにアカウントを作成してください。",
+    "emailLabel": "メール",
+    "passwordLabel": "パスワード",
+    "signInButton": "ログイン",
+    "signUpButton": "新規登録",
+    "newHere": "初めてですか？",
+    "alreadyJoined": "登録済みですか？",
+    "createAccount": "アカウント作成",
+    "orDivider": "または",
+    "continueWithGoogle": "Googleで続ける",
+    "missingInfoTitle": "情報不足",
+    "missingInfoMessage": "メールとパスワードの両方を入力してください。",
+    "accountExistsTitle": "アカウントは既に存在します",
+    "accountExistsMessage": "既存の旅にログインしますか？現在の一時データは統合されません。",
+    "cancelButton": "キャンセル",
+    "logInButton": "ログイン",
+    "successTitle": "成功",
+    "journeySecured": "旅が保護されました！",
+    "confirmEmail": "アカウントを確認するためにメールをご確認ください。"
+  },
+  "journalEntry": {
+    "title": "ジャーナル",
+    "header": "良いことに焦点を当てよう。",
+    "subheader": "今日、感謝している小さなことは何ですか？",
+    "placeholder": "感謝しています...",
+    "saveButton": "記録を保存",
+    "savedTitle": "感謝を保存しました！",
+    "savedMessage": "また明日！",
+    "errorTitle": "エラー",
+    "errorMessage": "記録を保存できませんでした。"
+  },
+  "profileNudge": {
+    "title": "旅を守ろう",
+    "message": "進捗をクラウドに保存して、思い出を失わないようにしましょう。"
+  },
+  "ranks": {
+    "beginner": "初心者",
+    "expert": "上級者",
+    "master": "マスター",
+    "dedicated": "熱心",
+    "legend": "レジェンド",
+    "hero": "HERO"
+  },
+  "streakLost": {
+    "title": "気にしないで！",
+    "message": "1日逃してしまったけど、それは旅の一部。今日から新しいストリークを始めましょう！",
+    "button": "始めよう"
+  },
+  "lockScreen": {
+    "title": "Cloudyは安全です",
+    "subtitle": "旅を続けるためにロックを解除",
+    "button": "ロック解除",
+    "footer": "あなたの思い出はプライベートで暗号化されています"
+  },
+  "splash": {
+    "tagline": "心をクリアにする小さなパートナー。"
+  },
+  "lockedFeature": {
+    "locked": "ロック中",
+    "unlockMessage": "この機能をアンロックするには、{{required}}日連続を一度達成してください。現在{{current}}日です！",
+    "seeProgress": "進捗を見る"
+  },
+  "journalMerge": {
+    "successTitle": "成功",
+    "welcomeBack": "おかえりなさい、{{name}}さん！最近の思い出をジャーナルに追加しました。",
+    "great": "いいね！"
+  }
+}

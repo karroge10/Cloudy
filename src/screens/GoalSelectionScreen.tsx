@@ -10,6 +10,7 @@ import { GOALS } from '../constants/Goals';
 import { MascotImage } from '../components/MascotImage';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { useAccent } from '../context/AccentContext';
+import { useTranslation } from 'react-i18next';
 
 export const GoalSelectionScreen = () => {
     const navigation = useNavigation();
@@ -17,6 +18,24 @@ export const GoalSelectionScreen = () => {
     const route = useRoute();
     const { trackEvent } = useAnalytics();
     const { currentAccent } = useAccent();
+    const { t } = useTranslation();
+
+    const renderGoalLabel = (goal: string) => {
+        switch (goal) {
+            case 'Mental Clarity': return t('profile.goals.clarity');
+            case 'Memory keeping': return t('profile.goals.memory');
+            case 'Self-discipline': return t('profile.goals.discipline');
+            case 'Creativity': return t('profile.goals.creativity');
+            case 'Gratitude': return t('profile.goals.gratitude');
+            case 'Inner Peace': return t('profile.goals.innerPeace');
+            case 'Happiness': return t('profile.goals.happiness');
+            case 'Better Sleep': return t('profile.goals.betterSleep');
+            case 'Productivity': return t('profile.goals.productivity');
+            case 'Self-Love': return t('profile.goals.selfLove');
+            case 'Focus': return t('profile.goals.focus');
+            default: return goal;
+        }
+    };
 
     const mascotSize = height < 750 ? 'w-48 h-48' : height < 850 ? 'w-64 h-64' : 'w-72 h-72';
 
@@ -49,7 +68,7 @@ export const GoalSelectionScreen = () => {
                     {/* Main Content Area */}
                     <View className="items-center mb-6">
                         <Text className="text-4xl font-q-bold text-text text-center mb-6 pt-4 leading-tight">
-                            What are your goals?
+                            {t('profile.setup.goalsTitle')}
                         </Text>
                         <MascotImage
                             source={MASCOTS.ZEN}
@@ -64,7 +83,7 @@ export const GoalSelectionScreen = () => {
                         {GOALS.map((goal) => (
                             <SelectionPill
                                 key={goal}
-                                label={goal}
+                                label={renderGoalLabel(goal)}
                                 selected={selected.includes(goal)}
                                 onPress={() => toggleSelection(goal)}
                             />
@@ -82,7 +101,7 @@ export const GoalSelectionScreen = () => {
                     </View>
 
                     <Button
-                        label="Continue"
+                        label={t('common.continue')}
                         onPress={() => {
                             trackEvent('onboarding_goals_selected', { goals: selected });
                             (navigation.navigate as any)('Summary', { struggles, goals: selected });

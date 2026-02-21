@@ -7,11 +7,13 @@ import { TopNav } from '../components/TopNav';
 import { useAccent, ACCENT_COLORS } from '../context/AccentContext';
 import { useProfile } from '../context/ProfileContext';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 
 export const AccentSettingsScreen = () => {
     const navigation = useNavigation();
     const { currentAccent, setAccent } = useAccent();
     const { profile } = useProfile();
+    const { t } = useTranslation();
     const isGroovyUnlocked = (profile?.max_streak || 0) >= 60;
 
     const handleSelect = async (id: string) => {
@@ -27,7 +29,7 @@ export const AccentSettingsScreen = () => {
     return (
         <Layout noScroll={true}>
             <View className="px-6 pt-4">
-                <TopNav title="Accent Color" showBack={true} />
+                <TopNav title={t('settings.accentColor')} showBack={true} />
             </View>
 
             <ScrollView 
@@ -38,16 +40,16 @@ export const AccentSettingsScreen = () => {
                 {/* Header */}
                 <View className="mb-8">
                     <Text className="text-3xl font-q-bold text-text mb-2">
-                        Your Vibe.
+                        {t('profile.yourVibe')}
                     </Text>
                     <Text className="text-base font-q-medium text-muted leading-6">
-                        Personalize Cloudy with a color that matches your energy.
+                        {t('profile.personalizeVibe')}
                     </Text>
                     {!isGroovyUnlocked && (
                         <View className="mt-4 bg-orange-500/10 p-4 rounded-xl border border-orange-500/20 flex-row items-center">
                             <Ionicons name="lock-closed" size={20} color="#F97316" />
                             <Text className="ml-2 text-orange-600 font-q-bold">
-                                Unlock at 60 Day Streak
+                                {t('profile.unlockStreak', { count: 60 })}
                             </Text>
                         </View>
                     )}
@@ -97,7 +99,7 @@ export const AccentSettingsScreen = () => {
                                     </View>
                                     
                                     <Text className={`text-lg font-q-bold text-center mb-1 ${isSelected ? 'text-primary' : 'text-text'}`}>
-                                        {color.label}
+                                        {t(`accents.${color.id}`)}
                                     </Text>
                                 </View>
                             </TouchableOpacity>

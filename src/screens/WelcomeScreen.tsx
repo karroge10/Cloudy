@@ -8,10 +8,12 @@ import { haptics } from '../utils/haptics';
 import { MascotImage } from '../components/MascotImage';
 
 import { Layout } from '../components/Layout';
+import { useTranslation } from 'react-i18next';
 
 export const WelcomeScreen = () => {
     const navigation = useNavigation();
     const { height } = useWindowDimensions();
+    const { t } = useTranslation();
     const scaleAnim = useRef(new Animated.Value(1)).current;
 
     const mascotSize = height < 750 ? 'w-48 h-48' : height < 850 ? 'w-56 h-56' : 'w-64 h-64';
@@ -55,13 +57,13 @@ export const WelcomeScreen = () => {
                         className="text-4xl font-q-bold text-text mb-6 text-center leading-tight px-4"
                         allowFontScaling={false}
                     >
-                        Hi, I'm Cloudy
+                        {t('welcome.hi')}
                     </Text>
                     <Text 
                         className="text-xl text-text opacity-80 text-center font-q-regular leading-relaxed px-8"
                         allowFontScaling={false}
                     >
-                        Your tiny companion for a clearer mind.
+                        {t('welcome.companion')}
                     </Text>
                 </View>
 
@@ -76,7 +78,7 @@ export const WelcomeScreen = () => {
                     </View>
 
                     <Button
-                        label="Let's Start"
+                        label={t('common.letsStart')}
                         onPress={() => navigation.navigate('StruggleSelection' as never)}
                         showArrow
                     />
@@ -86,7 +88,7 @@ export const WelcomeScreen = () => {
                         className="mt-6 items-center py-2"
                     >
                         <Text className="text-muted font-q-bold text-lg">
-                            Already have an account? <Text className="text-primary">Log In</Text>
+                            {t('common.alreadyHaveAccount')} <Text className="text-primary">{t('common.login')}</Text>
                         </Text>
                     </TouchableOpacity>
                 </View>

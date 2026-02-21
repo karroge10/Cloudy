@@ -9,9 +9,11 @@ import {
     NativeScrollEvent,
     Platform,
     Pressable,
+    TouchableOpacity,
 } from 'react-native';
 import { haptics } from '../utils/haptics';
 import { useAccent } from '../context/AccentContext';
+import { useTranslation } from 'react-i18next';
 
 /**
  * TIMEPICKER DESIGN RATIONALE:
@@ -178,6 +180,7 @@ const ScrollWheel = ({ data, initialValue, onSelect, label }: ScrollWheelProps) 
 
 export const TimePicker: React.FC<TimePickerProps> = ({ value, onChange }) => {
     const { currentAccent } = useAccent();
+    const { t } = useTranslation();
     const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
     const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
 
@@ -200,7 +203,7 @@ export const TimePicker: React.FC<TimePickerProps> = ({ value, onChange }) => {
                     data={hours}
                     initialValue={value.getHours()}
                     onSelect={handleHourChange}
-                    label="Hour"
+                    label={t('common.hour')}
                 />
                 
                 <View className="px-5 items-center justify-center mb-6">
@@ -211,7 +214,7 @@ export const TimePicker: React.FC<TimePickerProps> = ({ value, onChange }) => {
                     data={minutes}
                     initialValue={value.getMinutes()}
                     onSelect={handleMinuteChange}
-                    label="Min"
+                    label={t('common.min')}
                 />
             </View>
         </View>

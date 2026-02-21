@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { InfoCard } from './InfoCard';
+import { useTranslation } from 'react-i18next';
 
 interface ProfileNudgeProps {
     isAnonymous: boolean;
@@ -10,6 +11,7 @@ interface ProfileNudgeProps {
 
 export const ProfileNudge = ({ isAnonymous, className, loading }: ProfileNudgeProps) => {
     const navigation = useNavigation<any>();
+    const { t } = useTranslation();
 
     // Only show for anonymous users
     if (!isAnonymous || loading) return null;
@@ -20,8 +22,8 @@ export const ProfileNudge = ({ isAnonymous, className, loading }: ProfileNudgePr
 
     return (
         <InfoCard
-            title="Secure your journey"
-            subtitle="Save your progress to the cloud so you never lose your memories."
+            title={t('profileNudge.title')}
+            subtitle={t('profileNudge.message')}
             icon="sparkles"
             onPress={handlePress}
             className={className}

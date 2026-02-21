@@ -1,0 +1,185 @@
+{
+  "common": {
+    "save": "Salva",
+    "okay": "Okay",
+    "error": "Errore",
+    "maybeLater": "Forse più tardi",
+    "niceToMeetYou": "Piacere di conoscerti!",
+    "niceToMeetYouWithName": "Piacere di conoscerti, {{name}}!",
+    "cancel": "Annulla",
+    "offlineError": "Connessione Persa",
+    "offlineMessage": "Sembra che tu sia offline. Non preoccuparti, il tuo testo è ancora qui! Controlla la tua connessione e riprova a salvare."
+  },
+  "home": {
+    "dailyGratitude": "Gratitudine Quotidiana",
+    "placeholder": "A cosa pensi oggi?",
+    "today": "OGGI",
+    "charCount": "{{count}} / 200 simboli",
+    "emptyEntryTitle": "Voce Vuota",
+    "emptyEntryMessage": "Per faveur, scrivi qualcosa per salvare.",
+    "saveError": "Impossibile salvare la tua voce.",
+    "setup": {
+      "beautifullySaid": "Detto magnificamente!",
+      "callYou": "Come dovrebbe chiamarti Cloudy?",
+      "namePlaceholder": "Il Tuo Nome",
+      "saveProfile": "Salva Profilo",
+      "reminderTitle": "Quando dovrei ricordarti di riflettere?",
+      "setReminder": "Imposta Promemoria",
+      "noThanks": "No grazie, mi ricorderò"
+    }
+  },
+  "navigation": {
+    "entry": "Voce",
+    "journey": "Viaggio",
+    "profile": "Profilo"
+  },
+  "profile": {
+    "title": "Profilo",
+    "hi": "Ciao, {{name}}!",
+    "streakDay": "{{count}} Giorno",
+    "streakTitle": "Serie!",
+    "sections": {
+      "name": "Nome",
+      "age": "Età",
+      "gender": "Genere",
+      "location": "Località",
+      "goals": "Obiettivi",
+      "struggles": "Difficoltà"
+    },
+    "placeholders": {
+      "setName": "Imposta Nome",
+      "setAge": "Imposta Età",
+      "setGender": "Imposta Genere",
+      "setCountry": "Imposta Paese",
+      "setGoals": "Imposta Obiettivi",
+      "setStruggles": "Imposta Difficoltà"
+    },
+    "logout": "Esci"
+  },
+  "settings": {
+    "title": "Impostazioni",
+    "dailyReminder": "Promemoria Quotidiano",
+    "hapticFeedback": "Feedback Aptico",
+    "hapticDescription": "Vibrazioni dolci per le interazioni",
+    "nightTheme": "Tema Notte Nuvolosa",
+    "nightDescription": "Passa a una tavolozza scura e rilassante",
+    "accentColor": "Colore Accento",
+    "accentDescription": "Personalizza il colore primario dell'app",
+    "lockCloud": "Blocca il mio Cloud",
+    "lockDescription": "Protezione biometrica per il tuo diario",
+    "ourHome": "La Nostra Casa",
+    "visitWebsite": "Visita il nostro sito web",
+    "privacySecurity": "Privacy e Sicurezza",
+    "cloudyWhisper": "Sussurro di Cloudy",
+    "feedbackDescription": "Invia feedback o segnala bug",
+    "language": "Lingua",
+    "languageDescription": "Scegli la tua lingua preferita"
+  },
+  "journey": {
+    "title": "Il Tuo Viaggio",
+    "all": "Tutti",
+    "favorites": "Preferiti",
+    "loading": "Caricamento ricordi...",
+    "noMemories": "Il tuo viaggio è appena iniziato.",
+    "noFavorites": "Ancora nessuna voce preferita.",
+    "noMemoriesForDate": "Nessun ricordo trovato per il {{date}}.",
+    "viewAll": "Visualizza tutte le voci",
+    "deleteTitle": "Aspetta, sei sicuro?",
+    "deleteMessage": "Gli errori capitano! Sei sicuro di voler lasciare andare questo ricordo?",
+    "confirmDelete": "Sì, Elimina",
+    "cancelDelete": "No, Conserva",
+    "tooLateTitle": "Troppo Tardi",
+    "tooLateMessage": "Puoi eliminare le voci solo entro 24 ore dalla loro creazione."
+  },
+  "feedback": {
+    "title": "Feedback e Supporto",
+    "description": "Trovato un bug? Hai un'idea? O vuoi solo dire ciao? Sono tutt'orecchi! Puoi anche contattarci tramite il nostro sito web.",
+    "placeholder": "Raccontami tutto...",
+    "emailPlaceholder": "Email per risposta (opzionale)",
+    "sendButton": "Invia al Cloud",
+    "waitTitle": "Aspetta!",
+    "waitMessage": "Scrivi qualcosa prima di inviare.",
+    "successTitle": "Grazie!",
+    "successMessage": "Il tuo feedback ha raggiunto la mia nuvola. Ti ringrazio!",
+    "successButton": "Prego!",
+    "errorTitle": "Ops",
+    "errorMessage": "Impossibile inviare il feedback. Riprova."
+  },
+  "review": {
+    "delight": "Momento di Gioia ✨",
+    "enjoyingTitle": "Stai godendo il tuo viaggio con Cloudy?",
+    "enjoyingMessage": "La tua serie è incredibile! Condividere una recensione aiuta altre persone a trovare la loro pace.",
+    "rateButton": "Lo adoro! Valuta Ora"
+  },
+  "auth": {
+    "welcomeBack": "Bentornato!",
+    "saveJourney": "Salva il Tuo Viaggio",
+    "missedYou": "Cloudy ti ha mancato.",
+    "secureProgress": "Crea un account per proteggere i tuoi progressi e ricordi.",
+    "emailLabel": "Email",
+    "passwordLabel": "Password",
+    "signInButton": "Accedi",
+    "signUpButton": "Registrati",
+    "newHere": "Nuovo qui? ",
+    "alreadyJoined": "Già registrato? ",
+    "createAccount": "Crea Account",
+    "orDivider": "OPPURE",
+    "continueWithGoogle": "Continua con Google",
+    "missingInfoTitle": "Informazioni mancanti",
+    "missingInfoMessage": "Inserisci sia email che password.",
+    "accountExistsTitle": "Account già esistente",
+    "accountExistsMessage": "Vuoi accedere al tuo viaggio esistente? I tuoi dati temporanei attuali non verranno uniti.",
+    "cancelButton": "Annulla",
+    "logInButton": "Accedi",
+    "successTitle": "Successo",
+    "journeySecured": "Il tuo viaggio è protetto!",
+    "confirmEmail": "Controlla la tua email per confermare il tuo account."
+  },
+  "journalEntry": {
+    "title": "Diario",
+    "header": "Concentrati sul positivo.",
+    "subheader": "Per cosa sei grato oggi?",
+    "placeholder": "Sono grato per...",
+    "saveButton": "Salva Voce",
+    "savedTitle": "Gratitudine Salvata!",
+    "savedMessage": "A domani!",
+    "errorTitle": "Errore",
+    "errorMessage": "Impossibile salvare la tua voce."
+  },
+  "profileNudge": {
+    "title": "Proteggi il tuo viaggio",
+    "message": "Salva i tuoi progressi nel cloud per non perdere mai i tuoi ricordi."
+  },
+  "ranks": {
+    "beginner": "Principiante",
+    "expert": "Esperto",
+    "master": "Maestro",
+    "dedicated": "Dedicato",
+    "legend": "Leggenda",
+    "hero": "HERO"
+  },
+  "streakLost": {
+    "title": "Non preoccuparti!",
+    "message": "Hai perso un giorno, ma fa parte del viaggio. Iniziamo una nuova serie oggi!",
+    "button": "Andiamo"
+  },
+  "lockScreen": {
+    "title": "Cloudy è Sicuro",
+    "subtitle": "Sblocca per continuare il tuo viaggio",
+    "button": "Sblocca",
+    "footer": "I tuoi ricordi sono privati e crittografati"
+  },
+  "splash": {
+    "tagline": "Il tuo piccolo compagno per una mente più serena."
+  },
+  "lockedFeature": {
+    "locked": "Bloccato",
+    "unlockMessage": "Sblocca questa funzione raggiungendo una serie di {{required}} giorni una volta. Sei a {{current}} giorni!",
+    "seeProgress": "Vedi Progresso"
+  },
+  "journalMerge": {
+    "successTitle": "Successo",
+    "welcomeBack": "Bentornato, {{name}}! Abbiamo aggiunto i tuoi ricordi recenti al tuo diario.",
+    "great": "Ottimo!"
+  }
+}
