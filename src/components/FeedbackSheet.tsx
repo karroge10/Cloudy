@@ -76,7 +76,7 @@ export const FeedbackSheet = ({ visible, onClose }: FeedbackSheetProps) => {
                     Cloudy Whisper
                 </Text>
                 <Text className="text-base font-q-medium text-muted text-center mb-8 px-4 leading-5">
-                    Found a bug? Have an idea? Or just want to say hi? I'm all ears!
+                    Found a bug? Have an idea? Or just want to say hi? I'm all ears! You can also reach out via our website.
                 </Text>
 
                 <TextInput

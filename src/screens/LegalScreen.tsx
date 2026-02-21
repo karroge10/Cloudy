@@ -7,6 +7,8 @@ import { TopNav } from '../components/TopNav';
 import { haptics } from '../utils/haptics';
 import { AppFooter } from '../components/AppFooter';
 import { useAccent } from '../context/AccentContext';
+import { Linking } from 'react-native';
+import { LINKS } from '../constants/Links';
 
 export const LegalScreen = () => {
     const navigation = useNavigation();
@@ -94,6 +96,16 @@ Cloudy is provided "as is" without any warranties. We are not liable for any dam
                         {activeTab === 'privacy' ? privacyPolicy.trim() : termsOfService.trim()}
                     </Text>
                 </View>
+
+                <TouchableOpacity 
+                    onPress={() => Linking.openURL(LINKS.WEBSITE)}
+                    className="mt-6 items-center"
+                >
+                    <Text className="text-muted font-q-medium text-xs text-center">
+                        Full policies and terms are also available at{"\n"}
+                        <Text style={{ color: currentAccent.hex }} className="font-q-bold">cloudyapp.vercel.app</Text>
+                    </Text>
+                </TouchableOpacity>
 
                 <AppFooter />
             </ScrollView>
