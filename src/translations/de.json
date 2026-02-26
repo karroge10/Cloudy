@@ -136,7 +136,9 @@
       "goalsTitle": "Was sind deine Hauptziele bei der Nutzung von Cloudy?",
       "strugglesTitle": "Was belastet dich in letzter Zeit?",
       "mascotTitle": "Wähle deinen Begleiter",
-      "seeProgress": "Fortschritt sehen"
+      "seeProgress": "Fortschritt sehen",
+      "niceToMeetYou": "Schön dich kennenzulernen!",
+      "niceToMeetYouWithName": "Schön dich kennenzulernen, {{name}}!"
     },
     "genders": {
       "female": "Weiblich",

@@ -136,7 +136,9 @@
       "goalsTitle": "你使用 Cloudy 的主要目标是什么？",
       "strugglesTitle": "最近有什么让你困扰的事情吗？",
       "mascotTitle": "选择你的伙伴",
-      "seeProgress": "查看进度"
+      "seeProgress": "查看进度",
+      "niceToMeetYou": "很高兴见到你！",
+      "niceToMeetYouWithName": "很高兴见到你，{{name}}！"
     },
     "genders": {
       "female": "女性",

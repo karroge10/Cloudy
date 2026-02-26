@@ -70,7 +70,6 @@
     "legend": "Legend",
     "goodbye": "Goodbye",
     "great": "Great",
-    "okay": "Okay",
     "updateTime": "Update Time",
     "setPassword": "Set Password",
     "locale_code": "en",
@@ -137,7 +136,9 @@
       "goalsTitle": "What are your main goals for using Cloudy?",
       "strugglesTitle": "What's been weighing on you lately?",
       "mascotTitle": "Choose your companion",
-      "seeProgress": "See Progress"
+      "seeProgress": "See Progress",
+      "niceToMeetYou": "Nice to meet you!",
+      "niceToMeetYouWithName": "Nice to meet you, {{name}}!"
     },
     "genders": {
       "female": "Female",
@@ -388,7 +389,9 @@
   },
   "summary": {
     "title": "We can get there, together.",
-    "body": "Research shows that writing down just {{gratitude}} a day can reduce {{struggle}} and help you find {{goal}}.",
+    "body_start": "Research shows that writing down just ",
+    "body_mid": " a day can reduce ",
+    "body_end": " and help you find ",
     "gratitude": "one gratitude",
     "startWriting": "Start Writing",
     "andSuffix": "and others",

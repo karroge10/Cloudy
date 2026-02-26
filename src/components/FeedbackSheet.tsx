@@ -63,7 +63,6 @@ export const FeedbackSheet = ({ visible, onClose }: FeedbackSheetProps) => {
                 'success'
             );
         } catch (error) {
-            console.error('Feedback error:', error);
             showAlert(t('feedback.errorTitle'), t('feedback.errorMessage'), [{ text: t('common.okay') }], 'error');
         } finally {
             setLoading(false);

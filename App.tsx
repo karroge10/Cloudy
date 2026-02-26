@@ -152,7 +152,11 @@ const RootNavigator = ({ session, isBioLocked, isColdStartWithSession, isAuthLoa
             </>
         ) : viewMode === 'loading' ? (
             <Stack.Screen name="InitialLoading">
-              {() => <View style={{ flex: 1, backgroundColor: isDarkMode ? '#111427' : '#FFF9F0' }} />}
+              {() => (
+                <View style={{ flex: 1, backgroundColor: isDarkMode ? '#111427' : '#FFF9F0' }}>
+                   <CustomSplashScreen onFinish={() => {}} isStatic={true} />
+                </View>
+              )}
             </Stack.Screen>
         ) : (
           <>
@@ -372,7 +376,7 @@ export default function App() {
       const settleTime = (isBioLocked && session) ? 400 : 0;
 
       setTimeout(() => {
-        SplashScreen.hideAsync().catch(console.warn);
+        SplashScreen.hideAsync().catch(() => {});
       
         if (isBioLocked && session) {
             setShowAnimatedSplash(false);

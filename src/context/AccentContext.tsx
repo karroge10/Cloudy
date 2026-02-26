@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View } from 'react-native';
+import { useProfile } from './ProfileContext';
 
 export const ACCENT_COLORS = {
     ORANGE: { id: 'ORANGE', label: 'Sunny Orange', value: '255 158 125', hex: '#FF9E7D' },
@@ -21,35 +22,39 @@ interface AccentContextType {
 const AccentContext = createContext<AccentContextType | undefined>(undefined);
 
 export const AccentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { userId } = useProfile();
     const [currentAccent, setCurrentAccent] = useState<typeof ACCENT_COLORS[AccentColorId]>(ACCENT_COLORS.ORANGE);
 
-    useEffect(() => {
-        loadAccent();
+    const getStorageKey = useCallback((uid: string | null) => {
+        return uid ? `accent_color_${uid}` : 'accent_color_anonymous';
     }, []);
 
-    const loadAccent = async () => {
+    const loadAccent = useCallback(async (uid: string | null) => {
         try {
-            const saved = await AsyncStorage.getItem('accent_color');
+            const key = getStorageKey(uid);
+            const saved = await AsyncStorage.getItem(key);
             if (saved && saved in ACCENT_COLORS) {
                 setCurrentAccent(ACCENT_COLORS[saved as AccentColorId]);
+            } else {
+                setCurrentAccent(ACCENT_COLORS.ORANGE);
             }
         } catch (e) {
-            console.error('Failed to load accent color', e);
         }
-    };
+    }, [getStorageKey]);
+
+    useEffect(() => {
+        loadAccent(userId);
+    }, [userId, loadAccent]);
 
     const setAccent = async (id: AccentColorId) => {
         try {
             setCurrentAccent(ACCENT_COLORS[id]);
-            await AsyncStorage.setItem('accent_color', id);
+            const key = getStorageKey(userId);
+            await AsyncStorage.setItem(key, id);
         } catch (e) {
-            console.error('Failed to save accent color', e);
         }
     };
 
-    // We inject the CSS variable here. 
-    // Note: NativeWind 4+ often picks up vars from inline styles on parent Views.
-    // If using NativeWind 2/3, we might need a different approach, but let's try this standard way first.
     return (
         <AccentContext.Provider value={{ currentAccent, setAccent }}>
             <View style={{ flex: 1, '--primary': currentAccent.value } as any}>

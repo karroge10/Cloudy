@@ -136,7 +136,9 @@
       "goalsTitle": "Apa tujuan utama Anda menggunakan Cloudy?",
       "strugglesTitle": "Apa yang membuat Anda khawatir akhir-akhir ini?",
       "mascotTitle": "Pilih temanmu",
-      "seeProgress": "Lihat Kemajuan"
+      "seeProgress": "Lihat Kemajuan",
+      "niceToMeetYou": "Senang bertemu denganmu!",
+      "niceToMeetYouWithName": "Senang bertemu denganmu, {{name}}!"
     },
     "genders": {
       "female": "Perempuan",

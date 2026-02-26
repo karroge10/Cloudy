@@ -24,7 +24,7 @@ export const ProfileNudge = ({ isAnonymous, className, loading }: ProfileNudgePr
         <InfoCard
             title={t('profileNudge.title')}
             subtitle={t('profileNudge.message')}
-            icon="sparkles"
+            icon="shield-checkmark"
             onPress={handlePress}
             className={className}
         />

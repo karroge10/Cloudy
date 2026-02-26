@@ -70,7 +70,6 @@
     "legend": "Leyenda",
     "goodbye": "Adiós",
     "great": "Genial",
-    "okay": "Vale",
     "updateTime": "Actualizar hora",
     "setPassword": "Establecer contraseña",
     "locale_code": "es",
@@ -137,7 +136,9 @@
       "goalsTitle": "¿Cuáles son tus principales objetivos al usar Cloudy?",
       "strugglesTitle": "¿Qué te ha estado preocupando últimamente?",
       "mascotTitle": "Elige a tu compañero",
-      "seeProgress": "Ver Progreso"
+      "seeProgress": "Ver Progreso",
+      "niceToMeetYou": "¡Mucho gusto!",
+      "niceToMeetYouWithName": "¡Mucho gusto, {{name}}!"
     },
     "genders": {
       "female": "Mujer",
@@ -388,7 +389,9 @@
   },
   "summary": {
     "title": "Podemos llegar allí, juntos.",
-    "body": "La investigación muestra que escribir solo {{gratitude}} al día puede reducir {{struggle}} y ayudarte a encontrar {{goal}}.",
+    "body_start": "La investigación muestra que escribir solo ",
+    "body_mid": " al día puede reducir ",
+    "body_end": " y ayudarte a encontrar ",
     "gratitude": "una gratitud",
     "startWriting": "Empezar a escribir",
     "andSuffix": "y otros",

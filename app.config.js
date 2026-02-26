@@ -3,7 +3,7 @@ module.exports = ({ config }) => {
   
   return {
     ...config,
-    name: isPreview ? 'Cloudy (Preview)' : 'Cloudy',
+    name: isPreview ? 'Cloudy (Preview)' : 'Cloudy Gratitude Journal',
     android: {
       ...config.android,
       package: isPreview ? 'app.cloudy.journal.preview' : 'app.cloudy.journal',

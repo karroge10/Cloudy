@@ -235,8 +235,13 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
     }, [session?.user?.id, userId]);
 
     const updateProfile = async (updates: Partial<Profile>): Promise<boolean> => {
-        const activeUserId = session?.user?.id || userId;
-        if (!activeUserId) return false;
+        // Try getting user from Auth first to handle race conditions during onboarding
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        const activeUserId = currentUser?.id || session?.user?.id || userId;
+        
+        if (!activeUserId) {
+            return false;
+        }
 
         operationInFlight.current = activeUserId;
         lastUpdateTimestamp.current = Date.now();
@@ -245,10 +250,7 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
         const oldProfile = profile;
 
         try {
-            const { data: { user: currentUser } } = await supabase.auth.getUser();
-            
-            if (!currentUser) return false;
-            const activeUserId = currentUser.id;
+            // We already got the user/ID above
 
             // Optimistic update
             if (profile) {
@@ -305,7 +307,7 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
                     display_name: updates.display_name || null,
                     haptics_enabled: updates.haptics_enabled ?? true,
                     security_lock_enabled: updates.security_lock_enabled ?? false,
-                    onboarding_completed: updates.onboarding_completed ?? (currentUser.is_anonymous ? false : true),
+                    onboarding_completed: updates.onboarding_completed ?? (currentUser?.is_anonymous ? false : true),
                     reminder_time: updates.reminder_time || null,
                     age: updates.age || null,
                     gender: updates.gender || null,
@@ -414,7 +416,7 @@ export const ProfileProvider = ({ children, session }: { children: React.ReactNo
         profile: dataMatchesUser ? profile : null, 
         isAnonymous, 
         userId: userId || session?.user?.id || null, 
-        loading: loading || !dataMatchesUser, 
+        loading: loading || (profile ? !dataMatchesUser : false), 
         refreshProfile: fetchProfile, 
         updateProfile,
         logout 

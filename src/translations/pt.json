@@ -70,7 +70,6 @@
     "legend": "Lenda",
     "goodbye": "Adeus",
     "great": "Ótimo",
-    "okay": "OK",
     "updateTime": "Atualizar hora",
     "setPassword": "Definir senha",
     "locale_code": "pt",
@@ -137,7 +136,9 @@
       "goalsTitle": "Quais são seus principais objetivos ao usar o Cloudy?",
       "strugglesTitle": "O que tem te preocupado ultimamente?",
       "mascotTitle": "Escolha seu companheiro",
-      "seeProgress": "Ver Progresso"
+      "seeProgress": "Ver Progresso",
+      "niceToMeetYou": "Prazer em conhecer você!",
+      "niceToMeetYouWithName": "Prazer em conhecer você, {{name}}!"
     },
     "genders": {
       "female": "Feminino",

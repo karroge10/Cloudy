@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "Cloudy",
+    "name": "Cloudy Gratitude Journal",
     "slug": "Cloudy",
     "scheme": "cloudy",
-    "version": "1.0.0",
+    "version": "1.0.3",
     "description": "A mindful space for your daily memories and gratitude.",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -11,10 +11,11 @@
     "backgroundColor": "#FFF9F0",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/mascots/mascot_write.png",
       "resizeMode": "contain",
       "backgroundColor": "#FFF9F0",
       "dark": {
+        "image": "./assets/mascots/mascot_write.png",
         "backgroundColor": "#111427"
       }
     },
@@ -22,14 +23,15 @@
       "supportsTablet": true
     },
     "android": {
-      "versionCode": 1,
+      "versionCode": 4,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#f8ebb5"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": true,
-      "package": "app.cloudy.journal"
+      "package": "app.cloudy.journal",
+      "privacyPolicy": "https://cloudyapp.vercel.app/legal#privacy"
     },
     "web": {
       "favicon": "./assets/favicon.png"

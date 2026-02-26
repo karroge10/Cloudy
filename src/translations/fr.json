@@ -136,7 +136,9 @@
       "goalsTitle": "Quels sont vos principaux objectifs en utilisant Cloudy ?",
       "strugglesTitle": "Qu'est-ce qui vous pèse en ce moment ?",
       "mascotTitle": "Choisissez votre compagnon",
-      "seeProgress": "Voir les Progrès"
+      "seeProgress": "Voir les Progrès",
+      "niceToMeetYou": "Ravi de vous rencontrer !",
+      "niceToMeetYouWithName": "Ravi de vous rencontrer, {{name}} !"
     },
     "genders": {
       "female": "Femme",

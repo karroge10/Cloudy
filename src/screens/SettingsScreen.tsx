@@ -439,7 +439,7 @@ export const SettingsScreen = () => {
                                         <Text className="text-lg font-q-bold text-text">{t('settings.secureJourney')}</Text>
                                         <Text className="text-muted font-q-medium text-xs">{t('settings.secureJourneyDesc')}</Text>
                                     </View>
-                                <Ionicons name="sparkles-outline" size={22} color={currentAccent.hex} />
+                                <Ionicons name="shield-checkmark-outline" size={22} color={currentAccent.hex} />
                             </TouchableOpacity>
                             <Divider />
                         </>

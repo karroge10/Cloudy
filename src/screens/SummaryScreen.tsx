@@ -81,10 +81,15 @@ export const SummaryScreen = () => {
         haptics.selection();
         setLoading(true);
         try {
-            // Sign in anonymously to bypass traditional auth for now
-            const { data: { user }, error: authError } = await supabase.auth.signInAnonymously();
+            // Check if we already have a session (e.g. from email signup earlier in the flow)
+            const { data: { session: currentSession } } = await supabase.auth.getSession();
+            let user: any = currentSession?.user;
             
-            if (authError) throw authError;
+            if (!user) {
+                const { data: { user: newUser }, error: authError } = await supabase.auth.signInAnonymously();
+                if (authError) throw authError;
+                user = newUser;
+            }
             
             if (user) {
                 identifyUser(user.id, undefined, {
@@ -101,12 +106,13 @@ export const SummaryScreen = () => {
                 });
 
                 if (!success) {
-                    throw new Error('Could not save your preferences. Please try again.');
+                    throw new Error('Profile creation failed. No active session detected.');
                 }
             }
 
             trackEvent('onboarding_finished', { struggles, goals });
         } catch (error: any) {
+            // Log the raw error for debugging purposes
             const { title, message } = getFriendlyAuthErrorMessage(error);
             showAlert(title, message, [{ text: t('common.okay') }], 'error');
         } finally {
@@ -139,11 +145,12 @@ export const SummaryScreen = () => {
                         />
 
                          <Text className="text-2xl text-text text-center font-q-regular leading-relaxed px-4">
-                            {t('summary.body', { 
-                                gratitude: <Text className="font-q-bold" style={{ color: currentAccent.hex }}>{t('summary.gratitude')}</Text>,
-                                struggle: <Text className="font-q-bold" style={{ color: currentAccent.hex }}>{struggleText}</Text>,
-                                goal: <Text className="font-q-bold" style={{ color: currentAccent.hex }}>{goalText}</Text>
-                            })}
+                            {t('summary.body_start')}
+                            <Text className="font-q-bold" style={{ color: currentAccent.hex }}>{t('summary.gratitude')}</Text>
+                            {t('summary.body_mid')}
+                            <Text className="font-q-bold" style={{ color: currentAccent.hex }}>{struggleText}</Text>
+                            {t('summary.body_end')}
+                            <Text className="font-q-bold" style={{ color: currentAccent.hex }}>{goalText}</Text>.
                         </Text>
                     </View>
                 </View>

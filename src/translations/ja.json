@@ -136,7 +136,9 @@
       "goalsTitle": "Cloudyを使う主な目的は何ですか？",
       "strugglesTitle": "最近、どんな悩みがありますか？",
       "mascotTitle": "パートナーを選んでください",
-      "seeProgress": "進捗を見る"
+      "seeProgress": "進捗を見る",
+      "niceToMeetYou": "はじめまして！",
+      "niceToMeetYouWithName": "はじめまして、{{name}}さん！"
     },
     "genders": {
       "female": "女性",
