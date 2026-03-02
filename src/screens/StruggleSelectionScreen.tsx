@@ -37,7 +37,7 @@ export const StruggleSelectionScreen = () => {
 
     const [selected, setSelected] = useState<string[]>([]);
 
-    const mascotSize = height < 750 ? 'w-48 h-48' : height < 850 ? 'w-64 h-64' : 'w-72 h-72';
+    const mascotSize = height < 750 ? 'w-48 h-48' : height < 850 ? 'w-56 h-56' : 'w-64 h-64';
 
 
     const toggleSelection = (item: string) => {
@@ -52,19 +52,13 @@ export const StruggleSelectionScreen = () => {
 
     return (
         <Layout useSafePadding={false} noScroll={true}>
-            <View className="px-6 pt-4">
-                <TopNav showBack={true} />
-            </View>
+            <View className="px-6 pt-6 pb-2" />
 
-            <ScrollView 
-                contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
-                showsVerticalScrollIndicator={false}
-            >
-            <View className="flex-1 px-6 justify-between">
+            <View className="flex-1 px-6">
                 <View>
                     {/* Main Content Area */}
                     <View className="items-center mb-6">
-                        <Text className="text-4xl font-q-bold text-text text-center mb-6 pt-4 leading-tight">
+                        <Text className="text-4xl font-q-bold text-text text-center mb-6 leading-tight">
                             {t('profile.setup.strugglesTitle')}
                         </Text>
                         <MascotImage
@@ -87,29 +81,27 @@ export const StruggleSelectionScreen = () => {
                         ))}
                     </View>
                 </View>
-
-                {/* Footer */}
-                <View className="w-full">
-                     {/* Progress Dots */}
-                     <View className="flex-row justify-center gap-2 mb-8">
-                        <View className="w-3 h-3 rounded-full bg-gray-300" />
-                        <View className="w-3 h-3 rounded-full" style={{ backgroundColor: currentAccent.hex }} />
-                        <View className="w-3 h-3 rounded-full bg-gray-300" />
-                        <View className="w-3 h-3 rounded-full bg-gray-300" />
-                    </View>
-
-                    <Button
-                        label={t('common.continue')}
-                        onPress={() => {
-                            trackEvent('onboarding_struggles_selected', { struggles: selected });
-                            (navigation.navigate as any)('GoalSelection', { struggles: selected });
-                        }}
-                        disabled={!canContinue}
-                    />
-
-                </View>
             </View>
-            </ScrollView>
+
+            {/* Footer */}
+            <View className="w-full px-6 pb-6">
+                 {/* Progress Dots */}
+                 <View className="flex-row justify-center gap-2 mb-8">
+                    <View className="w-3 h-3 rounded-full bg-gray-300" />
+                    <View className="w-3 h-3 rounded-full" style={{ backgroundColor: currentAccent.hex }} />
+                    <View className="w-3 h-3 rounded-full bg-gray-300" />
+                    <View className="w-3 h-3 rounded-full bg-gray-300" />
+                </View>
+
+                <Button
+                    label={t('common.continue')}
+                    onPress={() => {
+                        trackEvent('onboarding_struggles_selected', { struggles: selected });
+                        (navigation.navigate as any)('GoalSelection', { struggles: selected });
+                    }}
+                    disabled={!canContinue}
+                />
+            </View>
         </Layout>
     );
 };

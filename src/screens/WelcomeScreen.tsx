@@ -35,14 +35,12 @@ export const WelcomeScreen = () => {
     };
 
     return (
-        <Layout useSafePadding={false}>
-            <View className="px-6 pt-16">
-                 <View className="flex-row justify-between items-center w-full min-h-[48px]" />
-            </View>
+        <Layout useSafePadding={false} noScroll={true}>
+            <View className="px-6 pt-6" />
 
             <View className="flex-1 px-6 justify-between pb-10">
                 {/* Content */}
-                <View className="items-center">
+                <View className="flex-1 justify-center items-center">
                     <Pressable onPress={handleMascotPress}>
                         <MascotImage
                             isAnimated
@@ -83,14 +81,16 @@ export const WelcomeScreen = () => {
                         showArrow
                     />
 
-                    <TouchableOpacity 
-                        onPress={() => navigation.navigate('Auth' as never)}
-                        className="mt-6 items-center py-2"
-                    >
-                        <Text className="text-muted font-q-bold text-lg">
-                            {t('common.alreadyHaveAccount')} <Text className="text-primary">{t('common.login')}</Text>
-                        </Text>
-                    </TouchableOpacity>
+                    <View className="mt-6 min-h-[44px] justify-center">
+                        <TouchableOpacity 
+                            onPress={() => navigation.navigate('Auth' as never)}
+                            className="items-center py-2"
+                        >
+                            <Text className="text-muted font-q-bold text-lg">
+                                {t('common.alreadyHaveAccount')} <Text className="text-primary">{t('common.login')}</Text>
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </View>
         </Layout>

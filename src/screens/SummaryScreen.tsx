@@ -61,7 +61,7 @@ export const SummaryScreen = () => {
         }
     };
 
-    const mascotSize = height < 750 ? 'w-48 h-48' : height < 850 ? 'w-64 h-64' : 'w-72 h-72';
+    const mascotSize = height < 700 ? 'w-52 h-52' : height < 800 ? 'w-64 h-64' : 'w-[280px] h-[280px]';
 
     const [loading, setLoading] = useState(false);
     const { struggles, goals } = route.params as { struggles: string[], goals: string[] } || { struggles: [], goals: [] };
@@ -122,55 +122,48 @@ export const SummaryScreen = () => {
 
     return (
         <Layout useSafePadding={false} noScroll={true}>
-            <View className="px-6 pt-4">
-                 <TopNav showBack={true} />
-            </View>
+            <View className="px-6 pt-6 pb-2" />
 
-            <ScrollView 
-                contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
-                showsVerticalScrollIndicator={false}
-            >
-            <View className="flex-1 px-6 justify-between">
-                <View>
-                    {/* Main Content Area */}
-                    <View className="items-center mb-6">
-                        <Text className="text-4xl font-q-bold text-text text-center mb-6 pt-4 leading-tight">
-                            {t('summary.title')}
-                        </Text>
+            <View className="flex-1 px-6 py-4">
+                {/* Main Content Area */}
+                <Text className="text-4xl font-q-bold text-text text-center mb-2 leading-tight">
+                    {t('summary.title')}
+                </Text>
 
-                        <MascotImage
-                            source={MASCOTS.SHINE}
-                            className={`${mascotSize} mb-6`}
-                            resizeMode="contain"
-                        />
-
-                         <Text className="text-2xl text-text text-center font-q-regular leading-relaxed px-4">
-                            {t('summary.body_start')}
-                            <Text className="font-q-bold" style={{ color: currentAccent.hex }}>{t('summary.gratitude')}</Text>
-                            {t('summary.body_mid')}
-                            <Text className="font-q-bold" style={{ color: currentAccent.hex }}>{struggleText}</Text>
-                            {t('summary.body_end')}
-                            <Text className="font-q-bold" style={{ color: currentAccent.hex }}>{goalText}</Text>.
-                        </Text>
-                    </View>
-                </View>
-
-                <View className="w-full">
-                     <View className="flex-row justify-center gap-2 mb-8">
-                        <View className="w-3 h-3 rounded-full bg-gray-300" />
-                        <View className="w-3 h-3 rounded-full bg-gray-300" />
-                        <View className="w-3 h-3 rounded-full bg-gray-300" />
-                        <View className="w-3 h-3 rounded-full" style={{ backgroundColor: currentAccent.hex }} />
-                    </View>
-
-                    <Button
-                        label={t('summary.startWriting')}
-                        onPress={handleStartWriting}
-                        loading={loading}
+                <View className="flex-1 justify-center items-center">
+                    <MascotImage
+                        source={MASCOTS.SHINE}
+                        className={`${mascotSize}`}
+                        resizeMode="contain"
                     />
                 </View>
+
+                <View className="mb-6">
+                    <Text className="text-2xl text-text text-center font-q-regular leading-relaxed px-4">
+                        {t('summary.body_start')}
+                        <Text className="font-q-bold" style={{ color: currentAccent.hex }}>{t('summary.gratitude')}</Text>
+                        {t('summary.body_mid')}
+                        <Text className="font-q-bold" style={{ color: currentAccent.hex }}>{struggleText}</Text>
+                        {t('summary.body_end')}
+                        <Text className="font-q-bold" style={{ color: currentAccent.hex }}>{goalText}</Text>.
+                    </Text>
+                </View>
             </View>
-            </ScrollView>
+
+            <View className="w-full px-6 pb-6">
+                 <View className="flex-row justify-center gap-2 mb-8">
+                    <View className="w-3 h-3 rounded-full bg-gray-300" />
+                    <View className="w-3 h-3 rounded-full bg-gray-300" />
+                    <View className="w-3 h-3 rounded-full bg-gray-300" />
+                    <View className="w-3 h-3 rounded-full" style={{ backgroundColor: currentAccent.hex }} />
+                </View>
+
+                <Button
+                    label={t('summary.startWriting')}
+                    onPress={handleStartWriting}
+                    loading={loading}
+                />
+            </View>
         </Layout>
     );
 };
