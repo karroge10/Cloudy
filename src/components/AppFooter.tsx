@@ -1,11 +1,11 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Linking } from 'react-native';
-import appJson from '../../app.json';
+import Constants from 'expo-constants';
 import { LINKS } from '../constants/Links';
 import { useTranslation } from 'react-i18next';
 
 export const AppFooter = () => {
-    const APP_VERSION = appJson.expo.version;
+    const APP_VERSION = Constants.expoConfig?.version || '1.0.0';
 
     const { t } = useTranslation();
 
