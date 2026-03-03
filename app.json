@@ -3,7 +3,7 @@
     "name": "Cloudy Gratitude Journal",
     "slug": "Cloudy",
     "scheme": "cloudy",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "description": "A mindful space for your daily memories and gratitude.",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -23,7 +23,7 @@
       "supportsTablet": true
     },
     "android": {
-      "versionCode": 6,
+      "versionCode": 7,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#f8ebb5"

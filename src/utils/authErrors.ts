@@ -34,11 +34,18 @@ export const getFriendlyAuthErrorMessage = (error: AuthError | Error | any): { t
         };
     }
 
-    // Network Errors
+    // Network & Parsing Errors
     if (message.includes('network request failed')) {
         return {
             title: 'Connection Error',
             message: "Cloudy can't reach the sky right now. Please check your internet connection."
+        };
+    }
+
+    if (message.includes('json') || message.includes('unexpected character')) {
+        return {
+            title: 'Connection Lost',
+            message: "Cloudy had a bit of trouble connecting to the sky. Please check your internet and try again."
         };
     }
 
